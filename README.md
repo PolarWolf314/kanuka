@@ -61,14 +61,14 @@ pair. The new `.env.enc` and the `{users_key}.enc` should be committed with the
 project. For example:
 
 ```bash
-.kanuka_secrets/
-├─ user_1.enc
-├─ user_2.enc
-├─ user_3.enc
-src/
+root
 ├─ .env.enc
-
-```
+├─ .kanuka_secrets/
+│  ├─ user_1.enc
+│  ├─ user_2.enc
+│  └─  user_3.enc
+├─ src/
+└─ ...
 
 - [ ] Decide on if there should be an owner/worker structure with the key
       distribution, or if there should be a flat encryption structure, where anybody
