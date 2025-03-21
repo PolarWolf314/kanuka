@@ -69,6 +69,7 @@ root
 │  └─  user_3.enc
 ├─ src/
 └─ ...
+```
 
 - [ ] Decide on if there should be an owner/worker structure with the key
       distribution, or if there should be a flat encryption structure, where anybody
