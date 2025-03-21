@@ -1,8 +1,8 @@
 # Kānuka CLI Tool
 
-Kānuka is a CLI tool written in Go. It makes sharing secrets, creating
-development environments, deploying code, and testing, unified under one robust
-and simple interface. Never again will you need to ask another developer to
+Kānuka is a CLI tool written in Go. It streamlines secret sharing, development
+environment setup, code deployment, and testing into a unified, robust, and
+user-friendly interface. Never again will you need to ask another developer to
 send you their `.env` file, or what tools need to be installed on your system
 in order to start developing.
 
