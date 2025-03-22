@@ -8,7 +8,7 @@ in order to start developing.
 
 ## What's with the name?
 
-Kānuka (Kunzea eicoides) is a tree that is native and endemic to New Zealand.
+Kānuka (Kunzea ericoides) is a tree that is native and endemic to New Zealand.
 It is a robust species that is critical to restoring wildlife that was
 destroyed in a fire, as it quickly propagates and regenerates the land. Its
 leaves has a characteristically soft touch, and is one of the few plants that
