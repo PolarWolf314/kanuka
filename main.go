@@ -18,16 +18,6 @@ Features:
   - Store and retrieve secrets securely
   - Enter a nix shell without having to worry about your environment
   - Provision cloud resources using Pulumi
-  
-Usage:
-  kanuka <command> [flags]
-  
-Available Commands:
-  secrets    Manage environment secrets
-  shell      Manage Nix packages
-  deploy     Provision cloud resources with Pulumi
-  
-Run 'kanuka help <command>' for more details on a specific command.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Welcome to Kānuka! Run 'kanuka --help' to see available commands.")
