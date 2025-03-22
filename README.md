@@ -110,3 +110,34 @@ Still TBD.
 ### Deployment management
 
 Still TBD.
+
+## Project setup
+
+To get started, you must have go>=1.23 installed. To build the project, run the
+following command:
+
+```bash
+# installs all missing packages and removes all unused packages
+go mod tidy
+```
+
+To test your changes, ensure that `$GOBIN` is in your `PATH` by adding this
+line to your `.bashrc` or `.zshrc` (or whatever other interpreter you use):
+
+```bash
+export PATH=$PATH:$(go env GOPATH)/bin
+```
+
+And then to build the package, make sure you are in the root directory of the
+project, and run this command:
+
+```bash
+# builds the binary and places it in your $GOBIN
+go install
+# run the binary
+kanuka
+
+# alternatively, if you'd rather the binary be local
+go build
+./kanuka
+```
