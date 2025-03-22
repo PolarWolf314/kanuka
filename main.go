@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"kanuka/cmd"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -34,6 +35,8 @@ Run 'kanuka help <command>' for more details on a specific command.
 }
 
 func main() {
+	rootCmd.AddCommand(cmd.SecretsCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
