@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"kanuka/cmd"
 	"os"
+
+	"kanuka/cmd"
 
 	"github.com/spf13/cobra"
 )
