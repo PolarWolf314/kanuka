@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"kanuka/cmd"
 	"os"
 
 	"github.com/spf13/cobra"
+	"kanuka/cmd"
 )
 
 var rootCmd = &cobra.Command{
