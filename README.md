@@ -57,16 +57,16 @@ the first goal is to achieve feature number 1.
 
 The idea of secrets management is this: Encrypt an `.env` file using a
 symmetric key, and then have the symmetric encrypted with a public/private key
-pair. The new `.env.enc` and the `{users_key}.enc` should be committed with the
+pair. The new `.env.kanuka` and the `{users_key}.kanuka` should be committed with the
 project. For example:
 
 ```bash
 root
-├─ .env.enc
-├─ .kanuka_secrets/
-│  ├─ user_1.enc
-│  ├─ user_2.enc
-│  └─  user_3.enc
+├─ env.kanuka
+├─ .kanuka/secrets/
+│  ├─ user_1.kanuka
+│  ├─ user_2.kanuka
+│  └─  user_3.kanuka
 ├─ src/
 └─ ...
 ```
