@@ -56,8 +56,8 @@ the first goal is to achieve feature &nbsp;1.
 ### Secrets management
 
 The idea of secrets management is this: Encrypt an `.env` file using a symmetric
-key, and then have the symmetric encrypted with a public/private key pair. The
-new `.env.kanuka` and the `{users_key}.kanuka` should be committed with the
+key, and then have the symmetric encrypted with a public&ndash;private key pair.
+The new `.env.kanuka` and the `{users_key}.kanuka` should be committed with the
 project. For example:
 
 ```bash
@@ -85,9 +85,9 @@ root
       (or decide on having just randomised encrypted key names).
 
 - [ ] Have a `kanuka secrets init`, which automatically generates a
-      public/private key pair for you in a `~/.kanuka/keys/` directory, and then
-      gives instructions for how to get your encrypted symmetric key into the
-      repo. If you are the first user to run the `init` command, then
+      public&ndash;private key pair for you in a `~/.kanuka/keys/` directory,
+      and then gives instructions for how to get your encrypted symmetric key
+      into the repo. If you are the first user to run the `init` command, then
       automatically generate the encrypted symmetric key and encrypt all
       discovered `*.env*` files.
 
