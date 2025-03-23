@@ -71,13 +71,13 @@ root
 └─ ...
 ```
 
-- [ ] Decide on if there should be an owner/worker structure with the key
-      distribution, or if there should be a flat encryption structure, where
-      anybody with decrypt access can add another user.
+- [ ] Decide whether there should be an owner/worker structure with the key
+      distribution, or a flat encryption structure where anybody with decrypt
+      access can add another user.
 
-- [ ] Search through the entire project for all `*.env*` files, and encrypt them
-      automatically with a `kanuka secrets encrypt` command, and
-      `kanuka secrets decrypt` for the reverse process.
+- [ ] Search the project for all `*.env*` files, and encrypt them automatically
+      with a `kanuka secrets encrypt` command, and `kanuka secrets decrypt` for
+      the reverse process.
 
 - [ ] Functionality to create and add another user’s encrypted symmetric key
       with
