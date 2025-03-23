@@ -56,7 +56,7 @@ the first goal is to achieve feature &nbsp;1.
 ### Secrets management
 
 The idea of secrets management is this: Encrypt an `.env` file using a symmetric
-key, and then have the symmetric encrypted with a public&ndash;private key pair.
+key, and then have the symmetric key encrypted with a public&ndash;private key pair.
 The new `.env.kanuka` and the `{users_key}.kanuka` should be committed with the
 project. For example:
 
