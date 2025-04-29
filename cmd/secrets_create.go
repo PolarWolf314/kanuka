@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"kanuka/internal/secrets"
 	"log"
-	"os"
-	"os/user"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -14,59 +11,38 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
 	Run: func(cmd *cobra.Command, args []string) {
+		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
+		if err != nil {
+			log.Fatalf("❌ Failed to check if project kanuka settings exists: %v", err)
+		}
+		if !kanukaExists {
+			log.Fatalf("❌ .kanuka/ doesn't exist. Please init the project first")
+		}
+
 		log.Println("Adding your public key...")
-
-		// Step 1: Get current working directory
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Fatalf("❌ Failed to get working directory: %v", err)
-		}
-		projectName := filepath.Base(wd)
-		log.Printf("📂 Current project: %s\n", projectName)
-
-		currentUser, err := user.Current()
-		if err != nil {
-			log.Fatalf("❌ Failed to get current user: %v", err)
-		}
-		username := currentUser.Username
-
-		// Step 2: Ensure ~/.kanuka/keys exists
-		keysDir := filepath.Join(currentUser.HomeDir, ".kanuka", "keys")
-		if err := os.MkdirAll(keysDir, 0700); err != nil {
-			log.Fatalf("❌ Failed to create keys directory: %v", err)
+		if err := secrets.EnsureUserSettings(); err != nil {
+			log.Fatalf("❌ Failed ensuring user settings: %v", err)
 		}
 
-		// Generate key pair
-		privateKeyPath := filepath.Join(keysDir, projectName)
-		publicKeyPath := privateKeyPath + ".pub"
-
-		if err := generateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
-			log.Fatalf("❌ Failed to generate RSA key pair: %v", err)
+		if err := secrets.CreateAndSaveRSAKeyPair(); err != nil {
+			log.Fatalf("❌ Failed to generate and save RSA key pair: %v", err)
 		}
-		log.Println("✅ Generated RSA public/private key pair")
+		// Above method handles printing comments
 
-		// Step 3: Check if .kanuka folder exists
-		// TODO: Check that a user doesn't already exist, or at some point use a yaml/toml
-		kanukaDir := filepath.Join(wd, ".kanuka")
-		publicKeysDir := filepath.Join(kanukaDir, "public_keys")
-
-		if _, err := os.Stat(kanukaDir); os.IsNotExist(err) {
-			log.Fatalf("❌ .kanuka folder does not exist! Run kanuka secrets init instead")
-			return
-		}
-
-		// Step 4: Copy public key into project
-		destPublicKey := filepath.Join(publicKeysDir, fmt.Sprintf("%s.pub", username))
-		if err := copyFile(publicKeyPath, destPublicKey); err != nil {
-			log.Fatalf("❌ Failed to copy public key into project: %v", err)
+		if err := secrets.CopyUserPublicKeyToProject(); err != nil {
+			log.Fatalf("❌ Failed to copy public key to project: %v", err)
 		}
 		log.Println("✅ Copied public key into project")
 
-		// Step 5: Give instructions for how to add access
+		username, err := secrets.GetUsername()
+		if err != nil {
+			log.Fatalf("❌ Failed to get username: %v", err)
+		}
+
 		log.Println()
 		log.Println("✨ Your public key has been added!")
 		log.Println("To gain access to the secrets in this project, do the following:")
 		log.Println("1. Commit your `.kanuka/public_keys/" + username + ".pub` file to Git.")
-		log.Println("2. Ask someone with access to encrypt the symmetric key for you using kanuka secrets add " + username)
+		log.Println("2. Ask someone with permissions grant you access `kanuka secrets add " + username + "`")
 	},
 }
