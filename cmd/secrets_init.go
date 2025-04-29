@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"io"
 	"kanuka/internal/secrets"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -51,25 +49,4 @@ var initCmd = &cobra.Command{
 		log.Println("✨ Initialization complete!")
 		log.Println("Go ahead and run `kanuka secrets encrypt` to encrypt your first .env file!")
 	},
-}
-
-// ===== Helper functions =====
-
-func copyFile(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-	return out.Sync()
 }
