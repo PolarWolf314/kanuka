@@ -106,7 +106,11 @@ var initCmd = &cobra.Command{
 
 		// Step 8: Run `kanuka encrypt`
 		log.Println("🚀 Running `kanuka encrypt` automatically...")
-		if err := exec.Command(os.Args[0], "secrets encrypt").Run(); err != nil {
+		kanuka_executable_path, err := os.Executable()
+		if err != nil {
+			log.Fatalf("❌ Failed to get executable path for Kanuka: %v", err)
+		}
+		if err := exec.Command(kanuka_executable_path, "secrets encrypt").Run(); err != nil {
 			log.Fatalf("❌ Failed to run encrypt command: %v", err)
 		}
 		log.Println("✅ Secrets encrypted successfully")
