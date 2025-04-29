@@ -102,5 +102,6 @@ func decryptFile(symKey []byte, inputPath, outputPath string) error {
 		return fmt.Errorf("failed to decrypt ciphertext with secretbox")
 	}
 
+	// #nosec G306 -- We want the decrypted .env file to be editable by the user
 	return os.WriteFile(outputPath, plaintext, 0644)
 }

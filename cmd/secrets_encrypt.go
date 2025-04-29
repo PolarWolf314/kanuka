@@ -103,5 +103,5 @@ func encryptFile(symKey []byte, inputPath, outputPath string) error {
 
 	ciphertext := secretbox.Seal(nonce[:], plaintext, &nonce, &key)
 
-	return os.WriteFile(outputPath, ciphertext, 0644)
+	return os.WriteFile(outputPath, ciphertext, 0600)
 }
