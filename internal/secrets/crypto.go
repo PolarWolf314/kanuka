@@ -6,7 +6,9 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 )
 
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
@@ -23,4 +25,183 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 
 func DecryptWithPrivateKey(ciphertext []byte, privateKey *rsa.PrivateKey) ([]byte, error) {
 	return rsa.DecryptPKCS1v15(rand.Reader, privateKey, ciphertext)
+}
+
+func GenerateRSAKeyPair(privatePath, publicPath string) error {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("failed to generate RSA key pair: %w", err)
+	}
+
+	// Create directories if they don't exist
+	privateDir := filepath.Dir(privatePath)
+	if err := os.MkdirAll(privateDir, 0700); err != nil {
+		return fmt.Errorf("failed to create directory for private key at %s: %w", privateDir, err)
+	}
+	publicDir := filepath.Dir(publicPath)
+	if err := os.MkdirAll(publicDir, 0700); err != nil {
+		return fmt.Errorf("failed to create directory for public key at %s: %w", publicDir, err)
+	}
+
+	// Save private key
+	privFile, err := os.Create(privatePath)
+	if err != nil {
+		return fmt.Errorf("failed to create private key file at %s: %w", privatePath, err)
+	}
+	defer func() {
+		if closeErr := privFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close private key file: %w", closeErr)
+		}
+	}()
+
+	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privPem := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	if err := pem.Encode(privFile, privPem); err != nil {
+		return fmt.Errorf("failed to PEM encode private key: %w", err)
+	}
+
+	// Save public key
+	pubFile, err := os.Create(publicPath)
+	if err != nil {
+		return fmt.Errorf("failed to create public key file at %s: %w", publicPath, err)
+	}
+	defer func() {
+		if closeErr := pubFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close public key file: %w", closeErr)
+		}
+	}()
+
+	pubASN1, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to marshal public key: %w", err)
+	}
+	pubPem := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubASN1,
+	}
+	if err := pem.Encode(pubFile, pubPem); err != nil {
+		return fmt.Errorf("failed to PEM encode public key: %w", err)
+	}
+
+	return nil
+}
+
+func CreateAndSaveRSAKeyPair() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	projectName := filepath.Base(wd)
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get user's home directory: %w", err)
+	}
+
+	// Create key paths
+	keysDir := filepath.Join(homeDir, ".kanuka", "keys")
+	privateKeyPath := filepath.Join(keysDir, projectName)
+	publicKeyPath := privateKeyPath + ".pub"
+
+	// Ensure key directory exists
+	if err := os.MkdirAll(keysDir, 0700); err != nil {
+		return fmt.Errorf("failed to create keys directory at %s: %w", keysDir, err)
+	}
+
+	if err := GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
+		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectName, err)
+	}
+
+	log.Printf("✅ Successfully generated RSA keys at:\n  - Private: %s\n  - Public: %s", privateKeyPath, publicKeyPath)
+	return nil
+}
+
+func CreateSymmetricKey() ([]byte, error) {
+	symKey := make([]byte, 32) // AES-256
+	if _, err := rand.Read(symKey); err != nil {
+		return nil, err
+	}
+
+	return symKey, nil
+}
+
+func LoadPublicKey() (*rsa.PublicKey, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	username, err := GetUsername()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
+
+	kanukaDir := filepath.Join(wd, ".kanuka")
+	publicKeyPath := filepath.Join(kanukaDir, "public_keys", username+".pub")
+
+	data, err := os.ReadFile(publicKeyPath)
+	if err != nil {
+		return nil, err
+	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "PUBLIC KEY" {
+		return nil, fmt.Errorf("failed to decode PEM block containing public key")
+	}
+	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	rsaPub, ok := pub.(*rsa.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("not an RSA public key")
+	}
+	return rsaPub, nil
+}
+
+func CreateAndSaveEncryptedSymmetricKey() error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	kanukaDir := filepath.Join(wd, ".kanuka")
+	secretsDir := filepath.Join(kanukaDir, "secrets")
+
+	// 1. create sym key in memory
+	symKey, err := CreateSymmetricKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate symmetric key: %w", err)
+	}
+	log.Println("🔐 Symmetric key generated in memory")
+
+	// 2. fetch user's public key from project
+	pubKey, err := LoadPublicKey()
+	if err != nil {
+		return fmt.Errorf("failed to load project public key: %w", err)
+	}
+
+	// 3. encrypt sym key using public key
+	encryptedSymKey, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, symKey)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt symmetric key: %w", err)
+	}
+	log.Println("🔒 Encrypted symmetric key with project public key")
+
+	// 4. save sym key to project
+	username, err := GetUsername()
+	if err != nil {
+		return fmt.Errorf("failed to get username: %w", err)
+	}
+
+	encryptedSymPath := filepath.Join(secretsDir, fmt.Sprintf("%s.kanuka", username))
+
+	if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0600); err != nil {
+		return fmt.Errorf("failed to save encrypted symmetric key: %v", err)
+	}
+	log.Println("✅ Saved encrypted symmetric key into project")
+
+	return nil
 }
