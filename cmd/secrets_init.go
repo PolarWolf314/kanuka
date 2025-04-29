@@ -98,7 +98,7 @@ var initCmd = &cobra.Command{
 
 			// Step 7: Save encrypted symmetric key
 			encryptedSymPath := filepath.Join(secretsDir, fmt.Sprintf("%s.kanuka", username))
-			if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0644); err != nil {
+			if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0600); err != nil {
 				log.Fatalf("❌ Failed to save encrypted symmetric key: %v", err)
 			}
 			log.Println("✅ Saved encrypted symmetric key into project")
