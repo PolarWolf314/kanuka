@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"os/user"
 	"path/filepath"
 
@@ -70,6 +69,11 @@ var initCmd = &cobra.Command{
 			log.Println("✅ Created .kanuka folders")
 		}
 
+		if kanukaExists {
+			log.Fatalf("❌ .kanuka folder already exists in this repo! Please run kanuka secrets create instead")
+			return
+		}
+
 		// Step 4: Copy public key into project
 		destPublicKey := filepath.Join(publicKeysDir, fmt.Sprintf("%s.pub", username))
 		if err := copyFile(publicKeyPath, destPublicKey); err != nil {
@@ -104,23 +108,10 @@ var initCmd = &cobra.Command{
 			log.Println("✅ Saved encrypted symmetric key into project")
 		}
 
-		// Step 8: Run `kanuka encrypt`
-		log.Println("🚀 Running `kanuka encrypt` automatically...")
-		kanuka_executable_path, err := os.Executable()
-		if err != nil {
-			log.Fatalf("❌ Failed to get executable path for Kanuka: %v", err)
-		}
-		if err := exec.Command(kanuka_executable_path, "secrets encrypt").Run(); err != nil {
-			log.Fatalf("❌ Failed to run encrypt command: %v", err)
-		}
-		log.Println("✅ Secrets encrypted successfully")
-
-		// Step 9a: Give instructions for access
+		// Step 8: Give instructions
 		log.Println()
-		log.Println("✨ Initialization complete! To give access to others:")
-		log.Println("1. Commit your `.kanuka/public_keys/" + username + ".pub` file to Git.")
-		log.Println("2. Ask someone with access to encrypt the symmetric key for you.")
-		log.Println()
+		log.Println("✨ Initialization complete!")
+		log.Println("Go ahead and run kanuka secrets encrypt to encrypt your first .env file!")
 	},
 }
 
