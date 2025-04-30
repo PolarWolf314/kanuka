@@ -30,7 +30,7 @@ var encryptCmd = &cobra.Command{
 		}
 
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
-		listOfEnvFiles, err := secrets.FindEnvFiles(workingDirectory, []string{})
+		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, false)
 		if err != nil {
 			log.Fatalf("❌ Failed to find environment files: %v", err)
 		}

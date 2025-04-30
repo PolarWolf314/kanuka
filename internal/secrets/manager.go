@@ -143,7 +143,7 @@ func EnsureKanukaSettings() error {
 	return nil
 }
 
-func FindEnvFiles(rootDir string, ignoreDirs []string) ([]string, error) {
+func FindEnvOrKanukaFiles(rootDir string, ignoreDirs []string, isKanuka bool) ([]string, error) {
 	var result []string
 
 	ignoreMap := make(map[string]bool)
@@ -172,9 +172,15 @@ func FindEnvFiles(rootDir string, ignoreDirs []string) ([]string, error) {
 			return nil
 		}
 
-		// Check if the filename contains ".env"
-		if strings.Contains(filepath.Base(path), ".env") && !strings.Contains(path, ".kanuka") {
-			result = append(result, path)
+		if isKanuka {
+			if strings.Contains(filepath.Base(path), ".env") && strings.Contains(path, ".kanuka") {
+				result = append(result, path)
+			}
+		} else {
+			// Check if the filename contains ".env"
+			if strings.Contains(filepath.Base(path), ".env") && !strings.Contains(path, ".kanuka") {
+				result = append(result, path)
+			}
 		}
 
 		return nil
