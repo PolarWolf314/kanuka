@@ -223,3 +223,13 @@ func GetUserPrivateKey() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
+func FormatPaths(paths []string) string {
+	var b strings.Builder
+	b.WriteString("\n")
+	for _, path := range paths {
+		b.WriteString("    - ")
+		b.WriteString(path)
+		b.WriteString("\n")
+	}
+	return b.String()
+}
