@@ -1,10 +1,13 @@
 package secrets
 
 import (
+	"crypto/rsa"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 )
 
 func EnsureUserSettings() error {
@@ -139,3 +142,44 @@ func EnsureKanukaSettings() error {
 
 	return nil
 }
+
+func FindEnvFiles(rootDir string, ignoreDirs []string) ([]string, error) {
+	var result []string
+
+	ignoreMap := make(map[string]bool)
+	for _, dir := range ignoreDirs {
+		ignoreMap[dir] = true
+	}
+
+	// Always ignore searching for .env files in .kanuka/
+	ignoreMap[".kanuka"] = true
+
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed while walking directory: %w", err)
+		}
+
+		// Skip ignored directories
+		if d.IsDir() {
+			if ignoreMap[filepath.Base(path)] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Skip irregular files such as sockets, pipes, devices, etc
+		if !d.Type().IsRegular() {
+			return nil
+		}
+
+		// Check if the filename contains ".env"
+		if strings.Contains(filepath.Base(path), ".env") && !strings.Contains(path, ".kanuka") {
+			result = append(result, path)
+		}
+
+		return nil
+	})
+
+	return result, err
+}
+
