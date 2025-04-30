@@ -200,3 +200,26 @@ func GetUserProjectKanukaKey() ([]byte, error) {
 	return encryptedSymmetricKey, nil
 }
 
+func GetUserPrivateKey() (*rsa.PrivateKey, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user's home directory: %w", err)
+	}
+	projectName, err := GetProjectName()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project name: %w", err)
+	}
+
+	privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
+	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to get private key: %w", err)
+	}
+
+	privateKey, err := LoadPrivateKey(privateKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load private key: %w", err)
+	}
+
+	return privateKey, nil
+}
+
