@@ -183,3 +183,20 @@ func FindEnvFiles(rootDir string, ignoreDirs []string) ([]string, error) {
 	return result, err
 }
 
+func GetUserProjectKanukaKey() ([]byte, error) {
+	username, err := GetUsername()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
+	userKeyFile := filepath.Join(".kanuka", "secrets", fmt.Sprintf("%s.kanuka", username))
+	if _, err := os.Stat(userKeyFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to get user's project encrypted symmetric key: %w", err)
+	}
+	encryptedSymmetricKey, err := os.ReadFile(userKeyFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read user's project encrypted symmetric key: %w", err)
+	}
+
+	return encryptedSymmetricKey, nil
+}
+
