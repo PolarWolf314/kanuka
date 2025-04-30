@@ -6,9 +6,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
@@ -202,6 +205,43 @@ func CreateAndSaveEncryptedSymmetricKey() error {
 		return fmt.Errorf("failed to save encrypted symmetric key: %v", err)
 	}
 	log.Println("✅ Saved encrypted symmetric key into project")
+
+	return nil
+}
+
+func EncryptFiles(symKey []byte, inputPaths []string) error {
+	if len(symKey) != 32 {
+		return fmt.Errorf("failed as symmetric key must be 32 bytes for secretbox")
+	}
+
+	var key [32]byte
+	copy(key[:], symKey)
+
+	var outputPaths []string
+
+	for _, inputPath := range inputPaths {
+		plaintext, err := os.ReadFile(inputPath)
+		if err != nil {
+			return fmt.Errorf("failed to read .env file at %s: %w", inputPath, err)
+		}
+
+		var nonce [24]byte
+		if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+			return fmt.Errorf("failed on ReadFull method: %w", err)
+		}
+
+		ciphertext := secretbox.Seal(nonce[:], plaintext, &nonce, &key)
+
+		outputPath := inputPath + ".kanuka"
+		outputPaths = append(outputPaths, outputPath)
+
+		if err := os.WriteFile(outputPath, ciphertext, 0600); err != nil {
+			return fmt.Errorf("failed to write to %s: %w", outputPath, err)
+		}
+	}
+
+	log.Println("✅ All environment files in the project have been encrypted 🎉")
+	log.Printf("The following files were written: %s", FormatPaths(outputPaths))
 
 	return nil
 }
