@@ -35,10 +35,12 @@ var initCmd = &cobra.Command{
 		}
 		// Above method handles printing comments
 
-		if err := secrets.CopyUserPublicKeyToProject(); err != nil {
+		destPath, err := secrets.CopyUserPublicKeyToProject()
+		if err != nil {
 			log.Fatalf("❌ Failed to copy public key to project: %v", err)
 		}
-		log.Println("✅ Copied public key into project")
+
+		log.Printf("✅ Copied public key into %s", destPath)
 
 		if err := secrets.CreateAndSaveEncryptedSymmetricKey(); err != nil {
 			log.Fatalf("❌ Failed to create encrypted symmetric key: %v", err)

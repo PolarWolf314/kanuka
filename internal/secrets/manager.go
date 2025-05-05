@@ -61,20 +61,20 @@ func DoesProjectKanukaSettingsExist() (bool, error) {
 	return true, nil
 }
 
-func CopyUserPublicKeyToProject() error {
+func CopyUserPublicKeyToProject() (string, error) {
 	username, err := GetUsername()
 	if err != nil {
-		return fmt.Errorf("failed to get username: %w", err)
+		return "", fmt.Errorf("failed to get username: %w", err)
 	}
 
 	projectName, err := GetProjectName()
 	if err != nil {
-		return fmt.Errorf("failed to get project name: %w", err)
+		return "", fmt.Errorf("failed to get project name: %w", err)
 	}
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 
 	// Source path: ~/.kanuka/keys/{project_name}.pub
@@ -83,14 +83,14 @@ func CopyUserPublicKeyToProject() error {
 	// Check if source key exists
 	if _, err := os.Stat(sourceKeyPath); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("public key for project %s not found at %s", projectName, sourceKeyPath)
+			return "", fmt.Errorf("public key for project %s not found at %s", projectName, sourceKeyPath)
 		}
-		return fmt.Errorf("failed to check for source key: %w", err)
+		return "", fmt.Errorf("failed to check for source key: %w", err)
 	}
 
 	workingDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to get working directory: %w", err)
+		return "", fmt.Errorf("failed to get working directory: %w", err)
 	}
 
 	// Destination directory: {project_path}/.kanuka/public_keys/{username}.pub
@@ -98,15 +98,15 @@ func CopyUserPublicKeyToProject() error {
 
 	keyData, err := os.ReadFile(sourceKeyPath)
 	if err != nil {
-		return fmt.Errorf("failed to read source key file: %w", err)
+		return "", fmt.Errorf("failed to read source key file: %w", err)
 	}
 
 	// Write to destination file
 	if err := os.WriteFile(destKeyPath, keyData, 0600); err != nil {
-		return fmt.Errorf("failed to write key to project: %w", err)
+		return "", fmt.Errorf("failed to write key to project: %w", err)
 	}
 
-	return nil
+	return destKeyPath, nil
 }
 
 func GetUsername() (string, error) {
