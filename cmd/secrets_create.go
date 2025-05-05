@@ -44,7 +44,7 @@ var createCmd = &cobra.Command{
 		log.Println()
 		log.Println("✨ Your public key has been added!")
 		log.Println("To gain access to the secrets in this project, do the following:")
-		log.Println("1. Commit your `.kanuka/public_keys/" + username + ".pub` file to Git.")
-		log.Println("2. Ask someone with permissions to grant you access with `kanuka secrets add " + username + "`")
+		log.Println("    1. Commit your `.kanuka/public_keys/" + username + ".pub` file to Git.")
+		log.Println("    2. Ask someone with permissions to grant you access with `kanuka secrets add " + username + "`")
 	},
 }
