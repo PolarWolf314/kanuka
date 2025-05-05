@@ -119,7 +119,9 @@ func CreateAndSaveRSAKeyPair() error {
 		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectName, err)
 	}
 
-	log.Printf("✅ Successfully generated RSA keys at:\n  - Private: %s\n  - Public: %s", privateKeyPath, publicKeyPath)
+	log.Printf(`✅ Successfully generated RSA keys at:
+  - Private: %s
+  - Public: %s`, privateKeyPath, publicKeyPath)
 	return nil
 }
 
