@@ -115,7 +115,7 @@ func EncryptFiles(symKey []byte, inputPaths []string) error {
 // DecryptFiles decrypts files using a symmetric key
 func DecryptFiles(symKey []byte, inputPaths []string) error {
 	if len(symKey) != 32 {
-		return fmt.Errorf("failed as symmetric key length must be exactly 32 bytes for secretbox")
+		return fmt.Errorf("failed to decrypt files: symmetric key length must be exactly 32 bytes for secretbox")
 	}
 	var key [32]byte
 	copy(key[:], symKey)
