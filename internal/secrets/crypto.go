@@ -77,7 +77,7 @@ func CreateAndSaveEncryptedSymmetricKey() error {
 // EncryptFiles encrypts files using a symmetric key
 func EncryptFiles(symKey []byte, inputPaths []string) error {
 	if len(symKey) != 32 {
-		return fmt.Errorf("failed as symmetric key length must be exactly 32 bytes for secretbox")
+		return fmt.Errorf("invalid symmetric key length: expected 32 bytes, got %d bytes", len(symKey))
 	}
 
 	var key [32]byte
