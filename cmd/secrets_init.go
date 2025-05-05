@@ -47,6 +47,6 @@ var initCmd = &cobra.Command{
 
 		log.Println()
 		log.Println("✨ Initialization complete!")
-		log.Println("Go ahead and run `kanuka secrets encrypt` to encrypt your first .env file!")
+		log.Println("Go ahead and run `kanuka secrets encrypt` to encrypt your existing `.env` files!")
 	},
 }
