@@ -7,6 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+}
+
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",

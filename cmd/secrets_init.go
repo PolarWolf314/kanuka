@@ -7,6 +7,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	initCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+}
+
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initializes the secrets store",

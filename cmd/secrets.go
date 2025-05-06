@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 )
+
+var verbose bool
 
 var SecretsCmd = &cobra.Command{
 	Use:   "secrets",
@@ -18,4 +22,10 @@ func init() {
 	SecretsCmd.AddCommand(removeCmd)
 	SecretsCmd.AddCommand(initCmd)
 	SecretsCmd.AddCommand(purgeCmd)
+}
+
+func verboseLog(message string) {
+	if verbose {
+		log.Println(message)
+	}
 }
