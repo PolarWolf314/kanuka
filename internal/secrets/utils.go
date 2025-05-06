@@ -3,6 +3,8 @@ package secrets
 import (
 	"os/user"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 // GetUsername returns the current username.
@@ -20,7 +22,7 @@ func FormatPaths(paths []string) string {
 	b.WriteString("\n")
 	for _, path := range paths {
 		b.WriteString("    - ")
-		b.WriteString(path)
+		b.WriteString(color.YellowString(path))
 		b.WriteString("\n")
 	}
 	return b.String()
