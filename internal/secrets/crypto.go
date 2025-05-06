@@ -28,8 +28,8 @@ func CreateSymmetricKey() ([]byte, error) {
 	return symKey, nil
 }
 
-func CreateAndSaveEncryptedSymmetricKey() error {
-	// CreateAndSaveEncryptedSymmetricKey creates a symmetric key, encrypts it with the user's public key, and saves it.
+// CreateAndSaveEncryptedSymmetricKey creates a symmetric key, encrypts it with the user's public key, and saves it.
+func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
@@ -43,7 +43,10 @@ func CreateAndSaveEncryptedSymmetricKey() error {
 	if err != nil {
 		return fmt.Errorf("failed to generate symmetric key: %w", err)
 	}
-	log.Println("🔐 Symmetric key generated in memory")
+
+	if verbose {
+		log.Println("🔐 Symmetric key generated in memory")
+	}
 
 	// 2. fetch user's public key from project
 	pubKey, err := LoadPublicKey()
@@ -56,7 +59,10 @@ func CreateAndSaveEncryptedSymmetricKey() error {
 	if err != nil {
 		return fmt.Errorf("failed to encrypt symmetric key: %w", err)
 	}
-	log.Println("🔒 Encrypted symmetric key with project public key")
+
+	if verbose {
+		log.Println("🔒 Encrypted symmetric key with project public key")
+	}
 
 	// 4. save sym key to project
 	username, err := GetUsername()
@@ -69,7 +75,10 @@ func CreateAndSaveEncryptedSymmetricKey() error {
 	if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0600); err != nil {
 		return fmt.Errorf("failed to save encrypted symmetric key: %v", err)
 	}
-	log.Println("✅ Saved encrypted symmetric key into project")
+
+	if verbose {
+		log.Println("✅ Saved encrypted symmetric key into project")
+	}
 
 	return nil
 }

@@ -121,8 +121,8 @@ func GenerateRSAKeyPair(privatePath, publicPath string) error {
 	return nil
 }
 
-func CreateAndSaveRSAKeyPair() error {
-	// CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
+// CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
+func CreateAndSaveRSAKeyPair(verbose bool) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
@@ -148,9 +148,11 @@ func CreateAndSaveRSAKeyPair() error {
 		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectName, err)
 	}
 
-	log.Printf(`✅ Successfully generated RSA keys at:
+	if verbose {
+		log.Printf(`✅ Successfully generated RSA keys at:
   - Private: %s
   - Public: %s`, privateKeyPath, publicKeyPath)
+	}
 	return nil
 }
 
