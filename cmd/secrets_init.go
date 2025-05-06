@@ -1,9 +1,14 @@
 package cmd
 
 import (
+	"fmt"
 	"kanuka/internal/secrets"
 	"log"
+	"os"
+	"time"
 
+	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -15,44 +20,81 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initializes the secrets store",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Create a new spinner
+		s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+		s.Suffix = " Initializing Kanuka..."
+		err := s.Color("cyan")
+		if err != nil {
+			printError("Failed to create a spinner", err)
+		}
+
+		// Only show spinner if not in verbose mode
+		if !verbose {
+			s.Start()
+			// Ensure log output is discarded unless in verbose mode
+			log.SetOutput(os.NewFile(0, os.DevNull))
+		}
+
+		// Function to run at the end to restore logging and stop spinner
+		defer func() {
+			if !verbose {
+				log.SetOutput(os.Stdout)
+				s.Stop()
+			}
+		}()
+
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
 		if err != nil {
-			log.Fatalf("❌ Failed to check if project kanuka settings exists: %v", err)
+			printError("Failed to check if project kanuka settings exists", err)
+			return
 		}
 		if kanukaExists {
-			log.Fatalf("❌ .kanuka/ already exists. Please use `kanuka secrets create` instead")
+			printError(".kanuka/ already exists", fmt.Errorf("please use `kanuka secrets create` instead"))
+			return
 		}
 
-		log.Println("Starting Kanuka initialization...")
+		verboseLog("Starting Kanuka initialization...")
 
 		if err := secrets.EnsureUserSettings(); err != nil {
-			log.Fatalf("❌ Failed ensuring user settings: %v", err)
+			printError("Failed ensuring user settings", err)
+			return
 		}
 
 		if err := secrets.EnsureKanukaSettings(); err != nil {
-			log.Fatalf("❌ Failed to create .kanuka folders: %v", err)
+			printError("Failed to create .kanuka folders", err)
+			return
 		}
-		log.Println("✅ Created .kanuka folders")
+		verboseLog("✅ Created .kanuka folders")
 
-		if err := secrets.CreateAndSaveRSAKeyPair(); err != nil {
-			log.Fatalf("❌ Failed to generate and save RSA key pair: %v", err)
+		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
+			printError("Failed to generate and save RSA key pair", err)
+			return
 		}
-		// Above method handles printing comments
 
 		destPath, err := secrets.CopyUserPublicKeyToProject()
 		if err != nil {
-			log.Fatalf("❌ Failed to copy public key to project: %v", err)
+			printError("Failed to copy public key to project", err)
+			return
+		}
+		verboseLog(fmt.Sprintf("✅ Copied public key into %s", destPath))
+
+		if err := secrets.CreateAndSaveEncryptedSymmetricKey(verbose); err != nil {
+			printError("Failed to create encrypted symmetric key", err)
+			return
 		}
 
-		log.Printf("✅ Copied public key into %s", destPath)
-
-		if err := secrets.CreateAndSaveEncryptedSymmetricKey(); err != nil {
-			log.Fatalf("❌ Failed to create encrypted symmetric key: %v", err)
+		if !verbose {
+			s.Stop()
 		}
-		// Above method handles printing comments
 
-		log.Println()
-		log.Println("✨ Initialization complete!")
-		log.Println("Go ahead and run `kanuka secrets encrypt` to encrypt your existing `.env` files!")
+		fmt.Println(color.GreenString("✓") + " Kanuka initialized successfully!")
+		fmt.Println(color.CyanString("→") + " Run 'kanuka secrets encrypt' to encrypt your existing .env files")
 	},
+}
+
+func printError(message string, err error) {
+	if !verbose {
+		log.SetOutput(os.Stdout)
+	}
+	log.Fatalf("❌ %s: %v", message, err)
 }
