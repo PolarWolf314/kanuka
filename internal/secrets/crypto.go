@@ -13,12 +13,12 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
-// DecryptWithPrivateKey decrypts data using an RSA private key
+// DecryptWithPrivateKey decrypts data using an RSA private key.
 func DecryptWithPrivateKey(ciphertext []byte, privateKey *rsa.PrivateKey) ([]byte, error) {
 	return rsa.DecryptPKCS1v15(rand.Reader, privateKey, ciphertext)
 }
 
-// CreateSymmetricKey generates a new random symmetric key
+// CreateSymmetricKey generates a new random symmetric key.
 func CreateSymmetricKey() ([]byte, error) {
 	symKey := make([]byte, 32) // AES-256
 	if _, err := rand.Read(symKey); err != nil {
@@ -28,8 +28,8 @@ func CreateSymmetricKey() ([]byte, error) {
 	return symKey, nil
 }
 
-// CreateAndSaveEncryptedSymmetricKey creates a symmetric key, encrypts it with the user's public key, and saves it
 func CreateAndSaveEncryptedSymmetricKey() error {
+	// CreateAndSaveEncryptedSymmetricKey creates a symmetric key, encrypts it with the user's public key, and saves it.
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
@@ -74,7 +74,7 @@ func CreateAndSaveEncryptedSymmetricKey() error {
 	return nil
 }
 
-// EncryptFiles encrypts files using a symmetric key
+// EncryptFiles encrypts files using a symmetric key.
 func EncryptFiles(symKey []byte, inputPaths []string) error {
 	if len(symKey) != 32 {
 		return fmt.Errorf("invalid symmetric key length: expected 32 bytes, got %d bytes", len(symKey))
@@ -112,7 +112,7 @@ func EncryptFiles(symKey []byte, inputPaths []string) error {
 	return nil
 }
 
-// DecryptFiles decrypts files using a symmetric key
+// DecryptFiles decrypts files using a symmetric key.
 func DecryptFiles(symKey []byte, inputPaths []string) error {
 	if len(symKey) != 32 {
 		return fmt.Errorf("failed to decrypt files: symmetric key length must be exactly 32 bytes for secretbox")

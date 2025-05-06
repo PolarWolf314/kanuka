@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// EnsureUserSettings ensures that the user's Kanuka settings directory exists
+// EnsureUserSettings ensures that the user's Kanuka settings directory exists.
 func EnsureUserSettings() error {
 	currentUser, err := user.Current()
 	if err != nil {
@@ -24,7 +24,7 @@ func EnsureUserSettings() error {
 	return nil
 }
 
-// DoesProjectKanukaSettingsExist checks if the project's Kanuka settings directory exists
+// DoesProjectKanukaSettingsExist checks if the project's Kanuka settings directory exists.
 func DoesProjectKanukaSettingsExist() (bool, error) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
@@ -53,7 +53,7 @@ func DoesProjectKanukaSettingsExist() (bool, error) {
 	return true, nil
 }
 
-// EnsureKanukaSettings ensures that the project's Kanuka settings directories exist
+// EnsureKanukaSettings ensures that the project's Kanuka settings directories exist.
 func EnsureKanukaSettings() error {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -80,7 +80,7 @@ func EnsureKanukaSettings() error {
 	return nil
 }
 
-// FindEnvOrKanukaFiles finds .env or .kanuka files in the project directory
+// FindEnvOrKanukaFiles finds .env or .kanuka files in the project directory.
 func FindEnvOrKanukaFiles(rootDir string, ignoreDirs []string, isKanuka bool) ([]string, error) {
 	var result []string
 

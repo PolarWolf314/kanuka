@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// GetUsername returns the current username
+// GetUsername returns the current username.
 func GetUsername() (string, error) {
 	user, err := user.Current()
 	if err != nil {
@@ -14,7 +14,7 @@ func GetUsername() (string, error) {
 	return user.Username, nil
 }
 
-// FormatPaths formats a slice of paths into a readable string
+// FormatPaths formats a slice of paths into a readable string.
 func FormatPaths(paths []string) string {
 	var b strings.Builder
 	b.WriteString("\n")

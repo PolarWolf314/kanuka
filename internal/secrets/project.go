@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-// GetProjectName returns the name of the current project (directory)
+// GetProjectName returns the name of the current project (directory).
 func GetProjectName() (string, error) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {

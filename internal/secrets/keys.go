@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-// LoadPrivateKey loads an RSA private key from disk
+// LoadPrivateKey loads an RSA private key from disk.
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -24,7 +24,7 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
-// LoadPublicKey loads the user's public key from the project directory
+// LoadPublicKey loads the user's public key from the project directory.
 func LoadPublicKey() (*rsa.PublicKey, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -58,7 +58,7 @@ func LoadPublicKey() (*rsa.PublicKey, error) {
 	return rsaPub, nil
 }
 
-// GenerateRSAKeyPair creates a new RSA key pair and saves them to disk
+// GenerateRSAKeyPair creates a new RSA key pair and saves them to disk.
 func GenerateRSAKeyPair(privatePath, publicPath string) error {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -121,8 +121,8 @@ func GenerateRSAKeyPair(privatePath, publicPath string) error {
 	return nil
 }
 
-// CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory
 func CreateAndSaveRSAKeyPair() error {
+	// CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
@@ -154,7 +154,7 @@ func CreateAndSaveRSAKeyPair() error {
 	return nil
 }
 
-// GetUserPrivateKey retrieves the user's private key for the current project
+// GetUserPrivateKey retrieves the user's private key for the current project.
 func GetUserPrivateKey() (*rsa.PrivateKey, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -178,7 +178,7 @@ func GetUserPrivateKey() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-// CopyUserPublicKeyToProject copies the user's public key to the project directory
+// CopyUserPublicKeyToProject copies the user's public key to the project directory.
 func CopyUserPublicKeyToProject() (string, error) {
 	username, err := GetUsername()
 	if err != nil {
@@ -227,7 +227,7 @@ func CopyUserPublicKeyToProject() (string, error) {
 	return destKeyPath, nil
 }
 
-// GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project
+// GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
 func GetUserProjectKanukaKey() ([]byte, error) {
 	username, err := GetUsername()
 	if err != nil {
