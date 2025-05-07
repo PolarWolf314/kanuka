@@ -84,7 +84,7 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 }
 
 // EncryptFiles encrypts files using a symmetric key.
-func EncryptFiles(symKey []byte, inputPaths []string) error {
+func EncryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 	if len(symKey) != 32 {
 		return fmt.Errorf("invalid symmetric key length: expected 32 bytes, got %d bytes", len(symKey))
 	}
@@ -115,14 +115,16 @@ func EncryptFiles(symKey []byte, inputPaths []string) error {
 		}
 	}
 
-	log.Println("✅ All environment files in the project have been encrypted 🎉")
-	log.Printf("The following files were written: %s", FormatPaths(outputPaths))
+	if verbose {
+		log.Println("✅ All environment files in the project have been encrypted 🎉")
+		log.Printf("The following files were written: %s", FormatPaths(outputPaths))
+	}
 
 	return nil
 }
 
 // DecryptFiles decrypts files using a symmetric key.
-func DecryptFiles(symKey []byte, inputPaths []string) error {
+func DecryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 	if len(symKey) != 32 {
 		return fmt.Errorf("failed to decrypt files: symmetric key length must be exactly 32 bytes for secretbox")
 	}
@@ -152,7 +154,10 @@ func DecryptFiles(symKey []byte, inputPaths []string) error {
 			return fmt.Errorf("failed to write to %s: %w", outputPath, err)
 		}
 	}
-	log.Println("✅ All environment files in the project have been decrypted 🎉")
-	log.Printf("The following files were written: %s", FormatPaths(outputPaths))
+
+	if verbose {
+		log.Println("✅ All environment files in the project have been decrypted 🎉")
+		log.Printf("The following files were written: %s", FormatPaths(outputPaths))
+	}
 	return nil
 }

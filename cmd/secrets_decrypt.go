@@ -99,7 +99,7 @@ var decryptCmd = &cobra.Command{
 		verboseLog("🔓 Decrypted symmetric key")
 
 		// Step 4: Decrypt all .kanuka files
-		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles); err != nil {
+		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles, verbose); err != nil {
 			printError("Failed to decrypt environment files", err)
 			return
 		}

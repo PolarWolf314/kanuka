@@ -99,7 +99,7 @@ var encryptCmd = &cobra.Command{
 		verboseLog("🔓 Decrypted symmetric key")
 
 		// Step 4: Encrypt all env files
-		if err := secrets.EncryptFiles(symKey, listOfEnvFiles); err != nil {
+		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
 			printError("Failed to encrypt environment files", err)
 			return
 		}
@@ -108,6 +108,6 @@ var encryptCmd = &cobra.Command{
 			s.Stop()
 		}
 		fmt.Println(color.GreenString("✓") + " Environment files encrypted successfully!")
-		fmt.Println(color.CyanString("→") + " You can now safely commit .env.kanuka files to your repository")
+		fmt.Println(color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository")
 	},
 }
