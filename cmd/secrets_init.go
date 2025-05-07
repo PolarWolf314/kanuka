@@ -91,10 +91,3 @@ var initCmd = &cobra.Command{
 		fmt.Println(color.CyanString("→") + " Run 'kanuka secrets encrypt' to encrypt your existing .env files")
 	},
 }
-
-func printError(message string, err error) {
-	if !verbose {
-		log.SetOutput(os.Stdout)
-	}
-	log.Fatalf("❌ %s: %v", message, err)
-}
