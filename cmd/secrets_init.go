@@ -3,11 +3,7 @@ package cmd
 import (
 	"fmt"
 	"kanuka/internal/secrets"
-	"log"
-	"os"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -20,28 +16,8 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initializes the secrets store",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Create a new spinner
-		s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-		s.Suffix = " Initializing Kanuka..."
-		err := s.Color("cyan")
-		if err != nil {
-			printError("Failed to create a spinner", err)
-		}
-
-		// Only show spinner if not in verbose mode
-		if !verbose {
-			s.Start()
-			// Ensure log output is discarded unless in verbose mode
-			log.SetOutput(os.NewFile(0, os.DevNull))
-		}
-
-		// Function to run at the end to restore logging and stop spinner
-		defer func() {
-			if !verbose {
-				log.SetOutput(os.Stdout)
-				s.Stop()
-			}
-		}()
+		_, cleanup := startSpinner("Initialising Kanuka...", verbose)
+		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
 		if err != nil {

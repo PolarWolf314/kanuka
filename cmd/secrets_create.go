@@ -3,11 +3,7 @@ package cmd
 import (
 	"fmt"
 	"kanuka/internal/secrets"
-	"log"
-	"os"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -20,26 +16,8 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
 	Run: func(cmd *cobra.Command, args []string) {
-		s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-		s.Suffix = " Adding your public key..."
-		err := s.Color("cyan")
-		if err != nil {
-			printError("Failed to create a spinner", err)
-		}
-
-		if !verbose {
-			s.Start()
-			// Ensure log output is discarded unless in verbose mode
-			log.SetOutput(os.NewFile(0, os.DevNull))
-		}
-
-		// Function to run at the end to restore logging and stop spinner
-		defer func() {
-			if !verbose {
-				log.SetOutput(os.Stdout)
-				s.Stop()
-			}
-		}()
+		_, cleanup := startSpinner("Creating Kanuka file...", verbose)
+		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
 		if err != nil {
