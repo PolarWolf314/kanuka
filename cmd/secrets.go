@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"log"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -23,17 +20,4 @@ func init() {
 	SecretsCmd.AddCommand(removeCmd)
 	SecretsCmd.AddCommand(initCmd)
 	SecretsCmd.AddCommand(purgeCmd)
-}
-
-func verboseLog(message string) {
-	if verbose {
-		log.Println(message)
-	}
-}
-
-func printError(message string, err error) {
-	if !verbose {
-		log.SetOutput(os.Stdout)
-	}
-	log.Fatalf("❌ %s: %v", message, err)
 }
