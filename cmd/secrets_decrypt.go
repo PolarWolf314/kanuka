@@ -85,7 +85,7 @@ var decryptCmd = &cobra.Command{
 		}
 
 		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
-			color.CyanString("→") + " Your .env files are now ready to use\n"
+			color.CyanString("→") + " Your environment files are now ready to use\n"
 
 		spinner.FinalMSG = finalMessage
 	},

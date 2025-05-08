@@ -62,7 +62,7 @@ var initCmd = &cobra.Command{
 		}
 
 		finalMessage := color.GreenString("✓") + " Kanuka initialized successfully!\n" +
-			color.CyanString("→") + " Run 'kanuka secrets encrypt' to encrypt your existing .env files\n"
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files\n"
 
 		spinner.FinalMSG = finalMessage
 	},
