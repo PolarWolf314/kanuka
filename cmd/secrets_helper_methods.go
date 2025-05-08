@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"log"
 	"os"
 	"time"
@@ -34,7 +35,7 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	if !verbose {
 		s.Start()
 		// Ensure log output is discarded unless in verbose mode
-		log.SetOutput(os.NewFile(0, os.DevNull))
+		log.SetOutput(io.Discard)
 	}
 
 	cleanup := func() {
