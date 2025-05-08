@@ -104,9 +104,6 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 
-		if !verbose {
-			s.Stop()
-		}
 		fmt.Println(color.GreenString("✓") + " Environment files encrypted successfully!")
 		fmt.Println(color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository")
 	},

@@ -104,9 +104,6 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 
-		if !verbose {
-			s.Stop()
-		}
 		fmt.Println(color.GreenString("✓") + " Environment files decrypted successfully!")
 		fmt.Println(color.CyanString("→") + " Your .env files are now ready to use")
 	},

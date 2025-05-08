@@ -76,10 +76,6 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		if !verbose {
-			s.Stop()
-		}
-
 		fmt.Println(color.GreenString("✓") + " Your public key has been added!")
 		fmt.Println()
 		fmt.Println(color.CyanString("To gain access to the secrets in this project:"))
