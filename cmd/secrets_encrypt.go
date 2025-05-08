@@ -17,7 +17,7 @@ var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
 	Short: "Encrypts the .env file into .env.kanuka using your Kanuka key",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cleanup := startSpinner("Encrypting environment files...", verbose)
+		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
@@ -81,7 +81,9 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println(color.GreenString("✓") + " Environment files encrypted successfully!")
-		fmt.Println(color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository")
+		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository\n"
+
+		spinner.FinalMSG = finalMessage
 	},
 }

@@ -17,7 +17,7 @@ var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
 	Short: "Decrypts the .env.kanuka file back into .env using your Kanuka key",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cleanup := startSpinner("Decrypting environment files...", verbose)
+		spinner, cleanup := startSpinner("Decrypting environment files...", verbose)
 		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
@@ -81,7 +81,9 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println(color.GreenString("✓") + " Environment files decrypted successfully!")
-		fmt.Println(color.CyanString("→") + " Your .env files are now ready to use")
+		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
+			color.CyanString("→") + " Your .env files are now ready to use\n"
+
+		spinner.FinalMSG = finalMessage
 	},
 }
