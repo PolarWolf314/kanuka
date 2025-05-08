@@ -48,7 +48,8 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 		if len(listOfEnvFiles) == 0 {
-			printError("No environment files found", fmt.Errorf("no .env files in %v", workingDirectory))
+			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(workingDirectory) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 

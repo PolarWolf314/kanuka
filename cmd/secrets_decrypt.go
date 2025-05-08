@@ -48,7 +48,8 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 		if len(listOfKanukaFiles) == 0 {
-			printError("No environment files found", fmt.Errorf("no .env.kanuka files in %v", workingDirectory))
+			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(workingDirectory) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
