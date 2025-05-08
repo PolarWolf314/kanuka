@@ -26,7 +26,9 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 		if !kanukaExists {
-			printError(".kanuka/ doesn't exist", fmt.Errorf("please init the project first with `kanuka init`"))
+			finalMessage := color.RedString("✗") + color.YellowString(" .kanuka/ ") + "doesn't exist\n" +
+				"please init the project with: " + color.YellowString("kanuka secrets init\n")
+			spinner.FinalMSG = finalMessage
 			return
 		}
 

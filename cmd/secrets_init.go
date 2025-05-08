@@ -25,7 +25,9 @@ var initCmd = &cobra.Command{
 			return
 		}
 		if kanukaExists {
-			printError(".kanuka/ already exists", fmt.Errorf("please use `kanuka secrets create` instead"))
+			finalMessage := color.RedString("✗") + color.YellowString(" .kanuka/ ") + "already exists\n" +
+				"please use " + color.YellowString("kanuka secrets create") + " instead\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
