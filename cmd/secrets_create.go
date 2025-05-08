@@ -56,7 +56,7 @@ var createCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Your public key has been added!\n" +
 			color.CyanString("To gain access to the secrets in this project:\n") +
-			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+username+".pub ") + color.WhiteString("file to Git\n") +
+			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+username+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
 			"     " + color.YellowString("kanuka secrets add "+username+"\n")
 
