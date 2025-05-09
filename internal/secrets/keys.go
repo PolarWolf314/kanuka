@@ -208,13 +208,13 @@ func CopyUserPublicKeyToProject() (string, error) {
 		return "", fmt.Errorf("failed to check for source key: %w", err)
 	}
 
-	workingDir, err := os.Getwd()
+	projectRoot, err := FindProjectKanukaRoot()
 	if err != nil {
-		return "", fmt.Errorf("failed to get working directory: %w", err)
+		return "", fmt.Errorf("failed to get project root: %w", err)
 	}
 
 	// Destination directory: {project_path}/.kanuka/public_keys/{username}.pub
-	destKeyPath := filepath.Join(workingDir, ".kanuka", "public_keys", username+".pub")
+	destKeyPath := filepath.Join(projectRoot, ".kanuka", "public_keys", username+".pub")
 
 	keyData, err := os.ReadFile(sourceKeyPath)
 	if err != nil {
