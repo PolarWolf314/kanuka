@@ -21,7 +21,7 @@ var encryptCmd = &cobra.Command{
 
 		projectRoot, err := secrets.FindProjectKanukaRoot()
 		if err != nil {
-			printError("Failed to check if project kanuka settings exists", err)
+			printError("Failed to obtain project root", err)
 			return
 		}
 		if projectRoot == "" {
