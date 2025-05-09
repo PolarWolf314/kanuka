@@ -7,10 +7,13 @@ import (
 
 // GetProjectName returns the name of the current project (directory).
 func GetProjectName() (string, error) {
-	projectDirectory, err := FindProjectKanukaRoot()
+	projectRoot, err := FindProjectKanukaRoot()
 	if err != nil {
 		return "", fmt.Errorf("failed to get project directory: %w", err)
 	}
-	projectName := filepath.Base(projectDirectory)
+	if projectRoot == "" {
+		return "", fmt.Errorf("failed to find project root because it doesn't exist")
+	}
+	projectName := filepath.Base(projectRoot)
 	return projectName, nil
 }
