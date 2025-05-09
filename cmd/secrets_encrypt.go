@@ -20,12 +20,12 @@ var encryptCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
-		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
+		projectRoot, err := secrets.FindProjectKanukaRoot()
 		if err != nil {
 			printError("Failed to check if project kanuka settings exists", err)
 			return
 		}
-		if !kanukaExists {
+		if projectRoot == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
