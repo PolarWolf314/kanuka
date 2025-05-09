@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"kanuka/internal/secrets"
-	"os"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -34,21 +33,15 @@ var decryptCmd = &cobra.Command{
 
 		verboseLog("🚀 Starting decryption process...")
 
-		// Step 1: Check for .env.kanuka file
-		workingDirectory, err := os.Getwd()
-		if err != nil {
-			printError("Failed to get working directory", err)
-			return
-		}
-
+		// Step 1: Check for .kanuka files
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
-		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, true)
+		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, true)
 		if err != nil {
 			printError("Failed to find environment files", err)
 			return
 		}
 		if len(listOfKanukaFiles) == 0 {
-			finalMessage := color.RedString("✗") + " No encrypted environment (" + color.YellowString(".kanuka") + ") files found in " + color.YellowString(workingDirectory) + "\n"
+			finalMessage := color.RedString("✗") + " No encrypted environment (" + color.YellowString(".kanuka") + ") files found in " + color.YellowString(projectRoot) + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
@@ -98,7 +91,7 @@ var decryptCmd = &cobra.Command{
 		}
 
 		// we can be sure they exist if the previous function ran without errors
-		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, false)
+		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, false)
 		if err != nil {
 			printError("Failed to find environment files", err)
 			return

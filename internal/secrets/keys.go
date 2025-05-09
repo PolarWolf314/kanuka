@@ -235,7 +235,11 @@ func GetUserProjectKanukaKey() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get username: %w", err)
 	}
-	userKeyFile := filepath.Join(".kanuka", "secrets", fmt.Sprintf("%s.kanuka", username))
+	projectPath, err := FindProjectKanukaRoot()
+	if err != nil {
+		return nil, fmt.Errorf("failed to find project root: %w", err)
+	}
+	userKeyFile := filepath.Join(projectPath, ".kanuka", "secrets", fmt.Sprintf("%s.kanuka", username))
 	if _, err := os.Stat(userKeyFile); os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to get user's project encrypted symmetric key: %w", err)
 	}
