@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	initCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+	initCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 }
 
 var initCmd = &cobra.Command{
