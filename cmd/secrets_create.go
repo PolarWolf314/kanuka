@@ -38,6 +38,22 @@ var createCmd = &cobra.Command{
 			return
 		}
 
+		username, err := secrets.GetUsername()
+		if err != nil {
+			printError("Failed to get username", err)
+			return
+		}
+
+		// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
+		encryptedSymmetricKey, _ := secrets.GetUserProjectKanukaKey()
+
+		if encryptedSymmetricKey != nil {
+			finalMessage := color.RedString("✗ ") + color.YellowString(username+".kanuka ") + "already exists\n" +
+				"To override, run: " + color.YellowString("kanuka secrets create --force\n")
+			spinner.FinalMSG = finalMessage
+			return
+		}
+
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
 			printError("Failed to generate and save RSA key pair", err)
 			return
@@ -49,12 +65,6 @@ var createCmd = &cobra.Command{
 			return
 		}
 		verboseLog(fmt.Sprintf("✅ Copied public key into %s", destPath))
-
-		username, err := secrets.GetUsername()
-		if err != nil {
-			printError("Failed to get username", err)
-			return
-		}
 
 		finalMessage := color.GreenString("✓") + " Your public key has been added!\n" +
 			color.CyanString("To gain access to the secrets in this project:\n") +
