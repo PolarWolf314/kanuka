@@ -27,6 +27,7 @@ var createCmd = &cobra.Command{
 			printError("Failed to check if project kanuka settings exists", err)
 			return
 		}
+
 		if projectRoot == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
@@ -41,7 +42,7 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		username, err := secrets.GetUsername()
+		currentUsername, err := secrets.GetUsername()
 		if err != nil {
 			printError("Failed to get username", err)
 			return
@@ -50,10 +51,10 @@ var createCmd = &cobra.Command{
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
 			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
-			encryptedSymmetricKey, _ := secrets.GetUserProjectKanukaKey()
+			encryptedSymmetricKey, _ := secrets.GetProjectKanukaKey(currentUsername)
 
 			if encryptedSymmetricKey != nil {
-				finalMessage := color.RedString("✗ ") + color.YellowString(username+".kanuka ") + "already exists\n" +
+				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".kanuka ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
 				return
@@ -75,9 +76,9 @@ var createCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Your public key has been added!\n" +
 			color.CyanString("To gain access to the secrets in this project:\n") +
-			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+username+".pub ") + color.WhiteString("file to your version control system\n") +
+			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
-			"     " + color.YellowString("kanuka secrets add "+username+"\n")
+			"     " + color.YellowString("kanuka secrets add "+currentUsername+"\n")
 
 		spinner.FinalMSG = finalMessage
 	},

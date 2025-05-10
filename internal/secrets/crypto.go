@@ -18,6 +18,10 @@ func DecryptWithPrivateKey(ciphertext []byte, privateKey *rsa.PrivateKey) ([]byt
 	return rsa.DecryptPKCS1v15(rand.Reader, privateKey, ciphertext)
 }
 
+func EncryptWithPublicKey(ciphertext []byte, publicKey *rsa.PublicKey) ([]byte, error) {
+	return rsa.EncryptPKCS1v15(rand.Reader, publicKey, ciphertext)
+}
+
 // CreateSymmetricKey generates a new random symmetric key.
 func CreateSymmetricKey() ([]byte, error) {
 	symKey := make([]byte, 32) // AES-256
@@ -35,8 +39,14 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
+	username, err := GetUsername()
+	if err != nil {
+		return fmt.Errorf("failed to get username: %w", err)
+	}
+
 	kanukaDir := filepath.Join(wd, ".kanuka")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
+	pubKeyPath := filepath.Join(kanukaDir, "public_keys", username+".pub")
 
 	// 1. create sym key in memory
 	symKey, err := CreateSymmetricKey()
@@ -49,13 +59,13 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 	}
 
 	// 2. fetch user's public key from project
-	pubKey, err := LoadPublicKey()
+	pubKey, err := LoadPublicKey(pubKeyPath)
 	if err != nil {
 		return fmt.Errorf("failed to load project public key: %w", err)
 	}
 
 	// 3. encrypt sym key using public key
-	encryptedSymKey, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, symKey)
+	encryptedSymKey, err := EncryptWithPublicKey(symKey, pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt symmetric key: %w", err)
 	}
@@ -65,11 +75,6 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 	}
 
 	// 4. save sym key to project
-	username, err := GetUsername()
-	if err != nil {
-		return fmt.Errorf("failed to get username: %w", err)
-	}
-
 	encryptedSymPath := filepath.Join(secretsDir, fmt.Sprintf("%s.kanuka", username))
 
 	if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0600); err != nil {
