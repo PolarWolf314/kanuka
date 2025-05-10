@@ -195,6 +195,23 @@ func CopyUserPublicKeyToProject() (string, error) {
 	return destKeyPath, nil
 }
 
+func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
+	projectRoot, err := FindProjectKanukaRoot()
+	if err != nil {
+		return fmt.Errorf("failed to get project root: %w", err)
+	}
+	if projectRoot == "" {
+		return fmt.Errorf("failed to find project root because it doesn't exist")
+	}
+	destKeyPath := filepath.Join(projectRoot, ".kanuka", "secrets", username+".kanuka")
+
+	if err := os.WriteFile(destKeyPath, kanukaKey, 0600); err != nil {
+		return fmt.Errorf("failed to write key to project: %w", err)
+	}
+
+	return nil
+}
+
 // GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
 func GetProjectKanukaKey(username string) ([]byte, error) {
 	projectRoot, err := FindProjectKanukaRoot()
