@@ -8,8 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var force bool
+
 func init() {
 	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
 }
 
 var createCmd = &cobra.Command{
@@ -44,14 +47,18 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
-		encryptedSymmetricKey, _ := secrets.GetUserProjectKanukaKey()
+		// If force flag is active, then ignore checking for existing symmetric key
+		if !force {
+			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
+			encryptedSymmetricKey, _ := secrets.GetUserProjectKanukaKey()
 
-		if encryptedSymmetricKey != nil {
-			finalMessage := color.RedString("✗ ") + color.YellowString(username+".kanuka ") + "already exists\n" +
-				"To override, run: " + color.YellowString("kanuka secrets create --force\n")
-			spinner.FinalMSG = finalMessage
-			return
+			if encryptedSymmetricKey != nil {
+				finalMessage := color.RedString("✗ ") + color.YellowString(username+".kanuka ") + "already exists\n" +
+					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
+				spinner.FinalMSG = finalMessage
+				return
+			}
+
 		}
 
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
