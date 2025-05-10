@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"kanuka/internal/secrets"
-	"os"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -20,12 +19,12 @@ var encryptCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
-		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
+		projectRoot, err := secrets.FindProjectKanukaRoot()
 		if err != nil {
-			printError("Failed to check if project kanuka settings exists", err)
+			printError("Failed to obtain project root", err)
 			return
 		}
-		if !kanukaExists {
+		if projectRoot == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -35,20 +34,14 @@ var encryptCmd = &cobra.Command{
 		verboseLog("🚀 Starting encryption process...")
 
 		// Step 1: Check for .env file
-		workingDirectory, err := os.Getwd()
-		if err != nil {
-			printError("Failed to get working directory", err)
-			return
-		}
-
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
-		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, false)
+		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, false)
 		if err != nil {
 			printError("Failed to find environment files", err)
 			return
 		}
 		if len(listOfEnvFiles) == 0 {
-			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(workingDirectory) + "\n"
+			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(projectRoot) + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
@@ -98,7 +91,7 @@ var encryptCmd = &cobra.Command{
 		}
 
 		// we can be sure they exist if the previous function ran without errors
-		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, true)
+		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, true)
 		if err != nil {
 			printError("Failed to find environment files", err)
 			return
