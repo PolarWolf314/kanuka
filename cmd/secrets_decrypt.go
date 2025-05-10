@@ -60,7 +60,7 @@ var decryptCmd = &cobra.Command{
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to obtain your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
-				"Error: " + color.RedString(err.Error()) + "\n"
+				color.RedString("Error: ") + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
@@ -69,7 +69,7 @@ var decryptCmd = &cobra.Command{
 		privateKey, err := secrets.GetUserPrivateKey()
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
-				"Error: " + color.RedString(err.Error()) + "\n"
+				color.RedString("Error: ") + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
@@ -80,7 +80,7 @@ var decryptCmd = &cobra.Command{
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to decrypt your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
-				"Error: " + color.RedString(err.Error()) + "\n"
+				color.RedString("Error: ") + err.Error() + "\n"
 
 			spinner.FinalMSG = finalMessage
 			return
@@ -92,7 +92,7 @@ var decryptCmd = &cobra.Command{
 		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles, verbose); err != nil {
 			finalMessage := color.RedString("✗") + " Failed to decrypt the project's " +
 				color.YellowString(".kanuka") + " files. Are you sure you have access?\n" +
-				"Error: " + color.RedString(err.Error()) + "\n"
+				color.RedString("Error: ") + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
