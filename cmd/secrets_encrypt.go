@@ -73,9 +73,14 @@ var encryptCmd = &cobra.Command{
 		// Step 3: Decrypt user's kanuka file (get symmetric key)
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 		if err != nil {
-			printError("Failed to decrypt symmetric key", err)
+			finalMessage := color.RedString("✗") + " Failed to decrypt your " +
+				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+
+			spinner.FinalMSG = finalMessage
 			return
 		}
+
 		verboseLog("🔓 Decrypted symmetric key")
 
 		// Step 4: Encrypt all env files
