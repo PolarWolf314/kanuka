@@ -89,7 +89,17 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 
+		// we can be sure they exist if the previous function ran without errors
+		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, true)
+		if err != nil {
+			printError("Failed to find environment files", err)
+			return
+		}
+
+		formattedListOfFiles := secrets.FormatPaths(listOfKanukaFiles)
+
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
+			"The following files were created: " + formattedListOfFiles +
 			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository\n"
 
 		spinner.FinalMSG = finalMessage

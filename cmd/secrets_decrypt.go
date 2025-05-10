@@ -88,7 +88,17 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 
+		// we can be sure they exist if the previous function ran without errors
+		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, false)
+		if err != nil {
+			printError("Failed to find environment files", err)
+			return
+		}
+
+		formattedListOfFiles := secrets.FormatPaths(listOfEnvFiles)
+
 		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
+			"The following files were created:" + formattedListOfFiles +
 			color.CyanString("→") + " Your environment files are now ready to use\n"
 
 		spinner.FinalMSG = finalMessage
