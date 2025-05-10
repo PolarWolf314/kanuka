@@ -27,6 +27,7 @@ var createCmd = &cobra.Command{
 			printError("Failed to check if project kanuka settings exists", err)
 			return
 		}
+
 		if projectRoot == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
