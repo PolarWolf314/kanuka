@@ -58,14 +58,19 @@ var decryptCmd = &cobra.Command{
 		// Step 2: Get project's encrypted symmetric key
 		encryptedSymKey, err := secrets.GetUserProjectKanukaKey()
 		if err != nil {
-			printError("Failed to get user's .kanuka file", err)
+			finalMessage := color.RedString("✗") + " Failed to obtain your " +
+				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 		verboseLog("🔑 Loaded user's .kanuka key")
 
 		privateKey, err := secrets.GetUserPrivateKey()
 		if err != nil {
-			printError("Failed to get user's private key", err)
+			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 		verboseLog("🔑 Loaded user's private key")
@@ -80,11 +85,15 @@ var decryptCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
+
 		verboseLog("🔓 Decrypted symmetric key")
 
 		// Step 4: Decrypt all .kanuka files
 		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles, verbose); err != nil {
-			printError("Failed to decrypt environment files", err)
+			finalMessage := color.RedString("✗") + " Failed to decrypt the project's " +
+				color.YellowString(".kanuka") + " files. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 

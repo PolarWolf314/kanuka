@@ -58,14 +58,19 @@ var encryptCmd = &cobra.Command{
 		// Step 2: Get project's encrypted symmetric key
 		encryptedSymKey, err := secrets.GetUserProjectKanukaKey()
 		if err != nil {
-			printError("Failed to get user's .kanuka file", err)
+			finalMessage := color.RedString("✗") + " Failed to get your " +
+				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 		verboseLog("🔑 Loaded user's .kanuka key")
 
 		privateKey, err := secrets.GetUserPrivateKey()
 		if err != nil {
-			printError("Failed to get user's private key", err)
+			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 		verboseLog("🔑 Loaded user's private key")
@@ -85,7 +90,10 @@ var encryptCmd = &cobra.Command{
 
 		// Step 4: Encrypt all env files
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
-			printError("Failed to encrypt environment files", err)
+			finalMessage := color.RedString("✗") + " Failed to encrypt the project's " +
+				color.YellowString(".env") + " files. Are you sure you have access?\n" +
+				"Error: " + color.RedString(err.Error()) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
