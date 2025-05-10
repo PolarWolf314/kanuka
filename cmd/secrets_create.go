@@ -25,8 +25,8 @@ var createCmd = &cobra.Command{
 			return
 		}
 		if !kanukaExists {
-			finalMessage := color.RedString("✗") + color.YellowString(" .kanuka/ ") + "doesn't exist\n" +
-				"please init the project with: " + color.YellowString("kanuka secrets init\n")
+			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}

@@ -25,8 +25,8 @@ var initCmd = &cobra.Command{
 			return
 		}
 		if kanukaExists {
-			finalMessage := color.RedString("✗") + "Kanuka has already been initialized\n" +
-				"please use " + color.YellowString("kanuka secrets create") + " instead\n"
+			finalMessage := color.RedString("✗") + " Kanuka has already been initialized\n" +
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets create") + " instead\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
