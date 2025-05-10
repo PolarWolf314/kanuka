@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"kanuka/internal/secrets"
+	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -65,7 +67,15 @@ var encryptCmd = &cobra.Command{
 		}
 		verboseLog("🔑 Loaded user's .kanuka key")
 
-		privateKey, err := secrets.GetUserPrivateKey()
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			printError("Failed to get user's home directory", err)
+			return
+		}
+		projectName := filepath.Base(projectRoot)
+		privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
+
+		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error() + "\n"
