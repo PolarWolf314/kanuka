@@ -38,6 +38,17 @@ var registerCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
+
+		// Check if specified user's public key exists
+		pubKeyPath := filepath.Join(projectRoot, ".kanuka", "public_keys", username+".pub")
+
+		targetUserPublicKey, err := secrets.LoadPublicKey(pubKeyPath)
+		if err != nil {
+			finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(username) + " not found\n" +
+				username + " must first run: " + color.YellowString("kanuka secrets create\n")
+			spinner.FinalMSG = finalMessage
+			return
+		}
 			color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
 		spinner.FinalMSG = finalMessage
 	},
