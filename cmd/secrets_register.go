@@ -49,6 +49,41 @@ var registerCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
+
+		// Get current user's encrypted symmetric key
+		currentUsername, err := secrets.GetUsername()
+		if err != nil {
+			printError("Failed to get username", err)
+			return
+		}
+
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
+		if err != nil {
+			printError("Failed to get current user's .kanuka file", err)
+			return
+		}
+
+		// Get current user's private key
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			printError("Failed to get user's home directory", err)
+			return
+		}
+		projectName := filepath.Base(projectRoot)
+		privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
+
+		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+		if err != nil {
+			printError("Failed to get current user's private key", err)
+			return
+		}
+
+		// Decrypt symmetric key with current user's private key
+		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+		if err != nil {
+			printError("Failed to decrypt symmetric key", err)
+			return
+		}
 			color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
 		spinner.FinalMSG = finalMessage
 	},
