@@ -11,7 +11,7 @@ import (
 var force bool
 
 func init() {
-	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	decryptCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+	decryptCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 }
 
 var decryptCmd = &cobra.Command{
