@@ -1,50 +1,64 @@
 package cmd
 
 import (
+	"fmt"
 	"kanuka/internal/secrets"
-	"log"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
+
+func init() {
+	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
+}
 
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
 	Run: func(cmd *cobra.Command, args []string) {
+		_, cleanup := startSpinner("Creating Kanuka file...", verbose)
+		defer cleanup()
+
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
 		if err != nil {
-			log.Fatalf("❌ Failed to check if project kanuka settings exists: %v", err)
+			printError("Failed to check if project kanuka settings exists", err)
+			return
 		}
 		if !kanukaExists {
-			log.Fatalf("❌ .kanuka/ doesn't exist. Please init the project first")
+			printError(".kanuka/ doesn't exist", fmt.Errorf("please init the project first"))
+			return
 		}
 
-		log.Println("Adding your public key...")
+		verboseLog("Adding your public key...")
+
 		if err := secrets.EnsureUserSettings(); err != nil {
-			log.Fatalf("❌ Failed ensuring user settings: %v", err)
+			printError("Failed ensuring user settings", err)
+			return
 		}
 
-		if err := secrets.CreateAndSaveRSAKeyPair(); err != nil {
-			log.Fatalf("❌ Failed to generate and save RSA key pair: %v", err)
+		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
+			printError("Failed to generate and save RSA key pair", err)
+			return
 		}
-		// Above method handles printing comments
 
 		destPath, err := secrets.CopyUserPublicKeyToProject()
 		if err != nil {
-			log.Fatalf("❌ Failed to copy public key to project: %v", err)
+			printError("Failed to copy public key to project", err)
+			return
 		}
-
-		log.Printf("✅ Copied public key into %s", destPath)
+		verboseLog(fmt.Sprintf("✅ Copied public key into %s", destPath))
 
 		username, err := secrets.GetUsername()
 		if err != nil {
-			log.Fatalf("❌ Failed to get username: %v", err)
+			printError("Failed to get username", err)
+			return
 		}
 
-		log.Println()
-		log.Println("✨ Your public key has been added!")
-		log.Println("To gain access to the secrets in this project, do the following:")
-		log.Println("    1. Commit your `.kanuka/public_keys/" + username + ".pub` file to Git.")
-		log.Println("    2. Ask someone with permissions to grant you access with `kanuka secrets add " + username + "`")
+		fmt.Println(color.GreenString("✓") + " Your public key has been added!")
+		fmt.Println()
+		fmt.Println(color.CyanString("To gain access to the secrets in this project:"))
+		fmt.Println("  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+username+".pub ") + color.WhiteString("file to Git"))
+		fmt.Println("  2. " + color.WhiteString("Ask someone with permissions to grant you access with:"))
+		fmt.Println("   " + color.YellowString("kanuka secrets add "+username))
 	},
 }
