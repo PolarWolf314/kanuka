@@ -48,7 +48,7 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 		if len(listOfKanukaFiles) == 0 {
-			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(workingDirectory) + "\n"
+			finalMessage := color.RedString("✗") + " No encrypted environment (" + color.YellowString(".kanuka") + ") files found in " + color.YellowString(workingDirectory) + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
