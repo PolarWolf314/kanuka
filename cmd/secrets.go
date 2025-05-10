@@ -18,7 +18,7 @@ func init() {
 	SecretsCmd.AddCommand(encryptCmd)
 	SecretsCmd.AddCommand(decryptCmd)
 	SecretsCmd.AddCommand(createCmd)
-	SecretsCmd.AddCommand(addCmd)
+	SecretsCmd.AddCommand(registerCmd)
 	SecretsCmd.AddCommand(removeCmd)
 	SecretsCmd.AddCommand(initCmd)
 	SecretsCmd.AddCommand(purgeCmd)
