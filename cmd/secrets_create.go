@@ -16,7 +16,7 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cleanup := startSpinner("Creating Kanuka file...", verbose)
+		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
@@ -25,7 +25,9 @@ var createCmd = &cobra.Command{
 			return
 		}
 		if !kanukaExists {
-			printError(".kanuka/ doesn't exist", fmt.Errorf("please init the project first"))
+			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
@@ -54,11 +56,12 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println(color.GreenString("✓") + " Your public key has been added!")
-		fmt.Println()
-		fmt.Println(color.CyanString("To gain access to the secrets in this project:"))
-		fmt.Println("  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+username+".pub ") + color.WhiteString("file to Git"))
-		fmt.Println("  2. " + color.WhiteString("Ask someone with permissions to grant you access with:"))
-		fmt.Println("   " + color.YellowString("kanuka secrets add "+username))
+		finalMessage := color.GreenString("✓") + " Your public key has been added!\n" +
+			color.CyanString("To gain access to the secrets in this project:\n") +
+			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+username+".pub ") + color.WhiteString("file to your version control system\n") +
+			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
+			"     " + color.YellowString("kanuka secrets add "+username+"\n")
+
+		spinner.FinalMSG = finalMessage
 	},
 }

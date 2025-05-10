@@ -16,7 +16,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initializes the secrets store",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cleanup := startSpinner("Initialising Kanuka...", verbose)
+		spinner, cleanup := startSpinner("Initializing Kanuka...", verbose)
 		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
@@ -25,7 +25,9 @@ var initCmd = &cobra.Command{
 			return
 		}
 		if kanukaExists {
-			printError(".kanuka/ already exists", fmt.Errorf("please use `kanuka secrets create` instead"))
+			finalMessage := color.RedString("✗") + " Kanuka has already been initialized\n" +
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets create") + " instead\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
@@ -59,7 +61,9 @@ var initCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println(color.GreenString("✓") + " Kanuka initialized successfully!")
-		fmt.Println(color.CyanString("→") + " Run 'kanuka secrets encrypt' to encrypt your existing .env files")
+		finalMessage := color.GreenString("✓") + " Kanuka initialized successfully!\n" +
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files\n"
+
+		spinner.FinalMSG = finalMessage
 	},
 }

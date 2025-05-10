@@ -17,7 +17,7 @@ var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
 	Short: "Encrypts the .env file into .env.kanuka using your Kanuka key",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, cleanup := startSpinner("Encrypting environment files...", verbose)
+		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
 		kanukaExists, err := secrets.DoesProjectKanukaSettingsExist()
@@ -26,7 +26,9 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 		if !kanukaExists {
-			printError(".kanuka/ doesn't exist", fmt.Errorf("please init the project first with `kanuka init`"))
+			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
@@ -46,7 +48,8 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 		if len(listOfEnvFiles) == 0 {
-			printError("No environment files found", fmt.Errorf("no .env files in %v", workingDirectory))
+			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(workingDirectory) + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
@@ -55,14 +58,19 @@ var encryptCmd = &cobra.Command{
 		// Step 2: Get project's encrypted symmetric key
 		encryptedSymKey, err := secrets.GetUserProjectKanukaKey()
 		if err != nil {
-			printError("Failed to get user's .kanuka file", err)
+			finalMessage := color.RedString("✗") + " Failed to get your " +
+				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 		verboseLog("🔑 Loaded user's .kanuka key")
 
 		privateKey, err := secrets.GetUserPrivateKey()
 		if err != nil {
-			printError("Failed to get user's private key", err)
+			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 		verboseLog("🔑 Loaded user's private key")
@@ -70,18 +78,38 @@ var encryptCmd = &cobra.Command{
 		// Step 3: Decrypt user's kanuka file (get symmetric key)
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 		if err != nil {
-			printError("Failed to decrypt symmetric key", err)
+			finalMessage := color.RedString("✗") + " Failed to decrypt your " +
+				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+
+			spinner.FinalMSG = finalMessage
 			return
 		}
+
 		verboseLog("🔓 Decrypted symmetric key")
 
 		// Step 4: Encrypt all env files
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
-			printError("Failed to encrypt environment files", err)
+			finalMessage := color.RedString("✗") + " Failed to encrypt the project's " +
+				color.YellowString(".env") + " files. Are you sure you have access?\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
-		fmt.Println(color.GreenString("✓") + " Environment files encrypted successfully!")
-		fmt.Println(color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository")
+		// we can be sure they exist if the previous function ran without errors
+		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(workingDirectory, []string{}, true)
+		if err != nil {
+			printError("Failed to find environment files", err)
+			return
+		}
+
+		formattedListOfFiles := secrets.FormatPaths(listOfKanukaFiles)
+
+		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
+			"The following files were created: " + formattedListOfFiles +
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository\n"
+
+		spinner.FinalMSG = finalMessage
 	},
 }
