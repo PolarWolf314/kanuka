@@ -49,7 +49,13 @@ var encryptCmd = &cobra.Command{
 		verboseLog(fmt.Sprintf("✅ Found %d .env files: %s", len(listOfEnvFiles), secrets.FormatPaths(listOfEnvFiles)))
 
 		// Step 2: Get project's encrypted symmetric key
-		encryptedSymKey, err := secrets.GetUserProjectKanukaKey()
+		currentUsername, err := secrets.GetUsername()
+		if err != nil {
+			printError("Failed to get username", err)
+			return
+		}
+
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to get your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
