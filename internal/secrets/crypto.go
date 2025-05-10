@@ -18,6 +18,10 @@ func DecryptWithPrivateKey(ciphertext []byte, privateKey *rsa.PrivateKey) ([]byt
 	return rsa.DecryptPKCS1v15(rand.Reader, privateKey, ciphertext)
 }
 
+func EncryptWithPublicKey(ciphertext []byte, publicKey *rsa.PublicKey) ([]byte, error) {
+	return rsa.EncryptPKCS1v15(rand.Reader, publicKey, ciphertext)
+}
+
 // CreateSymmetricKey generates a new random symmetric key.
 func CreateSymmetricKey() ([]byte, error) {
 	symKey := make([]byte, 32) // AES-256
@@ -55,7 +59,7 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 	}
 
 	// 3. encrypt sym key using public key
-	encryptedSymKey, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, symKey)
+	encryptedSymKey, err := EncryptWithPublicKey(symKey, pubKey)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt symmetric key: %w", err)
 	}
