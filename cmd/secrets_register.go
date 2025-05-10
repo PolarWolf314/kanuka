@@ -84,6 +84,21 @@ var registerCmd = &cobra.Command{
 			printError("Failed to decrypt symmetric key", err)
 			return
 		}
+
+		// Encrypt symmetric key with target user's public key
+		targetEncryptedSymKey, err := secrets.EncryptWithPublicKey(symKey, targetUserPublicKey)
+		if err != nil {
+			printError("Failed to encrypt symmetric key for target user", err)
+			return
+		}
+
+		// Save encrypted symmetric key for target user
+		if err := secrets.SaveKanukaKeyToProject(username, targetEncryptedSymKey); err != nil {
+			printError("Failed to save encrypted key for target user", err)
+			return
+		}
+
+		finalMessage := color.GreenString("✓") + " User " + color.YellowString(username) + " has been registered successfully!\n" +
 			color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
 		spinner.FinalMSG = finalMessage
 	},
