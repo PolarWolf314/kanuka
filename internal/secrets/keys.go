@@ -233,11 +233,7 @@ func CopyUserPublicKeyToProject() (string, error) {
 }
 
 // GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
-func GetUserProjectKanukaKey() ([]byte, error) {
-	username, err := GetUsername()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get username: %w", err)
-	}
+func GetProjectKanukaKey(username string) ([]byte, error) {
 	projectRoot, err := FindProjectKanukaRoot()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project root: %w", err)
