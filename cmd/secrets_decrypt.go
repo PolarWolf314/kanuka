@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"kanuka/internal/secrets"
 	"os"
 	"path/filepath"
@@ -33,8 +32,6 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 
-		verboseLog("🚀 Starting decryption process...")
-
 		// Step 1: Check for .kanuka files
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
 		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, true)
@@ -47,8 +44,6 @@ var decryptCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
-
-		verboseLog(fmt.Sprintf("✅ Found %d .env.kanuka files: %s", len(listOfKanukaFiles), secrets.FormatPaths(listOfKanukaFiles)))
 
 		// Step 2: Get project's encrypted symmetric key
 		currentUsername, err := secrets.GetUsername()
@@ -65,7 +60,6 @@ var decryptCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
-		verboseLog("🔑 Loaded user's .kanuka key")
 
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -82,7 +76,6 @@ var decryptCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
-		verboseLog("🔑 Loaded user's private key")
 
 		// Step 3: Decrypt user's kanuka file (get symmetric key)
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
@@ -94,8 +87,6 @@ var decryptCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
-
-		verboseLog("🔓 Decrypted symmetric key")
 
 		// Step 4: Decrypt all .kanuka files
 		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles, verbose); err != nil {
