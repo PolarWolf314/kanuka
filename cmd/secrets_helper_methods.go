@@ -9,12 +9,6 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-func verboseLog(message string) {
-	if verbose {
-		log.Println(message)
-	}
-}
-
 func printError(message string, err error) {
 	if !verbose {
 		log.SetOutput(os.Stdout)
