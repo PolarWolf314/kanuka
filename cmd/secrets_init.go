@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"kanuka/internal/secrets"
 
 	"github.com/fatih/color"
@@ -31,8 +30,6 @@ var initCmd = &cobra.Command{
 			return
 		}
 
-		verboseLog("Starting Kanuka initialization...")
-
 		if err := secrets.EnsureUserSettings(); err != nil {
 			printError("Failed ensuring user settings", err)
 			return
@@ -42,7 +39,6 @@ var initCmd = &cobra.Command{
 			printError("Failed to create .kanuka folders", err)
 			return
 		}
-		verboseLog("✅ Created .kanuka folders")
 
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
 			printError("Failed to generate and save RSA key pair", err)
@@ -50,11 +46,11 @@ var initCmd = &cobra.Command{
 		}
 
 		destPath, err := secrets.CopyUserPublicKeyToProject()
+		_ = destPath // explicity ignore destPath for now
 		if err != nil {
 			printError("Failed to copy public key to project", err)
 			return
 		}
-		verboseLog(fmt.Sprintf("✅ Copied public key into %s", destPath))
 
 		if err := secrets.CreateAndSaveEncryptedSymmetricKey(verbose); err != nil {
 			printError("Failed to create encrypted symmetric key", err)
