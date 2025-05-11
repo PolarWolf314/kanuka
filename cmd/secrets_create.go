@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"kanuka/internal/secrets"
 
 	"github.com/fatih/color"
@@ -34,8 +33,6 @@ var createCmd = &cobra.Command{
 			spinner.FinalMSG = finalMessage
 			return
 		}
-
-		verboseLog("Adding your public key...")
 
 		if err := secrets.EnsureUserSettings(); err != nil {
 			printError("Failed ensuring user settings", err)
@@ -72,9 +69,9 @@ var createCmd = &cobra.Command{
 			printError("Failed to copy public key to project", err)
 			return
 		}
-		verboseLog(fmt.Sprintf("✅ Copied public key into %s", destPath))
 
-		finalMessage := color.GreenString("✓") + " Your public key has been added!\n" +
+		finalMessage := color.GreenString("✓") + " Your public key has been added to the following location:\n" +
+			"    - " + color.YellowString(destPath) + "\n" +
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
