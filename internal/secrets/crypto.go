@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,10 +53,6 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 		return fmt.Errorf("failed to generate symmetric key: %w", err)
 	}
 
-	if verbose {
-		log.Println("🔐 Symmetric key generated in memory")
-	}
-
 	// 2. fetch user's public key from project
 	pubKey, err := LoadPublicKey(pubKeyPath)
 	if err != nil {
@@ -70,19 +65,11 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 		return fmt.Errorf("failed to encrypt symmetric key: %w", err)
 	}
 
-	if verbose {
-		log.Println("🔒 Encrypted symmetric key with project public key")
-	}
-
 	// 4. save sym key to project
 	encryptedSymPath := filepath.Join(secretsDir, fmt.Sprintf("%s.kanuka", username))
 
 	if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0600); err != nil {
 		return fmt.Errorf("failed to save encrypted symmetric key: %v", err)
-	}
-
-	if verbose {
-		log.Println("✅ Saved encrypted symmetric key into project")
 	}
 
 	return nil
@@ -96,8 +83,6 @@ func EncryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 
 	var key [32]byte
 	copy(key[:], symKey)
-
-	var outputPaths []string
 
 	for _, inputPath := range inputPaths {
 		plaintext, err := os.ReadFile(inputPath)
@@ -113,16 +98,10 @@ func EncryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 		ciphertext := secretbox.Seal(nonce[:], plaintext, &nonce, &key)
 
 		outputPath := inputPath + ".kanuka"
-		outputPaths = append(outputPaths, outputPath)
 
 		if err := os.WriteFile(outputPath, ciphertext, 0600); err != nil {
 			return fmt.Errorf("failed to write to %s: %w", outputPath, err)
 		}
-	}
-
-	if verbose {
-		log.Println("✅ All environment files in the project have been encrypted 🎉")
-		log.Printf("The following files were written: %s", FormatPaths(outputPaths))
 	}
 
 	return nil
@@ -135,7 +114,6 @@ func DecryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 	}
 	var key [32]byte
 	copy(key[:], symKey)
-	var outputPaths []string
 	for _, inputPath := range inputPaths {
 		ciphertext, err := os.ReadFile(inputPath)
 		if err != nil {
@@ -153,16 +131,11 @@ func DecryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 		}
 
 		outputPath := strings.TrimSuffix(inputPath, ".kanuka")
-		outputPaths = append(outputPaths, outputPath)
 		// #nosec G306 -- We want the decrypted .env file to be editable by the user
 		if err := os.WriteFile(outputPath, plaintext, 0644); err != nil {
 			return fmt.Errorf("failed to write to %s: %w", outputPath, err)
 		}
 	}
 
-	if verbose {
-		log.Println("✅ All environment files in the project have been decrypted 🎉")
-		log.Printf("The following files were written: %s", FormatPaths(outputPaths))
-	}
 	return nil
 }
