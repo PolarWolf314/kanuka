@@ -1,9 +1,8 @@
 package cmd
 
 import (
+	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
-	"kanuka/internal/utils"
-	"os"
 	"path/filepath"
 
 	"github.com/fatih/color"
@@ -19,6 +18,8 @@ func init() {
 		printError("Failed to mark --user flag as required", err)
 		return
 	}
+
+	configs.InitProjectSettings()
 }
 
 var registerCmd = &cobra.Command{
@@ -28,33 +29,28 @@ var registerCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
 		defer cleanup()
 
-		projectRoot, err := utils.FindProjectKanukaRoot()
-		if err != nil {
-			printError("Failed to check if project kanuka settings exists", err)
-			return
-		}
-		if projectRoot == "" {
+		currentUsername := configs.UserKanukaSettings.Username
+		currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
+
+		projectName := configs.ProjectKanukaSettings.ProjectName
+		projectPath := configs.ProjectKanukaSettings.ProjectPath
+		projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+
+		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
 
-		// Check if specified user's public key exists
-		pubKeyPath := filepath.Join(projectRoot, ".kanuka", "public_keys", username+".pub")
+		// Check if target user's public key exists
+		targetPubkeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
 
-		targetUserPublicKey, err := secrets.LoadPublicKey(pubKeyPath)
+		targetUserPublicKey, err := secrets.LoadPublicKey(targetPubkeyPath)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(username) + " not found\n" +
 				username + " must first run: " + color.YellowString("kanuka secrets create\n")
 			spinner.FinalMSG = finalMessage
-			return
-		}
-
-		// Get current user's encrypted symmetric key
-		currentUsername, err := utils.GetUsername()
-		if err != nil {
-			printError("Failed to get username", err)
 			return
 		}
 
@@ -65,13 +61,7 @@ var registerCmd = &cobra.Command{
 		}
 
 		// Get current user's private key
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			printError("Failed to get user's home directory", err)
-			return
-		}
-		projectName := filepath.Base(projectRoot)
-		privateKeyPath := filepath.Join(homeDir, ".config", ".kanuka", "keys", projectName)
+		privateKeyPath := filepath.Join(currentUserKeysPath, projectName)
 
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
