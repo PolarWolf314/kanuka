@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"kanuka/internal/utils"
+	"kanuka/internal/configs"
 	"os"
 	"path/filepath"
 )
@@ -116,13 +116,8 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 	}
 	projectName := filepath.Base(wd)
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get user's home directory: %w", err)
-	}
-
 	// Create key paths
-	keysDir := filepath.Join(homeDir, ".config", ".kanuka", "keys")
+	keysDir := configs.UserKanukaSettings.UserKeysPath
 	privateKeyPath := filepath.Join(keysDir, projectName)
 	publicKeyPath := privateKeyPath + ".pub"
 
@@ -140,23 +135,15 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 
 // CopyUserPublicKeyToProject copies the user's public key to the project directory.
 func CopyUserPublicKeyToProject() (string, error) {
-	username, err := utils.GetUsername()
-	if err != nil {
-		return "", fmt.Errorf("failed to get username: %w", err)
-	}
+	configs.InitProjectSettings()
 
-	projectName, err := utils.GetProjectName()
-	if err != nil {
-		return "", fmt.Errorf("failed to get project name: %w", err)
-	}
+	username := configs.UserKanukaSettings.Username
+	projectName := configs.ProjectKanukaSettings.ProjectName
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	// Source path: ~/.config/.kanuka/keys/{project_name}.pub
-	sourceKeyPath := filepath.Join(homeDir, ".config", ".kanuka", "keys", projectName+".pub")
+	userKeysPath := configs.UserKanukaSettings.UserKeysPath
+	sourceKeyPath := filepath.Join(userKeysPath, projectName+".pub")
+	destKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
 
 	// Check if source key exists
 	if _, err := os.Stat(sourceKeyPath); err != nil {
@@ -165,17 +152,6 @@ func CopyUserPublicKeyToProject() (string, error) {
 		}
 		return "", fmt.Errorf("failed to check for source key: %w", err)
 	}
-
-	projectRoot, err := utils.FindProjectKanukaRoot()
-	if err != nil {
-		return "", fmt.Errorf("failed to get project root: %w", err)
-	}
-	if projectRoot == "" {
-		return "", fmt.Errorf("failed to find project root because it doesn't exist")
-	}
-
-	// Destination directory: {project_path}/.kanuka/public_keys/{username}.pub
-	destKeyPath := filepath.Join(projectRoot, ".kanuka", "public_keys", username+".pub")
 
 	keyData, err := os.ReadFile(sourceKeyPath)
 	if err != nil {
@@ -191,14 +167,16 @@ func CopyUserPublicKeyToProject() (string, error) {
 }
 
 func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
-	projectRoot, err := utils.FindProjectKanukaRoot()
-	if err != nil {
-		return fmt.Errorf("failed to get project root: %w", err)
-	}
-	if projectRoot == "" {
+	configs.InitProjectSettings()
+
+	projectPath := configs.ProjectKanukaSettings.ProjectPath
+	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+
+	destKeyPath := filepath.Join(projectSecretsPath, username+".kanuka")
+
+	if projectPath == "" {
 		return fmt.Errorf("failed to find project root because it doesn't exist")
 	}
-	destKeyPath := filepath.Join(projectRoot, ".kanuka", "secrets", username+".kanuka")
 
 	if err := os.WriteFile(destKeyPath, kanukaKey, 0600); err != nil {
 		return fmt.Errorf("failed to write key to project: %w", err)
@@ -209,18 +187,20 @@ func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
 
 // GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
 func GetProjectKanukaKey(username string) ([]byte, error) {
-	projectRoot, err := utils.FindProjectKanukaRoot()
-	if err != nil {
-		return nil, fmt.Errorf("failed to find project root: %w", err)
-	}
-	if projectRoot == "" {
+	configs.InitProjectSettings()
+
+	projectPath := configs.ProjectKanukaSettings.ProjectPath
+	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+
+	if projectPath == "" {
 		return nil, fmt.Errorf("failed to find project root because it doesn't exist")
 	}
 
-	userKeyFile := filepath.Join(projectRoot, ".kanuka", "secrets", fmt.Sprintf("%s.kanuka", username))
+	userKeyFile := filepath.Join(projectSecretsPath, username+".kanuka")
 	if _, err := os.Stat(userKeyFile); os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to get user's project encrypted symmetric key: %w", err)
 	}
+
 	encryptedSymmetricKey, err := os.ReadFile(userKeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read user's project encrypted symmetric key: %w", err)

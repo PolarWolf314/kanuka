@@ -3,28 +3,28 @@ package secrets
 import (
 	"fmt"
 	"io/fs"
+	"kanuka/internal/configs"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 )
 
-// EnsureUserSettings ensures that the user's Kanuka settings directory exists.
+// EnsureUserSettings ensures that the user's Kanuka data and config directory exists.
 func EnsureUserSettings() error {
-	currentUser, err := user.Current()
-	if err != nil {
-		return fmt.Errorf("failed to get current user: %w", err)
-	}
-	userKanukaDirectory := filepath.Join(currentUser.HomeDir, ".config", ".kanuka", "keys")
+	userKanukaDataDirectory := configs.UserKanukaSettings.UserKeysPath
+	userKanukaConfigDirectory := configs.UserKanukaSettings.UserConfigsPath
 
-	if err := os.MkdirAll(userKanukaDirectory, 0700); err != nil {
-		return fmt.Errorf("failed to create %s: %w", userKanukaDirectory, err)
+	if err := os.MkdirAll(userKanukaDataDirectory, 0700); err != nil {
+		return fmt.Errorf("failed to create %s: %w", userKanukaDataDirectory, err)
+	}
+	if err := os.MkdirAll(userKanukaConfigDirectory, 0700); err != nil {
+		return fmt.Errorf("failed to create %s: %w", userKanukaConfigDirectory, err)
 	}
 
 	return nil
 }
 
-// DoesProjectKanukaSettingsExist checks if the project's Kanuka settings directory exists.
+// DoesProjectKanukaSettingsExist checks if the project has been init already.
 func DoesProjectKanukaSettingsExist() (bool, error) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
