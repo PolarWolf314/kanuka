@@ -15,7 +15,7 @@ func EnsureUserSettings() error {
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
-	userKanukaDirectory := filepath.Join(currentUser.HomeDir, ".kanuka", "keys")
+	userKanukaDirectory := filepath.Join(currentUser.HomeDir, ".config", ".kanuka", "keys")
 
 	if err := os.MkdirAll(userKanukaDirectory, 0700); err != nil {
 		return fmt.Errorf("failed to create %s: %w", userKanukaDirectory, err)

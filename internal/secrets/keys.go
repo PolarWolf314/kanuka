@@ -45,7 +45,7 @@ func LoadPublicKey(path string) (*rsa.PublicKey, error) {
 }
 
 // GenerateRSAKeyPair creates a new RSA key pair and saves them to disk.
-func GenerateRSAKeyPair(privatePath, publicPath string) error {
+func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return fmt.Errorf("failed to generate RSA key pair: %w", err)
@@ -121,7 +121,7 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 	}
 
 	// Create key paths
-	keysDir := filepath.Join(homeDir, ".kanuka", "keys")
+	keysDir := filepath.Join(homeDir, ".config", ".kanuka", "keys")
 	privateKeyPath := filepath.Join(keysDir, projectName)
 	publicKeyPath := privateKeyPath + ".pub"
 
@@ -154,8 +154,8 @@ func CopyUserPublicKeyToProject() (string, error) {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	// Source path: ~/.kanuka/keys/{project_name}.pub
-	sourceKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName+".pub")
+	// Source path: ~/.config/.kanuka/keys/{project_name}.pub
+	sourceKeyPath := filepath.Join(homeDir, ".config", ".kanuka", "keys", projectName+".pub")
 
 	// Check if source key exists
 	if _, err := os.Stat(sourceKeyPath); err != nil {

@@ -70,7 +70,7 @@ var registerCmd = &cobra.Command{
 			return
 		}
 		projectName := filepath.Base(projectRoot)
-		privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
+		privateKeyPath := filepath.Join(homeDir, ".config", ".kanuka", "keys", projectName)
 
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
