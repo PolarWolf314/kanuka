@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
-	"kanuka/internal/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -13,6 +13,8 @@ var force bool
 func init() {
 	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
+
+	configs.InitProjectSettings()
 }
 
 var createCmd = &cobra.Command{
@@ -22,13 +24,9 @@ var createCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
-		projectRoot, err := utils.FindProjectKanukaRoot()
-		if err != nil {
-			printError("Failed to check if project kanuka settings exists", err)
-			return
-		}
+		projectPath := configs.ProjectKanukaSettings.ProjectPath
 
-		if projectRoot == "" {
+		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -40,12 +38,7 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		currentUsername, err := utils.GetUsername()
-		if err != nil {
-			printError("Failed to get username", err)
-			return
-		}
-
+		currentUsername := configs.UserKanukaSettings.Username
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
 			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
