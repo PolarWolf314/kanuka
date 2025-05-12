@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
+	"kanuka/internal/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,7 +39,7 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	username, err := GetUsername()
+	username, err := utils.GetUsername()
 	if err != nil {
 		return fmt.Errorf("failed to get username: %w", err)
 	}

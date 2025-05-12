@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"kanuka/internal/secrets"
+	"kanuka/internal/utils"
 	"os"
 	"path/filepath"
 
@@ -20,7 +21,7 @@ var decryptCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Decrypting environment files...", verbose)
 		defer cleanup()
 
-		projectRoot, err := secrets.FindProjectKanukaRoot()
+		projectRoot, err := utils.FindProjectKanukaRoot()
 		if err != nil {
 			printError("Failed to obtain project root", err)
 			return
@@ -46,7 +47,7 @@ var decryptCmd = &cobra.Command{
 		}
 
 		// Step 2: Get project's encrypted symmetric key
-		currentUsername, err := secrets.GetUsername()
+		currentUsername, err := utils.GetUsername()
 		if err != nil {
 			printError("Failed to get username", err)
 			return
@@ -104,7 +105,7 @@ var decryptCmd = &cobra.Command{
 			return
 		}
 
-		formattedListOfFiles := secrets.FormatPaths(listOfEnvFiles)
+		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
 
 		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
 			"The following files were created:" + formattedListOfFiles +

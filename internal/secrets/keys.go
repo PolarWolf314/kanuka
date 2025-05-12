@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"kanuka/internal/utils"
 	"os"
 	"path/filepath"
 )
@@ -139,12 +140,12 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 
 // CopyUserPublicKeyToProject copies the user's public key to the project directory.
 func CopyUserPublicKeyToProject() (string, error) {
-	username, err := GetUsername()
+	username, err := utils.GetUsername()
 	if err != nil {
 		return "", fmt.Errorf("failed to get username: %w", err)
 	}
 
-	projectName, err := GetProjectName()
+	projectName, err := utils.GetProjectName()
 	if err != nil {
 		return "", fmt.Errorf("failed to get project name: %w", err)
 	}
@@ -165,7 +166,7 @@ func CopyUserPublicKeyToProject() (string, error) {
 		return "", fmt.Errorf("failed to check for source key: %w", err)
 	}
 
-	projectRoot, err := FindProjectKanukaRoot()
+	projectRoot, err := utils.FindProjectKanukaRoot()
 	if err != nil {
 		return "", fmt.Errorf("failed to get project root: %w", err)
 	}
@@ -190,7 +191,7 @@ func CopyUserPublicKeyToProject() (string, error) {
 }
 
 func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
-	projectRoot, err := FindProjectKanukaRoot()
+	projectRoot, err := utils.FindProjectKanukaRoot()
 	if err != nil {
 		return fmt.Errorf("failed to get project root: %w", err)
 	}
@@ -208,7 +209,7 @@ func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
 
 // GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
 func GetProjectKanukaKey(username string) ([]byte, error) {
-	projectRoot, err := FindProjectKanukaRoot()
+	projectRoot, err := utils.FindProjectKanukaRoot()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project root: %w", err)
 	}

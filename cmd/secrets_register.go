@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"kanuka/internal/secrets"
+	"kanuka/internal/utils"
 	"os"
 	"path/filepath"
 
@@ -27,7 +28,7 @@ var registerCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
 		defer cleanup()
 
-		projectRoot, err := secrets.FindProjectKanukaRoot()
+		projectRoot, err := utils.FindProjectKanukaRoot()
 		if err != nil {
 			printError("Failed to check if project kanuka settings exists", err)
 			return
@@ -51,7 +52,7 @@ var registerCmd = &cobra.Command{
 		}
 
 		// Get current user's encrypted symmetric key
-		currentUsername, err := secrets.GetUsername()
+		currentUsername, err := utils.GetUsername()
 		if err != nil {
 			printError("Failed to get username", err)
 			return

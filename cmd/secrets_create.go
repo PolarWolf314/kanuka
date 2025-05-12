@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"kanuka/internal/secrets"
+	"kanuka/internal/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -21,7 +22,7 @@ var createCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
-		projectRoot, err := secrets.FindProjectKanukaRoot()
+		projectRoot, err := utils.FindProjectKanukaRoot()
 		if err != nil {
 			printError("Failed to check if project kanuka settings exists", err)
 			return
@@ -39,7 +40,7 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		currentUsername, err := secrets.GetUsername()
+		currentUsername, err := utils.GetUsername()
 		if err != nil {
 			printError("Failed to get username", err)
 			return
