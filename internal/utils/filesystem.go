@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -22,8 +23,8 @@ func FindProjectKanukaRoot() (string, error) {
 	}
 
 	for {
-		// Stop searching at home directory
-		if currentDir == homeDir {
+		// Stop searching at one level above home directory
+		if currentDir == path.Join(homeDir, "..") {
 			return "", nil
 		}
 
