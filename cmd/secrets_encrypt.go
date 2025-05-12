@@ -12,8 +12,6 @@ import (
 
 func init() {
 	encryptCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
-
-	configs.InitProjectSettings()
 }
 
 var encryptCmd = &cobra.Command{
@@ -23,6 +21,7 @@ var encryptCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
+		configs.InitProjectSettings()
 		projectName := configs.ProjectKanukaSettings.ProjectName
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 

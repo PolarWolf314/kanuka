@@ -18,8 +18,6 @@ func init() {
 		printError("Failed to mark --user flag as required", err)
 		return
 	}
-
-	configs.InitProjectSettings()
 }
 
 var registerCmd = &cobra.Command{
@@ -29,6 +27,7 @@ var registerCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
 		defer cleanup()
 
+		configs.InitProjectSettings()
 		currentUsername := configs.UserKanukaSettings.Username
 		currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
 

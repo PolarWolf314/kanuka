@@ -13,8 +13,6 @@ var force bool
 func init() {
 	createCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
-
-	configs.InitProjectSettings()
 }
 
 var createCmd = &cobra.Command{
@@ -24,6 +22,7 @@ var createCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
+		configs.InitProjectSettings()
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 
 		if projectPath == "" {
