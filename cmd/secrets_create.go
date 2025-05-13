@@ -3,6 +3,7 @@ package cmd
 import (
 	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -43,16 +44,18 @@ var createCmd = &cobra.Command{
 		currentUsername := configs.UserKanukaSettings.Username
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
-			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
-			encryptedSymmetricKey, _ := secrets.GetProjectKanukaKey(currentUsername)
+			projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+			userPublicKeyPath := filepath.Join(projectPublicKeyPath, currentUsername+".pub")
 
-			if encryptedSymmetricKey != nil {
+			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
+			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
+
+			if userPublicKey != nil {
 				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".kanuka ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
 				return
 			}
-
 		}
 
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
