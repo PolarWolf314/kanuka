@@ -110,11 +110,10 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 
 // CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
 func CreateAndSaveRSAKeyPair(verbose bool) error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory: %w", err)
+	if err := configs.InitProjectSettings(); err != nil {
+		return fmt.Errorf("failed to init project settings: %w", err)
 	}
-	projectName := filepath.Base(wd)
+	projectName := configs.ProjectKanukaSettings.ProjectName
 
 	// Create key paths
 	keysDir := configs.UserKanukaSettings.UserKeysPath
@@ -135,7 +134,9 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 
 // CopyUserPublicKeyToProject copies the user's public key to the project directory.
 func CopyUserPublicKeyToProject() (string, error) {
-	configs.InitProjectSettings()
+	if err := configs.InitProjectSettings(); err != nil {
+		return "", fmt.Errorf("failed to init project settings: %w", err)
+	}
 
 	username := configs.UserKanukaSettings.Username
 	projectName := configs.ProjectKanukaSettings.ProjectName
@@ -167,7 +168,9 @@ func CopyUserPublicKeyToProject() (string, error) {
 }
 
 func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
-	configs.InitProjectSettings()
+	if err := configs.InitProjectSettings(); err != nil {
+		return fmt.Errorf("failed to init project settings: %w", err)
+	}
 
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
@@ -187,7 +190,9 @@ func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
 
 // GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
 func GetProjectKanukaKey(username string) ([]byte, error) {
-	configs.InitProjectSettings()
+	if err := configs.InitProjectSettings(); err != nil {
+		return nil, fmt.Errorf("failed to init project settings: %w", err)
+	}
 
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
