@@ -25,21 +25,8 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 }
 
 // LoadPublicKey loads the user's public key from the project directory.
-func LoadPublicKey() (*rsa.PublicKey, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get working directory: %w", err)
-	}
-
-	username, err := GetUsername()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get username: %w", err)
-	}
-
-	kanukaDir := filepath.Join(wd, ".kanuka")
-	publicKeyPath := filepath.Join(kanukaDir, "public_keys", username+".pub")
-
-	data, err := os.ReadFile(publicKeyPath)
+func LoadPublicKey(path string) (*rsa.PublicKey, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -156,30 +143,6 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 	return nil
 }
 
-// GetUserPrivateKey retrieves the user's private key for the current project.
-func GetUserPrivateKey() (*rsa.PrivateKey, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user's home directory: %w", err)
-	}
-	projectName, err := GetProjectName()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get project name: %w", err)
-	}
-
-	privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
-	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to get private key: %w", err)
-	}
-
-	privateKey, err := LoadPrivateKey(privateKeyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load private key: %w", err)
-	}
-
-	return privateKey, nil
-}
-
 // CopyUserPublicKeyToProject copies the user's public key to the project directory.
 func CopyUserPublicKeyToProject() (string, error) {
 	username, err := GetUsername()
@@ -232,12 +195,25 @@ func CopyUserPublicKeyToProject() (string, error) {
 	return destKeyPath, nil
 }
 
-// GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
-func GetUserProjectKanukaKey() ([]byte, error) {
-	username, err := GetUsername()
+func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
+	projectRoot, err := FindProjectKanukaRoot()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get username: %w", err)
+		return fmt.Errorf("failed to get project root: %w", err)
 	}
+	if projectRoot == "" {
+		return fmt.Errorf("failed to find project root because it doesn't exist")
+	}
+	destKeyPath := filepath.Join(projectRoot, ".kanuka", "secrets", username+".kanuka")
+
+	if err := os.WriteFile(destKeyPath, kanukaKey, 0600); err != nil {
+		return fmt.Errorf("failed to write key to project: %w", err)
+	}
+
+	return nil
+}
+
+// GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
+func GetProjectKanukaKey(username string) ([]byte, error) {
 	projectRoot, err := FindProjectKanukaRoot()
 	if err != nil {
 		return nil, fmt.Errorf("failed to find project root: %w", err)

@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"kanuka/internal/secrets"
+	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -49,7 +51,13 @@ var decryptCmd = &cobra.Command{
 		verboseLog(fmt.Sprintf("✅ Found %d .env.kanuka files: %s", len(listOfKanukaFiles), secrets.FormatPaths(listOfKanukaFiles)))
 
 		// Step 2: Get project's encrypted symmetric key
-		encryptedSymKey, err := secrets.GetUserProjectKanukaKey()
+		currentUsername, err := secrets.GetUsername()
+		if err != nil {
+			printError("Failed to get username", err)
+			return
+		}
+
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to obtain your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
@@ -59,7 +67,15 @@ var decryptCmd = &cobra.Command{
 		}
 		verboseLog("🔑 Loaded user's .kanuka key")
 
-		privateKey, err := secrets.GetUserPrivateKey()
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			printError("Failed to get user's home directory", err)
+			return
+		}
+		projectName := filepath.Base(projectRoot)
+		privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
+
+		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error() + "\n"
