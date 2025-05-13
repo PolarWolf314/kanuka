@@ -1,8 +1,9 @@
 package cmd
 
 import (
+	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
-	"os"
+	"kanuka/internal/utils"
 	"path/filepath"
 
 	"github.com/fatih/color"
@@ -20,39 +21,36 @@ var encryptCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
-		projectRoot, err := secrets.FindProjectKanukaRoot()
-		if err != nil {
-			printError("Failed to obtain project root", err)
+		if err := configs.InitProjectSettings(); err != nil {
+			printError("failed to init project settings", err)
 			return
 		}
-		if projectRoot == "" {
+		projectName := configs.ProjectKanukaSettings.ProjectName
+		projectPath := configs.ProjectKanukaSettings.ProjectPath
+
+		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
 
-		// Step 1: Check for .env file
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
-		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, false)
+		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
 		if err != nil {
 			printError("Failed to find environment files", err)
 			return
 		}
 		if len(listOfEnvFiles) == 0 {
-			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(projectRoot) + "\n"
+			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(projectPath) + "\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
 
-		// Step 2: Get project's encrypted symmetric key
-		currentUsername, err := secrets.GetUsername()
-		if err != nil {
-			printError("Failed to get username", err)
-			return
-		}
+		username := configs.UserKanukaSettings.Username
+		userKeysPath := configs.UserKanukaSettings.UserKeysPath
 
-		encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(username)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to get your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
@@ -61,14 +59,7 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			printError("Failed to get user's home directory", err)
-			return
-		}
-		projectName := filepath.Base(projectRoot)
-		privateKeyPath := filepath.Join(homeDir, ".kanuka", "keys", projectName)
-
+		privateKeyPath := filepath.Join(userKeysPath, projectName)
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
@@ -77,7 +68,6 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 
-		// Step 3: Decrypt user's kanuka file (get symmetric key)
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 		if err != nil {
 			finalMessage := color.RedString("✗") + " Failed to decrypt your " +
@@ -88,7 +78,6 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 
-		// Step 4: Encrypt all env files
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
 			finalMessage := color.RedString("✗") + " Failed to encrypt the project's " +
 				color.YellowString(".env") + " files. Are you sure you have access?\n" +
@@ -98,13 +87,13 @@ var encryptCmd = &cobra.Command{
 		}
 
 		// we can be sure they exist if the previous function ran without errors
-		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectRoot, []string{}, true)
+		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
 		if err != nil {
 			printError("Failed to find environment files", err)
 			return
 		}
 
-		formattedListOfFiles := secrets.FormatPaths(listOfKanukaFiles)
+		formattedListOfFiles := utils.FormatPaths(listOfKanukaFiles)
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +

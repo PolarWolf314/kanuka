@@ -1,20 +1,10 @@
-package secrets
+package utils
 
 import (
-	"os/user"
 	"strings"
 
 	"github.com/fatih/color"
 )
-
-// GetUsername returns the current username.
-func GetUsername() (string, error) {
-	user, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-	return user.Username, nil
-}
 
 // FormatPaths formats a slice of paths into a readable string.
 func FormatPaths(paths []string) string {

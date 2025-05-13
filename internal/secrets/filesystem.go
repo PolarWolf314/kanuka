@@ -3,28 +3,28 @@ package secrets
 import (
 	"fmt"
 	"io/fs"
+	"kanuka/internal/configs"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 )
 
-// EnsureUserSettings ensures that the user's Kanuka settings directory exists.
+// EnsureUserSettings ensures that the user's Kanuka data and config directory exists.
 func EnsureUserSettings() error {
-	currentUser, err := user.Current()
-	if err != nil {
-		return fmt.Errorf("failed to get current user: %w", err)
-	}
-	userKanukaDirectory := filepath.Join(currentUser.HomeDir, ".kanuka", "keys")
+	userKanukaDataDirectory := configs.UserKanukaSettings.UserKeysPath
+	userKanukaConfigDirectory := configs.UserKanukaSettings.UserConfigsPath
 
-	if err := os.MkdirAll(userKanukaDirectory, 0700); err != nil {
-		return fmt.Errorf("failed to create %s: %w", userKanukaDirectory, err)
+	if err := os.MkdirAll(userKanukaDataDirectory, 0700); err != nil {
+		return fmt.Errorf("failed to create %s: %w", userKanukaDataDirectory, err)
+	}
+	if err := os.MkdirAll(userKanukaConfigDirectory, 0700); err != nil {
+		return fmt.Errorf("failed to create %s: %w", userKanukaConfigDirectory, err)
 	}
 
 	return nil
 }
 
-// DoesProjectKanukaSettingsExist checks if the project's Kanuka settings directory exists.
+// DoesProjectKanukaSettingsExist checks if the project has been init already.
 func DoesProjectKanukaSettingsExist() (bool, error) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
@@ -51,49 +51,6 @@ func DoesProjectKanukaSettingsExist() (bool, error) {
 
 	// Directory exists
 	return true, nil
-}
-
-// FindProjectKanukaRoot traverses up directories to find the project's Kanuka root.
-// Returns the path to the project root if found, empty string otherwise.
-// Stops searching when it reaches the user's home directory.
-func FindProjectKanukaRoot() (string, error) {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get working directory: %w", err)
-	}
-
-	// Get the user's home directory
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user home directory: %w", err)
-	}
-
-	for {
-		// Stop searching at home directory
-		if currentDir == homeDir {
-			return "", nil
-		}
-
-		kanukaDir := filepath.Join(currentDir, ".kanuka")
-		fileInfo, err := os.Stat(kanukaDir)
-		// No error means the path exists
-		if err == nil {
-			if fileInfo.IsDir() {
-				return currentDir, nil
-			}
-		} else if !os.IsNotExist(err) {
-			// Return any error that's not "file not found" (like permission issues)
-			return "", fmt.Errorf("error checking for .kanuka directory at %s: %w", currentDir, err)
-		}
-
-		parentDir := filepath.Dir(currentDir)
-
-		// If we've reached the filesystem root and haven't found .kanuka
-		if parentDir == currentDir {
-			return "", nil
-		}
-		currentDir = parentDir
-	}
 }
 
 // EnsureKanukaSettings ensures that the project's Kanuka settings directories exist.
