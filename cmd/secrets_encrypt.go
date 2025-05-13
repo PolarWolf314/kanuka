@@ -21,7 +21,10 @@ var encryptCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
 		defer cleanup()
 
-		configs.InitProjectSettings()
+		if err := configs.InitProjectSettings(); err != nil {
+			printError("failed to init project settings", err)
+			return
+		}
 		projectName := configs.ProjectKanukaSettings.ProjectName
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 

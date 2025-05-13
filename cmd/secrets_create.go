@@ -22,7 +22,10 @@ var createCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
-		configs.InitProjectSettings()
+		if err := configs.InitProjectSettings(); err != nil {
+			printError("failed to init project settings", err)
+			return
+		}
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 
 		if projectPath == "" {

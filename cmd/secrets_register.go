@@ -27,7 +27,10 @@ var registerCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
 		defer cleanup()
 
-		configs.InitProjectSettings()
+		if err := configs.InitProjectSettings(); err != nil {
+			printError("failed to init project settings", err)
+			return
+		}
 		currentUsername := configs.UserKanukaSettings.Username
 		currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
 

@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"fmt"
 	"kanuka/internal/utils"
 	"log"
 	"os"
@@ -54,17 +55,23 @@ func init() {
 		UserConfigsPath: filepath.Join(configDir, "kanuka"),
 		Username:        username,
 	}
+	ProjectKanukaSettings = &ProjectSettings{
+		ProjectName:          "",
+		ProjectPath:          "",
+		ProjectPublicKeyPath: "",
+		ProjectSecretsPath:   "",
+	}
 }
 
-func InitProjectSettings() {
+func InitProjectSettings() error {
 	projectName, err := utils.GetProjectName()
 	if err != nil {
-		log.Fatalf("error getting project name: %s", err)
+		return fmt.Errorf("error getting project name: %w", err)
 	}
 
 	projectPath, err := utils.FindProjectKanukaRoot()
 	if err != nil {
-		log.Fatalf("error getting project root: %s", err)
+		return fmt.Errorf("error getting project root: %w", err)
 	}
 
 	ProjectKanukaSettings = &ProjectSettings{
@@ -73,4 +80,6 @@ func InitProjectSettings() {
 		ProjectPublicKeyPath: filepath.Join(projectPath, ".kanuka", "public_keys"),
 		ProjectSecretsPath:   filepath.Join(projectPath, ".kanuka", "secrets"),
 	}
+
+	return nil
 }
