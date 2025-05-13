@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -135,11 +134,6 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectName, err)
 	}
 
-	if verbose {
-		log.Printf(`✅ Successfully generated RSA keys at:
-  - Private: %s
-  - Public: %s`, privateKeyPath, publicKeyPath)
-	}
 	return nil
 }
 
