@@ -3,6 +3,7 @@ package cmd
 import (
 	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
+	"os"
 	"path/filepath"
 
 	"github.com/fatih/color"
@@ -69,8 +70,25 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		finalMessage := color.GreenString("✓") + " Your public key has been added to the following location:\n" +
-			"    - " + color.YellowString(destPath) + "\n" +
+		didKanukaExist := true
+
+		username := configs.UserKanukaSettings.Username
+		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+		userKanukaKeyPath := filepath.Join(projectSecretsPath, username+".kanuka")
+
+		if err := os.Remove(userKanukaKeyPath); err != nil {
+			didKanukaExist = false
+			// Explicity ignore error as we want to idempotently delete the file
+			_ = err
+		}
+
+		deletedMessage := ""
+		if didKanukaExist {
+			deletedMessage = "    deleted: " + color.RedString(userKanukaKeyPath) + "\n"
+		}
+
+		finalMessage := color.GreenString("✓") + " The following changes were made:\n" +
+			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
