@@ -4,6 +4,7 @@ import (
 	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
 	"path/filepath"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -54,6 +55,15 @@ var registerCmd = &cobra.Command{
 
 		// Check if target user's public key exists
 		targetPubkeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
+
+		if customFilePath != "" {
+			if !strings.HasSuffix(customFilePath, ".pub") {
+				finalMessage := color.RedString("✗ ") + color.YellowString(customFilePath) + " is not a valid path to a public key file.\n"
+				spinner.FinalMSG = finalMessage
+				return
+			}
+			targetPubkeyPath = customFilePath
+		}
 
 		targetUserPublicKey, err := secrets.LoadPublicKey(targetPubkeyPath)
 		if err != nil {
