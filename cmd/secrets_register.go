@@ -65,17 +65,31 @@ var registerCmd = &cobra.Command{
 			targetPubkeyPath = customFilePath
 		}
 
+		// TODO: In the future, differentiate between FileNotFound Error and InvalidKey Error
 		targetUserPublicKey, err := secrets.LoadPublicKey(targetPubkeyPath)
 		if err != nil {
+			if customFilePath != "" {
+				finalMessage := color.RedString("✗") + " Public key could not be loaded from " + color.YellowString(customFilePath) + "\n\n" +
+					color.RedString("Error: ") + err.Error() + "\n"
+				spinner.FinalMSG = finalMessage
+				return
+			}
+
 			finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(username) + " not found\n" +
 				username + " must first run: " + color.YellowString("kanuka secrets create\n")
 			spinner.FinalMSG = finalMessage
 			return
 		}
 
+		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+		kanukaKeyPath := filepath.Join(projectSecretsPath, currentUsername+".kanuka")
+
 		encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
 		if err != nil {
-			printError("Failed to get current user's .kanuka file", err)
+			finalMessage := color.RedString("✗") + " Couldn't get your Kanuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
+				"Are you sure you have access?\n\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
@@ -84,14 +98,22 @@ var registerCmd = &cobra.Command{
 
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
-			printError("Failed to get current user's private key", err)
+			finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
+				"Are you sure you have access?\n\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
 		// Decrypt symmetric key with current user's private key
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 		if err != nil {
-			printError("Failed to decrypt symmetric key", err)
+			finalMessage := color.RedString("✗") + " Failed to decrypt your Kanuka key using your private key: \n" +
+				"    Kanuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
+				"    Private key path: " + color.YellowString(privateKeyPath) + "\n\n" +
+				"Are you sure you have access?\n\n" +
+				color.RedString("Error: ") + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
 			return
 		}
 
@@ -103,12 +125,16 @@ var registerCmd = &cobra.Command{
 		}
 
 		// Save encrypted symmetric key for target user
-		if err := secrets.SaveKanukaKeyToProject(username, targetEncryptedSymKey); err != nil {
+		targetName := username
+		if customFilePath != "" {
+			targetName = strings.TrimSuffix(filepath.Base(customFilePath), ".pub")
+		}
+		if err := secrets.SaveKanukaKeyToProject(targetName, targetEncryptedSymKey); err != nil {
 			printError("Failed to save encrypted key for target user", err)
 			return
 		}
 
-		finalMessage := color.GreenString("✓") + " User " + color.YellowString(username) + " has been registered successfully!\n" +
+		finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetName) + " has been registered successfully!\n" +
 			color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
 		spinner.FinalMSG = finalMessage
 	},
