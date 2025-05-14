@@ -9,15 +9,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var username string
+var (
+	username       string
+	customFilePath string
+)
 
 func init() {
 	registerCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 	registerCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
-	if err := registerCmd.MarkFlagRequired("user"); err != nil {
-		printError("Failed to mark --user flag as required", err)
-		return
-	}
+	registerCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
 }
 
 var registerCmd = &cobra.Command{
@@ -26,6 +26,13 @@ var registerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
 		defer cleanup()
+
+		if username == "" && customFilePath == "" {
+			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + " or " + color.YellowString("--file") + " must be specified.\n" +
+				"Please run " + color.YellowString("kanuka secrets register --help") + " to see the available commands.\n"
+			spinner.FinalMSG = finalMessage
+			return
+		}
 
 		if err := configs.InitProjectSettings(); err != nil {
 			printError("failed to init project settings", err)
