@@ -134,7 +134,7 @@ var registerCmd = &cobra.Command{
 			return
 		}
 
-		finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetName) + " has been registered successfully!\n" +
+		finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetName+".pub") + " has been registered successfully!\n" +
 			color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
 		spinner.FinalMSG = finalMessage
 	},
