@@ -4,10 +4,15 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
@@ -213,4 +218,145 @@ func GetProjectKanukaKey(username string) ([]byte, error) {
 	}
 
 	return encryptedSymmetricKey, nil
+}
+
+// ParsePublicKeyText parses a PEM-encoded or SSH format public key string and returns an RSA public key.
+func ParsePublicKeyText(publicKeyText string) (*rsa.PublicKey, error) {
+	// Ensure the text is trimmed of whitespace
+	publicKeyText = strings.TrimSpace(publicKeyText)
+
+	// Check if this is an SSH format key (starts with "ssh-rsa")
+	if strings.HasPrefix(publicKeyText, "ssh-rsa") {
+		return parseSSHPublicKey(publicKeyText)
+	}
+
+	// If not SSH format, try PEM format
+	if !strings.HasPrefix(publicKeyText, "-----BEGIN") {
+		return nil, errors.New("public key text does not appear to be in PEM or SSH format")
+	}
+
+	// Decode the PEM block
+	block, _ := pem.Decode([]byte(publicKeyText))
+	if block == nil {
+		return nil, errors.New("failed to parse PEM block")
+	}
+
+	// Check that this is a public key
+	if block.Type != "PUBLIC KEY" && block.Type != "RSA PUBLIC KEY" {
+		return nil, errors.New("PEM block is not a public key")
+	}
+
+	// Parse the public key
+	var publicKey interface{}
+	var err error
+
+	if block.Type == "RSA PUBLIC KEY" {
+		// PKCS#1 format
+		publicKey, err = x509.ParsePKCS1PublicKey(block.Bytes)
+	} else {
+		// PKCS#8 format (more common)
+		publicKey, err = x509.ParsePKIXPublicKey(block.Bytes)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to RSA public key
+	rsaPublicKey, ok := publicKey.(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("not an RSA public key")
+	}
+
+	return rsaPublicKey, nil
+}
+
+// parseSSHPublicKey parses an SSH format RSA public key.
+// Format: ssh-rsa BASE64DATA comment.
+func parseSSHPublicKey(sshPublicKey string) (*rsa.PublicKey, error) {
+	parts := strings.Fields(sshPublicKey)
+	if len(parts) < 2 {
+		return nil, errors.New("invalid SSH public key format")
+	}
+
+	if parts[0] != "ssh-rsa" {
+		return nil, errors.New("unsupported key type, only RSA is supported")
+	}
+
+	// Decode the base64 encoded part
+	decoded, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode SSH key: %v", err)
+	}
+
+	// SSH key format consists of:
+	// - length of "ssh-rsa" (4 bytes)
+	// - the string "ssh-rsa"
+	// - length of exponent (4 bytes)
+	// - exponent
+	// - length of modulus (4 bytes)
+	// - modulus
+
+	// Let's parse this data structure
+	var pos uint32 = 0
+
+	// Skip the key type
+	keyTypeLen := binary.BigEndian.Uint32(decoded[pos : pos+4])
+	pos += 4 + keyTypeLen
+
+	// Read the exponent
+	expLen := binary.BigEndian.Uint32(decoded[pos : pos+4])
+	pos += 4
+	if int(pos)+int(expLen) > len(decoded) {
+		return nil, errors.New("invalid SSH key: exponent length out of bounds")
+	}
+	e := int(0)
+	for i := uint32(0); i < expLen; i++ {
+		e = e*256 + int(decoded[int(pos)+int(i)])
+	}
+	pos += expLen
+
+	// Read the modulus
+	modLen := binary.BigEndian.Uint32(decoded[pos : pos+4])
+	pos += 4
+	if int(pos)+int(modLen) > len(decoded) {
+		return nil, errors.New("invalid SSH key: modulus length out of bounds")
+	}
+	modBytes := decoded[int(pos) : int(pos)+int(modLen)]
+
+	// Ensure the first byte isn't negative
+	if modBytes[0] >= 0x80 {
+		modBytes = append([]byte{0}, modBytes...)
+	}
+
+	n := new(big.Int).SetBytes(modBytes)
+
+	// Create the RSA public key
+	return &rsa.PublicKey{
+		N: n,
+		E: e,
+	}, nil
+}
+
+// SavePublicKeyToFile saves an RSA public key to a file in PEM format.
+func SavePublicKeyToFile(publicKey *rsa.PublicKey, filePath string) error {
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	// Convert public key to DER format (PKIX)
+	derBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return err
+	}
+
+	pemBlock := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: derBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// #nosec G306 -- This is a pubkey
+	return os.WriteFile(filePath, pemBytes, 0644)
 }
