@@ -23,7 +23,7 @@ func init() {
 	registerCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 	registerCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
 	registerCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
-	registerCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "public key content to be saved with the specified username")
+	registerCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified username")
 }
 
 var registerCmd = &cobra.Command{
