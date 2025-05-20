@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - test-release
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Install tools
+        run: |
+          go install github.com/goreleaser/goreleaser@latest
+          go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
+
+      - name: Run release script
+        run: ./scripts/release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
