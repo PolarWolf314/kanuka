@@ -1,11 +1,17 @@
 ---
 title: Welcome to Kānuka
-description: Get started building your docs site with Starlight.
+description: Managing secrets, made easy
 template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
+  tagline: No third parties. Just fast, resilient, and pleasant secrets management.
+  image:
+    {
+      light: "../../assets/kanuka-light-circular.png",
+      dark: "../../assets/kanuka-dark-circular.png",
+      alt: "A drawing of a bunch of Kānuka flowers.",
+    }
   actions:
-    - text: Introduction
+    - text: Get started
       link: /introduction/example/
       icon: right-arrow
     - text: View on GitHub
@@ -14,21 +20,21 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
 ## Next steps
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+  <Card title="Update content" icon="pencil">
+    Edit `src/content/docs/index.mdx` to see this page change.
+  </Card>
+  <Card title="Add new content" icon="add-document">
+    Add Markdown or MDX files to `src/content/docs` to create new pages.
+  </Card>
+  <Card title="Configure your site" icon="setting">
+    Edit your `sidebar` and other config in `astro.config.mjs`.
+  </Card>
+  <Card title="Read the docs" icon="open-book">
+    Learn more in [the Starlight Docs](https://starlight.astro.build/).
+  </Card>
 </CardGrid>
