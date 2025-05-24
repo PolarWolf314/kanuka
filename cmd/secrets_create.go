@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
 
 	"github.com/fatih/color"
@@ -21,13 +22,13 @@ var createCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
-		projectRoot, err := secrets.FindProjectKanukaRoot()
-		if err != nil {
-			printError("Failed to check if project kanuka settings exists", err)
+		if err := configs.InitProjectSettings(); err != nil {
+			printError("failed to init project settings", err)
 			return
 		}
+		projectPath := configs.ProjectKanukaSettings.ProjectPath
 
-		if projectRoot == "" {
+		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -39,12 +40,7 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		currentUsername, err := secrets.GetUsername()
-		if err != nil {
-			printError("Failed to get username", err)
-			return
-		}
-
+		currentUsername := configs.UserKanukaSettings.Username
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
 			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.

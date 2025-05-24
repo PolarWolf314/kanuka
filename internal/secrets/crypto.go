@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
+	"kanuka/internal/configs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,11 +39,9 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	username, err := GetUsername()
-	if err != nil {
-		return fmt.Errorf("failed to get username: %w", err)
-	}
+	username := configs.UserKanukaSettings.Username
 
+	// Project hasn't been made at this point yet, so do it relative to working directory.
 	kanukaDir := filepath.Join(wd, ".kanuka")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
 	pubKeyPath := filepath.Join(kanukaDir, "public_keys", username+".pub")
