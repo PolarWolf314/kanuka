@@ -3,6 +3,8 @@ package cmd
 import (
 	"kanuka/internal/configs"
 	"kanuka/internal/secrets"
+	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -43,16 +45,18 @@ var createCmd = &cobra.Command{
 		currentUsername := configs.UserKanukaSettings.Username
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
-			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
-			encryptedSymmetricKey, _ := secrets.GetProjectKanukaKey(currentUsername)
+			projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+			userPublicKeyPath := filepath.Join(projectPublicKeyPath, currentUsername+".pub")
 
-			if encryptedSymmetricKey != nil {
-				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".kanuka ") + "already exists\n" +
+			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
+			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
+
+			if userPublicKey != nil {
+				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
 				return
 			}
-
 		}
 
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
@@ -66,8 +70,25 @@ var createCmd = &cobra.Command{
 			return
 		}
 
-		finalMessage := color.GreenString("✓") + " Your public key has been added to the following location:\n" +
-			"    - " + color.YellowString(destPath) + "\n" +
+		didKanukaExist := true
+
+		username := configs.UserKanukaSettings.Username
+		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+		userKanukaKeyPath := filepath.Join(projectSecretsPath, username+".kanuka")
+
+		if err := os.Remove(userKanukaKeyPath); err != nil {
+			didKanukaExist = false
+			// Explicity ignore error as we want to idempotently delete the file
+			_ = err
+		}
+
+		deletedMessage := ""
+		if didKanukaExist {
+			deletedMessage = "    deleted: " + color.RedString(userKanukaKeyPath) + "\n"
+		}
+
+		finalMessage := color.GreenString("✓") + " The following changes were made:\n" +
+			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
