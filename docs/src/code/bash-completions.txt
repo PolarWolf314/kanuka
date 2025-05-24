@@ -1,0 +1,5 @@
+# Linux:
+kanuka completion bash > /etc/bash_completion.d/kanuka
+
+# macOS:
+kanuka completion bash > $(brew --prefix)/etc/bash_completion.d/kanuka
