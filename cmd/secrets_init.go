@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/secrets"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

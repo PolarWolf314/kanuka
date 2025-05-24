@@ -1,0 +1,145 @@
+---
+title: Installation
+description: How to install Kānuka.
+---
+
+Feel free to install Kānuka using any of the following methods, although
+installing using Go itself is recommended.
+
+## Prerequisites
+
+You'll need to have Go installed first, and have the Go binaries available on
+your system path. Check the [Go installation documentation](https://go.dev/doc/install)
+if you haven't installed Go already.
+
+It's also worth making sure that you have your Go binaries on your system path.
+The Go installation tool should handle that for you, but if you installed Go
+through a different way (for example, using a package manager like `brew`),
+then you'll need to manually put Go in your path.
+
+##### Adding Go to your PATH
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Tabs>
+  <TabItem label="Linux">
+    <Code
+      code="# add the following line to your `~/.bashrc`
+      export PATH=$HOME/go/bin:$PATH"
+      lang="bash"
+      title="~/.bashrc"
+    />
+  </TabItem>
+  <TabItem label="macOS">
+    <Code
+      code="# add the following line to your `~/.zshrc`
+      export PATH=$HOME/go/bin:$PATH"
+      lang="zsh"
+      title="~/.zshrc"
+    />
+  </TabItem>
+  <TabItem label="Windows">
+    1. Press `win + s` and type `Environment Variables`
+    2. Click on `Environment Variables`
+    3. Under "user variables", click *edit*.
+    4. Add the following:
+
+    <Code code="%USERPROFILE%\go\bin" title="user variables" />
+
+  </TabItem>
+</Tabs>
+
+### Installing Kānuka using Go
+
+On any operating system, just run the following:
+
+import { Code } from "@astrojs/starlight/components";
+
+<Code
+  code="go install https://github.com/PolarWolf314/kanuka@latest"
+  lang="bash"
+/>
+
+### Installing Kānuka using GitHub Releases
+
+Kānuka releases artifacts which can be downloaded directly from [GitHub
+Releases](https://github.com/PolarWolf314/kanuka/releases).
+
+Each release page includes the binaries for all supported platforms.
+
+## Upgrading Kānuka
+
+If you installed Kānuka using Go, then running the following should be enough:
+
+<Code
+  code="go install github.com/PolarWolf314/kanuka@latest"
+  lang="bash"
+/>
+
+If you installed Kānuka using a GitHub Release, just navigate to the [GitHub
+Releases page](https://github.com/PolarWolf314/kanuka/releases), and install
+your existing binary with the newest version.
+
+## Shell Autocomplete
+
+Because Kānuka is built using [Cobra](https://github.com/spf13/cobra), shell
+autocomplete is supported for `bash`, `zsh`, `fish`, and `powershell`.
+
+:::tip
+You can run `echo $SHELL` to help determine your shell.
+:::
+
+import bashCompletionCode from "../../../code/bash-completions.txt?raw"
+import zshCompletionCode from "../../../code/zsh-completions.txt?raw"
+import fishCompletionCode from "../../../code/fish-completions.txt?raw"
+import powershellCompletionCode from "../../../code/powershell-completions.txt?raw"
+
+<Tabs>
+  <TabItem label="bash">
+    <Code
+      lang="bash"
+      code={bashCompletionCode}
+    />
+  </TabItem>
+<TabItem label="zsh">
+  <Code
+    lang="zsh"
+    code={zshCompletionCode}
+    />
+</TabItem>
+
+{" "}
+<TabItem label="fish">
+  <Code
+    lang="bash"
+    code={fishCompletionCode}
+  />
+</TabItem>
+
+  <TabItem label="powershell">
+    Add the following to your `powershell` profile.
+    <Code
+      lang="powershell"
+      code={powershellCompletionCode}
+    />
+  </TabItem>
+</Tabs>
+
+## Uninstalling
+
+You need to manually remove the Kānuka binary from your system. If you used `go
+install` to install Kānuka, then you can just go to the folder where your
+binaries are installed, and remove the binary.
+
+:::tip
+You can run `echo $GOBIN` to find out where your binaries are installed.
+:::
+
+If you installed using a GitHub Release, then remove the binary from where you
+installed it.
+
+:::caution[Note]
+You may also want to remove all your related Kānuka files. These will be stored
+in `XDG_DATA_HOME` and in `XDG_CONFIG_HOME` (or your operating system
+equivalent).
+:::

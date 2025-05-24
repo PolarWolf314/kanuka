@@ -1,0 +1,1 @@
+kanuka completion fish > ~/.config/fish/completions/kanuka.fish

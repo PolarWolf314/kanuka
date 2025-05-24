@@ -5,10 +5,11 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
-	"kanuka/internal/configs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
 
 	"golang.org/x/crypto/nacl/secretbox"
 )

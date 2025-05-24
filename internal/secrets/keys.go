@@ -6,9 +6,10 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"kanuka/internal/configs"
 	"os"
 	"path/filepath"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
 // LoadPrivateKey loads an RSA private key from disk.

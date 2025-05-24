@@ -2,10 +2,11 @@ package configs
 
 import (
 	"fmt"
-	"kanuka/internal/utils"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/PolarWolf314/kanuka/internal/utils"
 )
 
 type UserSettings struct {
