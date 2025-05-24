@@ -52,7 +52,7 @@ var createCmd = &cobra.Command{
 			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
 
 			if userPublicKey != nil {
-				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".kanuka ") + "already exists\n" +
+				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
 				return
