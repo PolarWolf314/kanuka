@@ -22,7 +22,10 @@ export default defineConfig({
         },
         {
           label: "Getting started",
-          autogenerate: { directory: "getting-started" },
+          items: [
+            "getting-started/installation",
+            "getting-started/first-steps",
+          ],
         },
         {
           label: "Guides",
