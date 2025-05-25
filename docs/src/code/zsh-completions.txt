@@ -1,0 +1,5 @@
+# Linux:
+kanuka completion zsh > "${fpath[1]}/_kanuka"
+
+# macOS:
+kanuka completion zsh > $(brew --prefix)/share/zsh/site-functions/_kanuka
