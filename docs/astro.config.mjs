@@ -29,7 +29,7 @@ export default defineConfig({
         },
         {
           label: "Guides",
-          autogenerate: { directory: "guides" },
+          items: ["guides/project-init", "guides/encryption"],
         },
         {
           label: "Concepts",
