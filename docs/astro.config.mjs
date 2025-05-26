@@ -36,6 +36,7 @@ export default defineConfig({
             "guides/create",
             "guides/register",
             "guides/remove",
+            "guides/purge",
           ],
         },
         {
