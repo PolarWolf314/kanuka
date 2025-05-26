@@ -34,6 +34,7 @@ export default defineConfig({
             "guides/encryption",
             "guides/decryption",
             "guides/create",
+            "guides/register",
           ],
         },
         {

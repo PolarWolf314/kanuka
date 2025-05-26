@@ -5,7 +5,7 @@ description: A guide to gaining access to a repo's secrets using Kānuka.
 
 Kānuka uses a combination of RSA key pairs and symmetric keys to encrypt and
 decrypt files. If you aren't the person who ran `kanuka secrets init`, you
-won't have access. You may wish to gain access to a project.
+won't have access. You may wish to gain access to a project's secrets.
 
 ## Creating your keys
 
