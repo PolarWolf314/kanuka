@@ -29,7 +29,11 @@ export default defineConfig({
         },
         {
           label: "Guides",
-          items: ["guides/project-init", "guides/encryption"],
+          items: [
+            "guides/project-init",
+            "guides/encryption",
+            "guides/decryption",
+          ],
         },
         {
           label: "Concepts",
