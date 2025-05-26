@@ -33,6 +33,7 @@ export default defineConfig({
             "guides/project-init",
             "guides/encryption",
             "guides/decryption",
+            "guides/create",
           ],
         },
         {
