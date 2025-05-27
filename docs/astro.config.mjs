@@ -48,6 +48,7 @@ export default defineConfig({
             "concepts/structure",
             "concepts/encryption",
             "concepts/registration",
+            "concepts/purge",
           ],
         },
         {
