@@ -1,0 +1,71 @@
+---
+title: Where Kānuka Stores Your Files
+description: An explanation for the project structure.
+---
+
+## Project specific files
+
+Kānuka stores all your project related files in a `.kanuka` folder at the root
+of your project. For example, if you had as Astro project, it may look like
+this:
+
+import { FileTree } from '@astrojs/starlight/components';
+
+<FileTree>
+
+- astro.config.mjs
+- package.json
+- .env your secrets, which should be in .gitignore
+- .env.kanuka your secrets, encrypted by Kānuka
+- src
+  - components/
+  - pages/
+- **.kanuka**
+  - public_keys
+    - user_1.pub
+    - user_2.pub
+  - secrets
+    - user_1.kanuka
+    - user_2.kanuka
+
+</FileTree>
+
+Any files created by Kānuka in your project are safe to commit to your version
+control.
+
+A core concept to understand is that each user has _their own_ version of a
+symmetric key, but everyone has the _same_ symmetric key. To read more about
+how encryption and decryption works, check out the [encryption concepts
+page](/concepts/encryption).
+
+:::caution[Note]
+There are plans in the future to include a configuration file as well, which
+would help identify both users and project names. We are well aware of
+potential namespace clashes, so sit tight!
+:::
+
+## User specific files
+
+Of course, to decrypt a file that has been encrypted by an RSA key pair, the
+user will need to have their matching private key. By default, the private keys
+are stored at `XDG_DATA_HOME` (which defaults to `~/.local/share/kanuka/` for
+UNIX-like systems, and `%APPDATA%\kanuka\` on Windows).
+
+They look like this:
+
+<FileTree>
+
+- kanuka at `~/.local/share/kanuka` or equivalent
+  - keys
+    - project_one this is a private key for project_one
+    - project_one.pub the corresponding public key
+    - project_two
+    - project_two.pub
+
+</FileTree>
+
+Kānuka will reach into your `XDG_DATA_HOME` and find the correct private key,
+and use that to decrypt your version of the symmetric key.
+
+Continue reading to find out more about how Kānuka actually encrypts and
+decrypts files.
