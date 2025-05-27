@@ -44,7 +44,7 @@ export default defineConfig({
         },
         {
           label: "Concepts",
-          autogenerate: { directory: "concepts" },
+          items: ["concepts/structure"],
         },
         {
           label: "Configuration",
