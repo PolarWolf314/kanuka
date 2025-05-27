@@ -44,7 +44,7 @@ export default defineConfig({
         },
         {
           label: "Concepts",
-          items: ["concepts/structure"],
+          items: ["concepts/structure", "concepts/encryption"],
         },
         {
           label: "Configuration",
