@@ -1,0 +1,75 @@
+---
+title: Registration and Removal
+description: An explanation for how Kānuka registers and removes other users.
+---
+
+When a new user joins the project for the first time, they will not have access
+to the system — it would be a bit concerning if they did! The diagram below
+demonstrates the missing piece for a new user, assuming they have already ran
+`kanuka secrets create` and committed their changes to version control.
+
+<img
+  class="dark:sl-hidden"
+  src="/assets/registration-concept-light.png"
+  alt="A diagram showing the process of how a symmetric key is encrypted and decrypted, with one missing component"
+/>
+<img
+  class="light:sl-hidden"
+  src="/assets/registration-concept-dark.png"
+  alt="A diagram showing the process of how a symmetric key is encrypted and decrypted, with one missing component"
+/>
+
+When a user with access runs:
+
+```bash
+# Using the example's username
+kanuka secrets register --user user_2
+```
+
+Kānuka does the following two steps:
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. Kānuka will decrypt `user_1`'s encrypted AES key.
+2. Kānuka will then use the symmetric key and combine it with `user_2`'s public
+   key.
+
+</Steps>
+
+<img
+  class="dark:sl-hidden"
+  src="/assets/registration-symkey-concept-light.png"
+  alt="A diagram version of the two steps described above"
+/>
+<img
+  class="light:sl-hidden"
+  src="/assets/registration-symkey-concept-dark.png"
+  alt="A diagram version of the two steps described above"
+/>
+
+## How does Kānuka handle both OpenSSH and PEM format?
+
+If the RSA encryption standard is like a destination, OpenSSH and PEM are the
+different ways to get there. At the end of the day, they are both
+representations of the same thing. Under the hood, Kānuka converts everything
+to PEM format before using or storing it.
+
+:::tip
+The discussion around these two formats are a [bit more
+nuanced](https://security.stackexchange.com/questions/143114/what-is-the-difference-between-pem-format-to-dsa-rsa-ecc-might-i-confuse-pem-w).
+RSA is just one of many encryption standards. Other algorithms include ed25519
+(an algorithm based on elliptic curves, which is the OpenSSH default now), and
+DSA (used for digital signing).
+
+In truth, Kānuka only supports **RSA** at the moment.
+:::
+
+## How does Kānuka remove other users?
+
+By simply deleting a user's encrypted AES key and their public key, that user
+will no longer have access to the secrets, and no other user can accidentally
+give them access again.
+
+Continue reading to see how purging works with Kānuka.

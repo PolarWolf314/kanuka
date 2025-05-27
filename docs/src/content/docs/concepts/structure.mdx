@@ -12,6 +12,7 @@ this:
 import { FileTree } from '@astrojs/starlight/components';
 
 <FileTree>
+
 - astro.config.mjs
 - package.json
 - .env your secrets, which should be in .gitignore
@@ -32,22 +33,28 @@ import { FileTree } from '@astrojs/starlight/components';
 Any files created by Kānuka in your project are safe to commit to your version
 control.
 
-A core concept to understand is that each user has _their own_ version of a symmetric key, but everyone has the _same_ symmetric key. To read more about
+A core concept to understand is that each user has _their own_ version of a
+symmetric key, but everyone has the _same_ symmetric key. To read more about
 how encryption and decryption works, check out the [encryption concepts
-page](concepts/encryption).
+page](/concepts/encryption).
 
 :::caution[Note]
 There are plans in the future to include a configuration file as well, which
-would help identify both users and project names. We are well aware of potential namespace clashes, so sit tight!
+would help identify both users and project names. We are well aware of
+potential namespace clashes, so sit tight!
 :::
 
 ## User specific files
 
-Of course, to decrypt a file that has been encrypted by an RSA key pair, the user will need to have their matching private key. By default, the private keys are stored at `XDG_DATA_HOME` (which defaults to `~/.local/share/kanuka/` for UNIX-like systems, and `%APPDATA%\kanuka\` on Windows).
+Of course, to decrypt a file that has been encrypted by an RSA key pair, the
+user will need to have their matching private key. By default, the private keys
+are stored at `XDG_DATA_HOME` (which defaults to `~/.local/share/kanuka/` for
+UNIX-like systems, and `%APPDATA%\kanuka\` on Windows).
 
 They look like this:
 
 <FileTree>
+
 - kanuka at `~/.local/share/kanuka` or equivalent
   - keys
     - project_one this is a private key for project_one

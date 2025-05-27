@@ -31,5 +31,4 @@ of any references to Kānuka.
 To learn more about `kanuka secrets purge`, see the [secrets purge
 page]() and the [command reference]().
 
-Or, continue reading to learn how to purge all access to a project's secrets in
-the case of a security breach.
+Or, continue reading to learn core concepts on how Kānuka works.
