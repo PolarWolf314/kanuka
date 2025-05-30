@@ -10,6 +10,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Kānuka",
+      favicon: "/favicon.ico",
       customCss: ["./src/styles/custom.css"],
       social: [
         {
