@@ -26,3 +26,5 @@ go.work.sum
 
 # built binary for the project
 kanuka
+
+dist/
