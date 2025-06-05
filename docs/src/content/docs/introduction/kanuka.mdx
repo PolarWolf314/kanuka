@@ -1,0 +1,78 @@
+---
+title: Kānuka
+description: What is Kānuka?
+---
+
+Kānuka is a CLI tool written in Go. It makes sharing secrets, creating
+development environments, deploying code, and testing, unified under one robust
+and simple interface. Never again will you need to ask another developer to send
+you their `.env` file, or what tools need to be installed on your system in
+order to start developing.
+
+:::caution[Note]
+The current scope of the project only encompasses secrets managements right now.
+:::
+
+## What’s with the name?
+
+Kānuka (<i>Kunzea ericoides</i>) is a tree that is endemic to Aotearoa New
+Zealand. It is a robust species, critical to restoring wildlife destroyed by
+fire as it quickly propagates and regenerates the land. Its leaves have a
+characteristically soft touch, and it’s one of few plants that can survive the
+heat of geothermal features.
+
+It is fast, resilient, yet pleasant to touch. This is the vision of Kānuka.
+
+## Installation
+
+You'll need to have Go installed first, and have the Go binaries available on
+your system path. Check the [Go installation documentation](https://go.dev/doc/install)
+if you haven't installed Go already.
+
+It's also worth making sure that you have your Go binaries on your system path.
+The Go installation tool should handle that for you, but if you installed Go
+through a different way (for example, using a package manager like `brew`),
+then you'll need to manually put Go in your path.
+
+##### Adding Go to your PATH
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+<Tabs>
+  <TabItem label="Linux">
+    <Code
+      code="# add the following line to your `~/.bashrc`
+      export PATH=$HOME/go/bin:$PATH"
+      lang="bash"
+      title="~/.bashrc"
+    />
+  </TabItem>
+  <TabItem label="macOS">
+    <Code
+      code="# add the following line to your `~/.zshrc`
+      export PATH=$HOME/go/bin:$PATH"
+      lang="zsh"
+      title="~/.zshrc"
+    />
+  </TabItem>
+  <TabItem label="Windows">
+    1. Press `win + s` and type `Environment Variables`
+    2. Click on `Environment Variables`
+    3. Under "user variables", click *edit*.
+    4. Add the following:
+
+    <Code code="%USERPROFILE%\go\bin" title="user variables" />
+
+  </TabItem>
+</Tabs>
+
+### Installing Kānuka
+
+On any operating system, just run the following:
+
+import { Code } from "@astrojs/starlight/components";
+
+<Code
+  code="go install https://github.com/PolarWolf314/kanuka@latest"
+  lang="bash"
+/>

@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"kanuka/internal/configs"
-	"kanuka/internal/secrets"
-	"kanuka/internal/utils"
 	"path/filepath"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
