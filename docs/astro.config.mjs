@@ -1,9 +1,12 @@
 // @ts-check
-import { defineConfig } from "astro/config";
+import { defineConfig, passthroughImageService } from "astro/config";
 import starlight from "@astrojs/starlight";
 
 // https://astro.build/config
 export default defineConfig({
+  image: {
+    service: passthroughImageService(),
+  },
   integrations: [
     starlight({
       title: "Kānuka",
@@ -22,11 +25,22 @@ export default defineConfig({
         },
         {
           label: "Getting started",
-          autogenerate: { directory: "getting-started" },
+          items: [
+            "getting-started/installation",
+            "getting-started/first-steps",
+          ],
         },
         {
           label: "Guides",
-          autogenerate: { directory: "guides" },
+          items: [
+            "guides/project-init",
+            "guides/encryption",
+            "guides/decryption",
+            "guides/create",
+            "guides/register",
+            "guides/remove",
+            "guides/purge",
+          ],
         },
         {
           label: "Concepts",
