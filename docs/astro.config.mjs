@@ -44,7 +44,12 @@ export default defineConfig({
         },
         {
           label: "Concepts",
-          autogenerate: { directory: "concepts" },
+          items: [
+            "concepts/structure",
+            "concepts/encryption",
+            "concepts/registration",
+            "concepts/purge",
+          ],
         },
         {
           label: "Configuration",

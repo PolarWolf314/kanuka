@@ -1,0 +1,74 @@
+---
+title: Encryption and Decryption
+description: An explanation for how Kānuka actually works.
+---
+
+Kānuka uses open standards for encryption, and all the code is [open
+source](https://github.com/PolarWolf314/kanuka). For the symmetric key, Kānuka
+uses the [AES 256-bit
+standard](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard). For the
+public/private key pair, Kānuka uses the [RSA 2048-bit
+standard](https://en.wikipedia.org/wiki/RSA_cryptosystem). Both these standards
+are used widely across the internet. RSA is used any time you browse the
+internet with an HTTPS connection, while AES is used whenever you are logged
+into the Wi-Fi router.
+
+## How does Kānuka work?
+
+Here is the basic workflow for encryption, assuming you have access:
+
+import { Steps } from '@astrojs/starlight/components';
+
+<Steps>
+
+1. Kānuka will search your entire repo for every file that has `.env` in the
+   name, but not `.kanuka`.
+2. Kānuka will then use your private key to decrypt your symmetric key that
+   resides in `project_root/.kanuka/secrets/your_username.kanuka`.
+3. Kānuka will use that decrypted symmetric key to encrypt every file found in
+   step 1.
+4. Kānuka will then name those files exactly the same, just with `.kanuka`
+   added onto the end.
+
+</Steps>
+
+For decryption, the same is done just in reverse. Instead of searching for all
+`.env` files, it will search for all `.kanuka` files.
+
+## Why is this secure?
+
+Kānuka is secure because all sensitive information is only ever in memory or on
+your local device.
+
+<img
+  class="dark:sl-hidden"
+  src="/assets/encryption-concept-light.png"
+  alt="Encryption Concept Diagram"
+/>
+<img
+  class="light:sl-hidden"
+  src="/assets/encryption-concept-dark.png"
+  alt="Encryption Concept Diagram"
+/>
+
+These are — in broad strokes — what ends up happening during an encryption and
+decryption process.
+
+<img
+  class="dark:sl-hidden"
+  src="/assets/encrypt-key-concept-light.png"
+  alt="A diagram showing the process of how a symmetric key is encrypted and decrypted, as well as how project secrets are encrypted and decrypted"
+/>
+<img
+  class="light:sl-hidden"
+  src="/assets/encrypt-key-concept-dark.png"
+  alt="A diagram showing the process of how a symmetric key is encrypted and decrypted, as well as how project secrets are encrypted and decrypted"
+/>
+
+:::tip
+Unlike the typical math equation where you can go forwards and back, modern
+cryptographic techniques are created in such a way that the processes shown in
+the image above _only ever work in one direction_.
+:::
+
+Continue reading to learn about what happens during registration.
