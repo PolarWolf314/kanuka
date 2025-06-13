@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/rsa"
 	"path/filepath"
 	"strings"
 
@@ -15,12 +16,14 @@ import (
 var (
 	username       string
 	customFilePath string
+	publicKeyText  string
 )
 
 func init() {
 	registerCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
 	registerCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
 	registerCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
+	registerCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified username")
 }
 
 var registerCmd = &cobra.Command{
@@ -30,9 +33,18 @@ var registerCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
 		defer cleanup()
 
-		if username == "" && customFilePath == "" {
-			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + " or " + color.YellowString("--file") + " must be specified.\n" +
+		// Check for required flags
+		if username == "" && customFilePath == "" && publicKeyText == "" {
+			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + ", " + color.YellowString("--file") + ", or " + color.YellowString("--pubkey") + " must be specified.\n" +
 				"Please run " + color.YellowString("kanuka secrets register --help") + " to see the available commands.\n"
+			spinner.FinalMSG = finalMessage
+			return
+		}
+
+		// When using --pubkey, username is required
+		if publicKeyText != "" && username == "" {
+			finalMessage := color.RedString("✗") + " When using " + color.YellowString("--pubkey") + ", the " + color.YellowString("--user") + " flag is required.\n" +
+				"Please specify a username with " + color.YellowString("--user") + ".\n"
 			spinner.FinalMSG = finalMessage
 			return
 		}
@@ -42,12 +54,95 @@ var registerCmd = &cobra.Command{
 			return
 		}
 
-		if customFilePath != "" {
+		switch {
+		case publicKeyText != "":
+			handlePubkeyTextRegistration(spinner)
+		case customFilePath != "":
 			handleCustomFileRegistration(spinner)
-		} else {
+		default:
 			handleUserRegistration(spinner)
 		}
 	},
+}
+
+func handlePubkeyTextRegistration(spinner *spinner.Spinner) {
+	projectPath := configs.ProjectKanukaSettings.ProjectPath
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+
+	if projectPath == "" {
+		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+		spinner.FinalMSG = finalMessage
+		return
+	}
+
+	// Validate and parse the public key text
+	publicKey, err := secrets.ParsePublicKeyText(publicKeyText)
+	if err != nil {
+		finalMessage := color.RedString("✗") + " Invalid public key format provided\n" +
+			color.RedString("Error: ") + err.Error() + "\n"
+		spinner.FinalMSG = finalMessage
+		return
+	}
+
+	// Save the public key to a file
+	pubKeyFilePath := filepath.Join(projectPublicKeyPath, username+".pub")
+	if err := secrets.SavePublicKeyToFile(publicKey, pubKeyFilePath); err != nil {
+		finalMessage := color.RedString("✗") + " Failed to save public key to " + color.YellowString(pubKeyFilePath) + "\n" +
+			color.RedString("Error: ") + err.Error() + "\n"
+		spinner.FinalMSG = finalMessage
+		return
+	}
+
+	// Now register the user with the newly saved public key
+	if err := registerUserWithPublicKey(username, publicKey); err != nil {
+		finalMessage := color.RedString("✗") + " Failed to register user with the provided public key\n" +
+			color.RedString("Error: ") + err.Error() + "\n"
+		spinner.FinalMSG = finalMessage
+		return
+	}
+
+	finalMessage := color.GreenString("✓") + " Public key for " + color.YellowString(username) + " has been saved and registered successfully!\n" +
+		color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
+	spinner.FinalMSG = finalMessage
+}
+
+func registerUserWithPublicKey(targetUsername string, targetPublicKey *rsa.PublicKey) error {
+	currentUsername := configs.UserKanukaSettings.Username
+	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
+	projectName := configs.ProjectKanukaSettings.ProjectName
+
+	// Get the current user's encrypted symmetric key
+	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
+	if err != nil {
+		return err
+	}
+
+	// Get current user's private key
+	privateKeyPath := filepath.Join(currentUserKeysPath, projectName)
+	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+	if err != nil {
+		return err
+	}
+
+	// Decrypt symmetric key with current user's private key
+	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+	if err != nil {
+		return err
+	}
+
+	// Encrypt symmetric key with target user's public key
+	targetEncryptedSymKey, err := secrets.EncryptWithPublicKey(symKey, targetPublicKey)
+	if err != nil {
+		return err
+	}
+
+	// Save encrypted symmetric key for target user
+	if err := secrets.SaveKanukaKeyToProject(targetUsername, targetEncryptedSymKey); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func handleUserRegistration(spinner *spinner.Spinner) {
