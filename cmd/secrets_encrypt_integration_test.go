@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -147,6 +148,7 @@ func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd strin
 	// Create a .env file
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=secret123\n"
 	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
@@ -220,6 +222,7 @@ func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
+		// #nosec G306 -- Writing a file that should be modifiable
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatalf("Failed to create .env file %s: %v", fullPath, err)
 		}
@@ -273,6 +276,7 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	// Create a .env file
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
 	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
@@ -323,6 +327,7 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 	// Create a .env file in root
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
 	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
@@ -393,6 +398,7 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
+		// #nosec G306 -- Writing a file that should be modifiable
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatalf("Failed to create .env file %s: %v", fullPath, err)
 		}
@@ -464,8 +470,12 @@ func createEncryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugF
 	rootCmd.SetArgs([]string{"secrets", "encrypt"})
 
 	// Set the flags on the actual command
-	SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag))
-	SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag))
+	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
+		log.Fatalf("Failed to set verbose flag for testing: %s", err)
+	}
+	if err := SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
+		log.Fatalf("Failed to set debug flag for testing: %s", err)
+	}
 
 	return rootCmd
 }

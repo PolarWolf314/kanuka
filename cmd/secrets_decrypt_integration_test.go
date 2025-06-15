@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -148,6 +149,7 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 	// Create and encrypt a .env file first
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=secret123\n"
 	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
@@ -237,6 +239,7 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
+		// #nosec G306 -- Writing a file that should be modifiable
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatalf("Failed to create .env file %s: %v", fullPath, err)
 		}
@@ -317,6 +320,7 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	// Create and encrypt a .env file first
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
 	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
@@ -381,6 +385,7 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 	// Create and encrypt a .env file in root
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
 	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
@@ -464,6 +469,7 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
+		// #nosec G306 -- Writing a file that should be modifiable
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			t.Fatalf("Failed to create .env file %s: %v", fullPath, err)
 		}
@@ -520,11 +526,6 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 	}
 }
 
-// createDecryptCommand creates a command that uses the actual decrypt command.
-func createDecryptCommand(stdout, stderr io.Writer) *cobra.Command {
-	return createDecryptCommandWithFlags(stdout, stderr, false, false)
-}
-
 // createDecryptCommandWithFlags creates a command that uses the actual decrypt command with specified flags.
 func createDecryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
 	// Set the global flags for the actual command
@@ -557,9 +558,12 @@ func createDecryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugF
 	rootCmd.SetArgs([]string{"secrets", "decrypt"})
 
 	// Set the flags on the actual command
-	SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag))
-	SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag))
+	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
+		log.Fatalf("Failed to set verbose flag for testing: %s", err)
+	}
+	if err := SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
+		log.Fatalf("Failed to set debug flag for testing: %s", err)
+	}
 
 	return rootCmd
 }
-

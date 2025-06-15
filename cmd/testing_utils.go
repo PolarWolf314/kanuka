@@ -149,8 +149,12 @@ func createInitCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag
 	rootCmd.SetArgs([]string{"secrets", "init"})
 
 	// Set the flags on the actual command
-	SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag))
-	SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag))
+	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
+		log.Fatalf("Failed to set verbose flag for testing: %s", err)
+	}
+	if err := SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
+		log.Fatalf("Failed to set debug flag for testing: %s", err)
+	}
 
 	return rootCmd
 }
