@@ -10,6 +10,7 @@ import (
 )
 
 func printError(message string, err error) {
+	Logger.Errorf("%s: %v", message, err)
 	if !verbose {
 		log.SetOutput(os.Stdout)
 	}
@@ -19,21 +20,27 @@ func printError(message string, err error) {
 // startSpinner creates and starts a spinner with the given message when not in verbose mode.
 // Returns the spinner and a function that should be deferred to clean up.
 func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
+	Logger.Debugf("Starting spinner with message: %s", message)
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	s.Suffix = " " + message
 	err := s.Color("cyan")
 	if err != nil {
+		Logger.Errorf("Failed to create a spinner: %v", err)
 		printError("Failed to create a spinner", err)
 	}
 
 	if !verbose {
+		Logger.Debugf("Starting spinner in non-verbose mode")
 		s.Start()
 		// Ensure log output is discarded unless in verbose mode
 		log.SetOutput(io.Discard)
+	} else {
+		Logger.Infof("Running in verbose mode: %s", message)
 	}
 
 	cleanup := func() {
 		if !verbose {
+			Logger.Debugf("Stopping spinner and restoring log output")
 			log.SetOutput(os.Stdout)
 			s.Stop()
 		}
