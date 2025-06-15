@@ -8,13 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PolarWolf314/kanuka/internal/configs"
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/spf13/cobra"
 )
 
-// TestSecretsEncryptIntegration contains integration tests for the `kanuka secrets encrypt` command.
-func TestSecretsEncryptIntegration(t *testing.T) {
+// TestSecretsDecryptIntegration contains integration tests for the `kanuka secrets decrypt` command.
+func TestSecretsDecryptIntegration(t *testing.T) {
 	// Save original working directory
 	originalWd, err := os.Getwd()
 	if err != nil {
@@ -24,39 +25,39 @@ func TestSecretsEncryptIntegration(t *testing.T) {
 	// Save original user settings to restore later
 	originalUserSettings := configs.UserKanukaSettings
 
-	t.Run("EncryptInEmptyFolder", func(t *testing.T) {
-		testEncryptInEmptyFolder(t, originalWd, originalUserSettings)
+	t.Run("DecryptInEmptyFolder", func(t *testing.T) {
+		testDecryptInEmptyFolder(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("EncryptInInitializedFolderWithNoEnvFiles", func(t *testing.T) {
-		testEncryptInInitializedFolderWithNoEnvFiles(t, originalWd, originalUserSettings)
+	t.Run("DecryptInInitializedFolderWithNoKanukaFiles", func(t *testing.T) {
+		testDecryptInInitializedFolderWithNoKanukaFiles(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("EncryptInInitializedFolderWithOneEnvFile", func(t *testing.T) {
-		testEncryptInInitializedFolderWithOneEnvFile(t, originalWd, originalUserSettings)
+	t.Run("DecryptInInitializedFolderWithOneKanukaFile", func(t *testing.T) {
+		testDecryptInInitializedFolderWithOneKanukaFile(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("EncryptInInitializedFolderWithMultipleEnvFiles", func(t *testing.T) {
-		testEncryptInInitializedFolderWithMultipleEnvFiles(t, originalWd, originalUserSettings)
+	t.Run("DecryptInInitializedFolderWithMultipleKanukaFiles", func(t *testing.T) {
+		testDecryptInInitializedFolderWithMultipleKanukaFiles(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("EncryptWithoutAccess", func(t *testing.T) {
-		testEncryptWithoutAccess(t, originalWd, originalUserSettings)
+	t.Run("DecryptWithoutAccess", func(t *testing.T) {
+		testDecryptWithoutAccess(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("EncryptFromSubfolderWithOneEnvFile", func(t *testing.T) {
-		testEncryptFromSubfolderWithOneEnvFile(t, originalWd, originalUserSettings)
+	t.Run("DecryptFromSubfolderWithOneKanukaFile", func(t *testing.T) {
+		testDecryptFromSubfolderWithOneKanukaFile(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("EncryptFromSubfolderWithMultipleEnvFiles", func(t *testing.T) {
-		testEncryptFromSubfolderWithMultipleEnvFiles(t, originalWd, originalUserSettings)
+	t.Run("DecryptFromSubfolderWithMultipleKanukaFiles", func(t *testing.T) {
+		testDecryptFromSubfolderWithMultipleKanukaFiles(t, originalWd, originalUserSettings)
 	})
 }
 
-// testEncryptInEmptyFolder tests encrypt command in an empty folder (should fail).
-func testEncryptInEmptyFolder(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptInEmptyFolder tests decrypt command in an empty folder (should fail).
+func testDecryptInEmptyFolder(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-empty-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-empty-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -74,7 +75,7 @@ func testEncryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail because kanuka is not initialized
@@ -88,10 +89,10 @@ func testEncryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 	}
 }
 
-// testEncryptInInitializedFolderWithNoEnvFiles tests encrypt in initialized folder with no .env files.
-func testEncryptInInitializedFolderWithNoEnvFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptInInitializedFolderWithNoKanukaFiles tests decrypt in initialized folder with no .kanuka files.
+func testDecryptInInitializedFolderWithNoKanukaFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-no-env-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-no-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -110,7 +111,7 @@ func testEncryptInInitializedFolderWithNoEnvFiles(t *testing.T, originalWd strin
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed but report no files found
@@ -118,16 +119,16 @@ func testEncryptInInitializedFolderWithNoEnvFiles(t *testing.T, originalWd strin
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// Verify message about no environment files found
-	if !strings.Contains(output, "No environment files found") {
-		t.Errorf("Expected 'no environment files found' message not found in output: %s", output)
+	// Verify message about no kanuka files found
+	if !strings.Contains(output, "No encrypted environment (.kanuka) files found") {
+		t.Errorf("Expected 'no kanuka files found' message not found in output: %s", output)
 	}
 }
 
-// testEncryptInInitializedFolderWithOneEnvFile tests encrypt with one .env file.
-func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptInInitializedFolderWithOneKanukaFile tests decrypt with one .kanuka file.
+func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-one-env-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-one-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -144,16 +145,36 @@ func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd strin
 	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	initializeProject(t)
 
-	// Create a .env file
+	// Create and encrypt a .env file first
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=secret123\n"
 	envPath := filepath.Join(tempDir, ".env")
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
 	}
 
+	// Encrypt the file first
+	_, err = captureOutput(func() error {
+		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Failed to encrypt file for test setup: %v", err)
+	}
+
+	// Remove the original .env file to test decryption
+	if err := os.Remove(envPath); err != nil {
+		t.Fatalf("Failed to remove .env file: %v", err)
+	}
+
+	// Verify .env.kanuka file exists
+	kanukaPath := envPath + ".kanuka"
+	if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
+		t.Fatalf(".env.kanuka file was not created during setup")
+	}
+
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -163,33 +184,29 @@ func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd strin
 	}
 
 	// Verify success message
-	if !strings.Contains(output, "Environment files encrypted successfully") {
+	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify .env.kanuka file was created
-	kanukaPath := envPath + ".kanuka"
-	if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
-		t.Errorf(".env.kanuka file was not created at %s", kanukaPath)
+	// Verify .env file was recreated
+	if _, err := os.Stat(envPath); os.IsNotExist(err) {
+		t.Errorf(".env file was not recreated at %s", envPath)
 	}
 
-	// Verify the encrypted file is not empty and different from original
-	kanukaContent, err := os.ReadFile(kanukaPath)
+	// Verify the decrypted content matches the original
+	decryptedContent, err := os.ReadFile(envPath)
 	if err != nil {
-		t.Errorf("Failed to read .env.kanuka file: %v", err)
+		t.Errorf("Failed to read decrypted .env file: %v", err)
 	}
-	if len(kanukaContent) == 0 {
-		t.Errorf(".env.kanuka file is empty")
-	}
-	if string(kanukaContent) == envContent {
-		t.Errorf(".env.kanuka file content is the same as .env file (not encrypted)")
+	if string(decryptedContent) != envContent {
+		t.Errorf("Decrypted content doesn't match original. Expected: %s, Got: %s", envContent, string(decryptedContent))
 	}
 }
 
-// testEncryptInInitializedFolderWithMultipleEnvFiles tests encrypt with multiple .env files.
-func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptInInitializedFolderWithMultipleKanukaFiles tests decrypt with multiple .kanuka files.
+func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-multi-env-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-multi-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -225,9 +242,26 @@ func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd
 		}
 	}
 
+	// Encrypt all files first
+	_, err = captureOutput(func() error {
+		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Failed to encrypt files for test setup: %v", err)
+	}
+
+	// Remove all original .env files to test decryption
+	for filePath := range envFiles {
+		fullPath := filepath.Join(tempDir, filePath)
+		if err := os.Remove(fullPath); err != nil {
+			t.Fatalf("Failed to remove .env file %s: %v", fullPath, err)
+		}
+	}
+
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -237,23 +271,33 @@ func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd
 	}
 
 	// Verify success message
-	if !strings.Contains(output, "Environment files encrypted successfully") {
+	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify all .env.kanuka files were created
-	for filePath := range envFiles {
-		kanukaPath := filepath.Join(tempDir, filePath+".kanuka")
-		if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
-			t.Errorf(".env.kanuka file was not created at %s", kanukaPath)
+	// Verify all .env files were recreated with correct content
+	for filePath, expectedContent := range envFiles {
+		fullPath := filepath.Join(tempDir, filePath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			t.Errorf(".env file was not recreated at %s", fullPath)
+			continue
+		}
+
+		decryptedContent, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Errorf("Failed to read decrypted .env file %s: %v", fullPath, err)
+			continue
+		}
+		if string(decryptedContent) != expectedContent {
+			t.Errorf("Decrypted content doesn't match original for %s. Expected: %s, Got: %s", filePath, expectedContent, string(decryptedContent))
 		}
 	}
 }
 
-// testEncryptWithoutAccess tests encrypt when user doesn't have access (missing private key).
-func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptWithoutAccess tests decrypt when user doesn't have access (missing private key).
+func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-no-access-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-no-access-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -270,11 +314,25 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	initializeProject(t)
 
-	// Create a .env file
+	// Create and encrypt a .env file first
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
 	envPath := filepath.Join(tempDir, ".env")
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	// Encrypt the file first
+	_, err = captureOutput(func() error {
+		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Failed to encrypt file for test setup: %v", err)
+	}
+
+	// Remove the original .env file
+	if err := os.Remove(envPath); err != nil {
+		t.Fatalf("Failed to remove .env file: %v", err)
 	}
 
 	// Remove the user's private key to simulate no access
@@ -286,7 +344,7 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail
@@ -300,10 +358,10 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	}
 }
 
-// testEncryptFromSubfolderWithOneEnvFile tests encrypt from subfolder with one .env file.
-func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptFromSubfolderWithOneKanukaFile tests decrypt from subfolder with one .kanuka file.
+func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-subfolder-one-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-subfolder-one-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -320,11 +378,25 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	initializeProject(t)
 
-	// Create a .env file in root
+	// Create and encrypt a .env file in root
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
 	envPath := filepath.Join(tempDir, ".env")
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	// Encrypt the file first
+	_, err = captureOutput(func() error {
+		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Failed to encrypt file for test setup: %v", err)
+	}
+
+	// Remove the original .env file
+	if err := os.Remove(envPath); err != nil {
+		t.Fatalf("Failed to remove .env file: %v", err)
 	}
 
 	// Create a subfolder and change to it
@@ -338,7 +410,7 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -348,21 +420,20 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 	}
 
 	// Verify success message
-	if !strings.Contains(output, "Environment files encrypted successfully") {
+	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify .env.kanuka file was created in the root
-	kanukaPath := envPath + ".kanuka"
-	if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
-		t.Errorf(".env.kanuka file was not created at %s", kanukaPath)
+	// Verify .env file was recreated in the root
+	if _, err := os.Stat(envPath); os.IsNotExist(err) {
+		t.Errorf(".env file was not recreated at %s", envPath)
 	}
 }
 
-// testEncryptFromSubfolderWithMultipleEnvFiles tests encrypt from subfolder with multiple .env files.
-func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+// testDecryptFromSubfolderWithMultipleKanukaFiles tests decrypt from subfolder with multiple .kanuka files.
+func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
-	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-subfolder-multi-*")
+	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-subfolder-multi-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -398,6 +469,23 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 		}
 	}
 
+	// Encrypt all files first
+	_, err = captureOutput(func() error {
+		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Failed to encrypt files for test setup: %v", err)
+	}
+
+	// Remove all original .env files
+	for filePath := range envFiles {
+		fullPath := filepath.Join(tempDir, filePath)
+		if err := os.Remove(fullPath); err != nil {
+			t.Fatalf("Failed to remove .env file %s: %v", fullPath, err)
+		}
+	}
+
 	// Create a subfolder and change to it
 	subDir := filepath.Join(tempDir, "subfolder")
 	if err := os.MkdirAll(subDir, 0755); err != nil {
@@ -409,7 +497,7 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -419,21 +507,26 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 	}
 
 	// Verify success message
-	if !strings.Contains(output, "Environment files encrypted successfully") {
+	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify all .env.kanuka files were created
+	// Verify all .env files were recreated
 	for filePath := range envFiles {
-		kanukaPath := filepath.Join(tempDir, filePath+".kanuka")
-		if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
-			t.Errorf(".env.kanuka file was not created at %s", kanukaPath)
+		fullPath := filepath.Join(tempDir, filePath)
+		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+			t.Errorf(".env file was not recreated at %s", fullPath)
 		}
 	}
 }
 
-// createEncryptCommandWithFlags creates a command that uses the actual encrypt command with specified flags.
-func createEncryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
+// createDecryptCommand creates a command that uses the actual decrypt command.
+func createDecryptCommand(stdout, stderr io.Writer) *cobra.Command {
+	return createDecryptCommandWithFlags(stdout, stderr, false, false)
+}
+
+// createDecryptCommandWithFlags creates a command that uses the actual decrypt command with specified flags.
+func createDecryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
 	// Set the global flags for the actual command
 	verbose = verboseFlag
 	debug = debugFlag
@@ -452,16 +545,16 @@ func createEncryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugF
 	if stdout != nil {
 		rootCmd.SetOut(stdout)
 		SecretsCmd.SetOut(stdout)
-		encryptCmd.SetOut(stdout)
+		decryptCmd.SetOut(stdout)
 	}
 	if stderr != nil {
 		rootCmd.SetErr(stderr)
 		SecretsCmd.SetErr(stderr)
-		encryptCmd.SetErr(stderr)
+		decryptCmd.SetErr(stderr)
 	}
 
-	// Set args to run the encrypt command
-	rootCmd.SetArgs([]string{"secrets", "encrypt"})
+	// Set args to run the decrypt command
+	rootCmd.SetArgs([]string{"secrets", "decrypt"})
 
 	// Set the flags on the actual command
 	SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag))
@@ -469,3 +562,4 @@ func createEncryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugF
 
 	return rootCmd
 }
+
