@@ -10,14 +10,6 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-func printError(message string, err error) {
-	Logger.Errorf("%s: %v", message, err)
-	if !verbose && !debug {
-		log.SetOutput(os.Stdout)
-	}
-	log.Fatalf("❌ %s: %v", message, err)
-}
-
 // startSpinner creates and starts a spinner with the given message when not in verbose or debug mode.
 // Returns the spinner and a function that should be deferred to clean up.
 func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
@@ -26,8 +18,7 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	s.Suffix = " " + message
 	err := s.Color("cyan")
 	if err != nil {
-		Logger.Errorf("Failed to create a spinner: %v", err)
-		printError("Failed to create a spinner", err)
+		Logger.Fatalf("Failed to create a spinner: %v", err)
 	}
 
 	if !verbose && !debug {

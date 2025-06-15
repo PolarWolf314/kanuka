@@ -27,15 +27,14 @@ var createCmd = &cobra.Command{
 
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
-			Logger.Errorf("Failed to initialize project settings: %v", err)
-			printError("failed to init project settings", err)
+			Logger.Fatalf("failed to init project settings: %v", err)
 			return
 		}
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			Logger.Warnf("Kanuka has not been initialized")
+			Logger.WarnfUser("Kanuka has not been initialized")
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -44,8 +43,7 @@ var createCmd = &cobra.Command{
 
 		Logger.Debugf("Ensuring user settings")
 		if err := secrets.EnsureUserSettings(); err != nil {
-			Logger.Errorf("Failed to ensure user settings: %v", err)
-			printError("Failed ensuring user settings", err)
+			Logger.Fatalf("Failed ensuring user settings: %v", err)
 			return
 		}
 
@@ -63,7 +61,7 @@ var createCmd = &cobra.Command{
 			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
 
 			if userPublicKey != nil {
-				Logger.Warnf("Public key already exists for user %s", currentUsername)
+				Logger.WarnfUser("Public key already exists for user %s", currentUsername)
 				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
@@ -71,12 +69,12 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			Logger.Infof("Force flag set, will override existing keys if present")
+			Logger.WarnfUser("Using --force flag will overwrite existing keys - ensure you have backups")
 		}
 
 		Logger.Debugf("Creating and saving RSA key pair")
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
-			Logger.Errorf("Failed to generate and save RSA key pair: %v", err)
-			printError("Failed to generate and save RSA key pair", err)
+			Logger.Fatalf("Failed to generate and save RSA key pair: %v", err)
 			return
 		}
 		Logger.Infof("RSA key pair created successfully")
@@ -84,8 +82,7 @@ var createCmd = &cobra.Command{
 		Logger.Debugf("Copying user public key to project")
 		destPath, err := secrets.CopyUserPublicKeyToProject()
 		if err != nil {
-			Logger.Errorf("Failed to copy public key to project: %v", err)
-			printError("Failed to copy public key to project", err)
+			Logger.Fatalf("Failed to copy public key to project: %v", err)
 			return
 		}
 		Logger.Infof("Public key copied to: %s", destPath)

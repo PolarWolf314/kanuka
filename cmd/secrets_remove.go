@@ -11,7 +11,7 @@ var removeCmd = &cobra.Command{
 	Short: "Removes access to the secret store",
 	Run: func(cmd *cobra.Command, args []string) {
 		Logger.Infof("Starting remove command")
-		Logger.Warnf("Remove command is not yet implemented")
+		Logger.WarnfAlways("Remove command is not yet implemented")
 		fmt.Println("Removing secret... (Placeholder)")
 		Logger.Debugf("Remove command completed (placeholder)")
 	},

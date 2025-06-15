@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/PolarWolf314/kanuka/internal/secrets"
@@ -22,8 +23,7 @@ var decryptCmd = &cobra.Command{
 
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
-			Logger.Errorf("Failed to initialize project settings: %v", err)
-			printError("failed to init project settings", err)
+			Logger.Fatalf("failed to init project settings: %v", err)
 			return
 		}
 		projectName := configs.ProjectKanukaSettings.ProjectName
@@ -31,7 +31,7 @@ var decryptCmd = &cobra.Command{
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			Logger.Warnf("Kanuka has not been initialized")
+			Logger.WarnfUser("Kanuka has not been initialized")
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -42,16 +42,20 @@ var decryptCmd = &cobra.Command{
 		Logger.Debugf("Searching for .kanuka files in project path")
 		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
 		if err != nil {
-			Logger.Errorf("Failed to find environment files: %v", err)
-			printError("Failed to find environment files", err)
+			Logger.Fatalf("Failed to find environment files: %v", err)
 			return
 		}
 		Logger.Debugf("Found %d .kanuka files", len(listOfKanukaFiles))
 		if len(listOfKanukaFiles) == 0 {
-			Logger.Warnf("No encrypted environment files found in %s", projectPath)
+			Logger.WarnfUser("No encrypted environment files found in %s", projectPath)
 			finalMessage := color.RedString("✗") + " No encrypted environment (" + color.YellowString(".kanuka") + ") files found in " + color.YellowString(projectPath) + "\n"
 			spinner.FinalMSG = finalMessage
 			return
+		}
+
+		// Performance warning for large number of files
+		if len(listOfKanukaFiles) > 20 {
+			Logger.Warnf("Processing %d encrypted files - this may take a moment", len(listOfKanukaFiles))
 		}
 
 		username := configs.UserKanukaSettings.Username
@@ -81,6 +85,14 @@ var decryptCmd = &cobra.Command{
 		}
 		Logger.Infof("Private key loaded successfully")
 
+		// Security warning: Check private key file permissions
+		if fileInfo, err := os.Stat(privateKeyPath); err == nil {
+			if fileInfo.Mode().Perm() != 0600 {
+				Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'", 
+					fileInfo.Mode().Perm(), privateKeyPath)
+			}
+		}
+
 		Logger.Debugf("Decrypting symmetric key with private key")
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 		if err != nil {
@@ -108,13 +120,15 @@ var decryptCmd = &cobra.Command{
 		Logger.Debugf("Finding decrypted environment files")
 		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
 		if err != nil {
-			Logger.Errorf("Failed to find environment files after decryption: %v", err)
-			printError("Failed to find environment files", err)
+			Logger.Fatalf("Failed to find environment files after decryption: %v", err)
 			return
 		}
 
 		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
 		Logger.Infof("Decrypt command completed successfully. Created %d environment files", len(listOfEnvFiles))
+
+		// Security reminder
+		Logger.WarnfUser("Decrypted .env files contain sensitive data - ensure they're in your .gitignore")
 
 		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
 			"The following files were created:" + formattedListOfFiles +
