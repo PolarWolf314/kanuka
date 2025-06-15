@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -29,7 +30,7 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 		printError("Failed to create a spinner", err)
 	}
 
-	if !verbose {
+	if !verbose || !debug {
 		Logger.Debugf("Starting spinner in non-verbose mode")
 		s.Start()
 		// Ensure log output is discarded unless in verbose mode
@@ -39,10 +40,16 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	}
 
 	cleanup := func() {
-		if !verbose {
+		if !verbose || !debug {
 			Logger.Debugf("Stopping spinner and restoring log output")
 			log.SetOutput(os.Stdout)
 			s.Stop()
+		} else {
+			// In verbose or debug mode, manually print the final message if it's set
+			if s.FinalMSG != "" {
+				Logger.Debugf("Displaying final message in verbose mode")
+				fmt.Print(s.FinalMSG)
+			}
 		}
 	}
 
