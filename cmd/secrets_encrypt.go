@@ -30,7 +30,6 @@ var encryptCmd = &cobra.Command{
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			Logger.WarnfUser("Kanuka has not been initialized")
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -46,7 +45,6 @@ var encryptCmd = &cobra.Command{
 		}
 		Logger.Debugf("Found %d .env files", len(listOfEnvFiles))
 		if len(listOfEnvFiles) == 0 {
-			Logger.WarnfUser("No environment files found in %s", projectPath)
 			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(projectPath) + "\n"
 			spinner.FinalMSG = finalMessage
 			return
@@ -87,7 +85,7 @@ var encryptCmd = &cobra.Command{
 		// Security warning: Check private key file permissions
 		if fileInfo, err := os.Stat(privateKeyPath); err == nil {
 			if fileInfo.Mode().Perm() != 0600 {
-				Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'", 
+				Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'",
 					fileInfo.Mode().Perm(), privateKeyPath)
 			}
 		}

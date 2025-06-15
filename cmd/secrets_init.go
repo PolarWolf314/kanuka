@@ -22,7 +22,6 @@ var initCmd = &cobra.Command{
 			return
 		}
 		if kanukaExists {
-			Logger.WarnfUser("Kanuka has already been initialized")
 			finalMessage := color.RedString("✗") + " Kanuka has already been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets create") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -67,10 +66,10 @@ var initCmd = &cobra.Command{
 		Logger.Infof("Encrypted symmetric key created and saved successfully")
 
 		Logger.Infof("Init command completed successfully")
-		
+
 		// Security reminder about .env files
 		Logger.WarnfUser("Remember: Never commit .env files to version control - only commit .kanuka files")
-		
+
 		finalMessage := color.GreenString("✓") + " Kanuka initialized successfully!\n" +
 			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files\n"
 

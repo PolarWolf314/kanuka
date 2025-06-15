@@ -34,7 +34,6 @@ var createCmd = &cobra.Command{
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			Logger.WarnfUser("Kanuka has not been initialized")
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
@@ -61,7 +60,6 @@ var createCmd = &cobra.Command{
 			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
 
 			if userPublicKey != nil {
-				Logger.WarnfUser("Public key already exists for user %s", currentUsername)
 				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
