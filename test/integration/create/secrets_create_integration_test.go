@@ -84,7 +84,7 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 	defer os.RemoveAll(tempUserDir)
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	
+
 	// Initialize project structure only (without creating user keys)
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
@@ -93,13 +93,13 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 	if err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
-	
+
 	// Verify no user keys exist yet
 	projectName := filepath.Base(tempDir)
 	username := configs.UserKanukaSettings.Username
 	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
+
 	// Remove any existing keys from init (if any)
 	os.Remove(privateKeyPath)
 	os.Remove(privateKeyPath + ".pub")
@@ -209,7 +209,7 @@ func testCreateWithForceFlag(t *testing.T, originalWd string, originalUserSettin
 
 	projectName := filepath.Base(tempDir)
 	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	
+
 	originalKeyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		t.Fatalf("Failed to read original private key: %v", err)

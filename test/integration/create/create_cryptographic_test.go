@@ -245,7 +245,7 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 
 	// Test encryption/decryption to verify mathematical relationship
 	testMessage := []byte("test message for key pair validation")
-	
+
 	// Encrypt with public key
 	encrypted, err := secrets.EncryptWithPublicKey(testMessage, publicKey)
 	if err != nil {
@@ -265,7 +265,7 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 	// Also verify the project public key matches
 	username := configs.UserKanukaSettings.Username
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
+
 	projectPublicKey, err := secrets.LoadPublicKey(projectPublicKeyPath)
 	if err != nil {
 		t.Errorf("Failed to load project public key: %v", err)

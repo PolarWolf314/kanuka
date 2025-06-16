@@ -64,7 +64,7 @@ func testForceWithExistingKeys(t *testing.T, originalWd string, originalUserSett
 
 	projectName := filepath.Base(tempDir)
 	username := configs.UserKanukaSettings.Username
-	
+
 	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
 	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
