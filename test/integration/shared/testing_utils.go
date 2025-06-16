@@ -221,11 +221,11 @@ func InitializeProject(t *testing.T, tempDir, tempUserDir string) {
 		cmd := CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
-	
 	if err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
-	
+
 	// Verify the project was initialized correctly
 	VerifyProjectStructure(t, tempDir)
 }
+

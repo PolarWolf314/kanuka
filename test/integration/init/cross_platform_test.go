@@ -52,7 +52,6 @@ func testInitWithSpecialCharactersInPath(t *testing.T, originalWd string, origin
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with special characters in path: %v", err)
@@ -91,7 +90,6 @@ func testInitWithUnicodeInPath(t *testing.T, originalWd string, originalUserSett
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with Unicode in path: %v", err)
@@ -106,3 +104,4 @@ func testInitWithUnicodeInPath(t *testing.T, originalWd string, originalUserSett
 	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
+

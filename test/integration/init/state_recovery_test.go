@@ -74,7 +74,6 @@ func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, origina
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should detect existing .kanuka directory
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
@@ -243,3 +242,4 @@ func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, origina
 		t.Errorf("Expected .kanuka directory to not exist after failure, but it does")
 	}
 }
+

@@ -52,7 +52,6 @@ func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUs
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should succeed (100 chars is reasonable)
 	if err != nil {
 		t.Errorf("Command failed with long project name: %v", err)
@@ -91,7 +90,6 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with special characters in project name: %v", err)
@@ -106,3 +104,4 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
+
