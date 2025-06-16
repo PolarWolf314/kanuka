@@ -64,3 +64,16 @@ func (l Logger) Fatalf(msg string, args ...any) {
 	// Print fatal error and exit
 	log.Fatalf("❌ "+msg, args...)
 }
+
+func (l Logger) ErrorfAndReturn(msg string, args ...any) error {
+	// Log the error using our custom error logging
+	l.Errorf(msg, args...)
+
+	// Print error message without exiting
+	if !l.Verbose && !l.Debug {
+		fmt.Fprintf(os.Stdout, "❌ "+msg+"\n", args...)
+	}
+
+	// Return the error for the caller to handle
+	return fmt.Errorf(msg, args...)
+}
