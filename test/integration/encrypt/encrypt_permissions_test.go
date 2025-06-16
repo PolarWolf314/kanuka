@@ -19,7 +19,6 @@ func TestSecretsEncryptPermissions(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 4: Permission and Access Edge Cases
 	t.Run("EncryptWithReadOnlyKanukaDir", func(t *testing.T) {
 		testEncryptWithReadOnlyKanukaDir(t, originalWd, originalUserSettings)
 	})
@@ -37,7 +36,7 @@ func TestSecretsEncryptPermissions(t *testing.T) {
 	})
 }
 
-// Test 15: .kanuka directory is read-only.
+// Tests encrypt when .kanuka directory is read-only.
 func testEncryptWithReadOnlyKanukaDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-readonly-kanuka-*")
@@ -93,7 +92,7 @@ func testEncryptWithReadOnlyKanukaDir(t *testing.T, originalWd string, originalU
 	}
 }
 
-// Test 16: .kanuka/secrets directory is read-only.
+// Tests encrypt when .kanuka/secrets directory is read-only.
 func testEncryptWithReadOnlySecretsDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-readonly-secrets-*")
@@ -149,7 +148,7 @@ func testEncryptWithReadOnlySecretsDir(t *testing.T, originalWd string, original
 	}
 }
 
-// Test 17: Can't write to project directory.
+// Tests encrypt when project directory is not writable.
 func testEncryptWithNoWritePermissionToProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-no-write-project-*")

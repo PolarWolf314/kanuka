@@ -40,7 +40,7 @@ func TestSecretsDecryptProjectState(t *testing.T) {
 	})
 }
 
-// Test 30: .kanuka directory is corrupted.
+// Tests decrypt when .kanuka directory is corrupted.
 func testDecryptWithCorruptedKanukaDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -91,7 +91,7 @@ func testDecryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 	}
 }
 
-// Test 31: User key files are missing.
+// Tests decrypt when user key files are missing.
 func testDecryptWithMissingUserKeys(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directories
 	tempDir := t.TempDir()

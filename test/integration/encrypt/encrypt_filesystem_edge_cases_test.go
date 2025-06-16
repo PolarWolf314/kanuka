@@ -20,7 +20,6 @@ func TestSecretsEncryptFilesystemEdgeCases(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 1: File System Edge Cases
 	t.Run("EncryptWithEmptyEnvFile", func(t *testing.T) {
 		testEncryptWithEmptyEnvFile(t, originalWd, originalUserSettings)
 	})
@@ -46,7 +45,7 @@ func TestSecretsEncryptFilesystemEdgeCases(t *testing.T) {
 	})
 }
 
-// Test 1: Encrypt an empty .env file.
+// Tests encrypting an empty .env file.
 func testEncryptWithEmptyEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-empty-env-*")
@@ -94,7 +93,7 @@ func testEncryptWithEmptyEnvFile(t *testing.T, originalWd string, originalUserSe
 	}
 }
 
-// Test 2: .env file exists but is read-only.
+// Tests encrypting a read-only .env file.
 func testEncryptWithReadOnlyEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-readonly-env-*")
@@ -148,7 +147,7 @@ func testEncryptWithReadOnlyEnvFile(t *testing.T, originalWd string, originalUse
 	}
 }
 
-// Test 3: .env exists as a directory instead of file.
+// Tests encrypting when .env exists as a directory instead of file.
 func testEncryptWithEnvFileAsDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-env-as-dir-*")
@@ -190,7 +189,7 @@ func testEncryptWithEnvFileAsDirectory(t *testing.T, originalWd string, original
 	}
 }
 
-// Test 4: .env is a symlink to another file.
+// Tests encrypting when .env is a symlink to another file.
 func testEncryptWithEnvFileAsSymlink(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-env-symlink-*")
@@ -238,7 +237,7 @@ func testEncryptWithEnvFileAsSymlink(t *testing.T, originalWd string, originalUs
 	}
 }
 
-// Test 5: .env is a broken symlink.
+// Tests encrypting when .env is a broken symlink.
 func testEncryptWithBrokenEnvSymlink(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-broken-symlink-*")
@@ -281,7 +280,7 @@ func testEncryptWithBrokenEnvSymlink(t *testing.T, originalWd string, originalUs
 	}
 }
 
-// Test 6: Encrypt a very large .env file (MB+ size).
+// Tests encrypting a very large .env file (MB+ size).
 func testEncryptWithVeryLargeEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-large-env-*")

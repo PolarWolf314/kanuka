@@ -18,7 +18,6 @@ func TestSecretsInitInputValidation(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 13: Input Validation Edge Cases
 	t.Run("InitWithVeryLongProjectName", func(t *testing.T) {
 		testInitWithVeryLongProjectName(t, originalWd, originalUserSettings)
 	})
@@ -28,7 +27,7 @@ func TestSecretsInitInputValidation(t *testing.T) {
 	})
 }
 
-// Category 13: Input Validation Edge Cases.
+// Tests init with invalid username input.
 func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory with very long name (but within filesystem limits)
 	longName := strings.Repeat("a", 100) // 100 characters should be safe on most filesystems

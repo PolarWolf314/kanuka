@@ -19,7 +19,6 @@ func TestSecretsEncryptProjectState(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 3: Project State Edge Cases
 	t.Run("EncryptWithCorruptedKanukaDir", func(t *testing.T) {
 		testEncryptWithCorruptedKanukaDir(t, originalWd, originalUserSettings)
 	})
@@ -53,7 +52,7 @@ func TestSecretsEncryptProjectState(t *testing.T) {
 	})
 }
 
-// Test 9: .kanuka directory is corrupted/incomplete.
+// Tests encrypt when .kanuka directory is corrupted/incomplete.
 func testEncryptWithCorruptedKanukaDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-corrupted-kanuka-*")
@@ -98,7 +97,7 @@ func testEncryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 	}
 }
 
-// Test 10: Public key file is missing.
+// Tests encrypt when public key file is missing.
 func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-missing-public-key-*")
@@ -148,7 +147,7 @@ func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUs
 	}
 }
 
-// Test 11: Symmetric key file is missing.
+// Tests encrypt when symmetric key file is missing.
 func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-missing-symmetric-key-*")
@@ -193,7 +192,7 @@ func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, origina
 	}
 }
 
-// Test 12: Public key file is corrupted.
+// Tests encrypt when public key file is corrupted.
 func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-corrupted-public-key-*")
@@ -243,7 +242,7 @@ func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, original
 	}
 }
 
-// Test 13: Symmetric key file is corrupted.
+// Tests encrypt when symmetric key file is corrupted.
 func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-corrupted-symmetric-key-*")
@@ -289,7 +288,7 @@ func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, origi
 	}
 }
 
-// Test 14: Key files have wrong format/content.
+// Tests encrypt when key files have wrong format/content.
 func testEncryptWithWrongKeyFormat(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-wrong-key-format-*")

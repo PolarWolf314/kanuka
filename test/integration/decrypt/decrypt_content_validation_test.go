@@ -10,7 +10,7 @@ import (
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
-// Test 32: Verify decrypted content matches original.
+// Tests that decrypted content matches original.
 func TestDecryptAndValidateContent(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -93,7 +93,7 @@ SPACES_VAR=  value with spaces  `
 	}
 }
 
-// Test 33: Encrypted file has wrong format.
+// Tests decrypt when encrypted file has wrong format.
 func TestDecryptWithInvalidEncryptedFormat(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()

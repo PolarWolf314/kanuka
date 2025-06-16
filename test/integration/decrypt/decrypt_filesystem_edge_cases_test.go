@@ -10,7 +10,7 @@ import (
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
-// Test 19: Decrypt with corrupted encrypted file.
+// Tests decrypt with corrupted encrypted file.
 func TestDecryptWithCorruptedEncryptedFile(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -67,7 +67,7 @@ func TestDecryptWithCorruptedEncryptedFile(t *testing.T) {
 	}
 }
 
-// Test 20: Decrypt with read-only encrypted file.
+// Tests decrypt with read-only encrypted file.
 func TestDecryptWithReadOnlyEncryptedFile(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -138,7 +138,7 @@ func TestDecryptWithReadOnlyEncryptedFile(t *testing.T) {
 	}
 }
 
-// Test 21: Encrypted file path is a directory.
+// Tests decrypt when encrypted file path is a directory.
 func TestDecryptWithEncryptedFileAsDirectory(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -170,7 +170,7 @@ func TestDecryptWithEncryptedFileAsDirectory(t *testing.T) {
 	}
 }
 
-// Test 22: Specific encrypted file doesn't exist.
+// Tests decrypt when specific encrypted file doesn't exist.
 func TestDecryptWithMissingEncryptedFile(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -198,7 +198,7 @@ func TestDecryptWithMissingEncryptedFile(t *testing.T) {
 	}
 }
 
-// Test 23: Very large encrypted file.
+// Tests decrypt with very large encrypted file.
 func TestDecryptWithVeryLargeEncryptedFile(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -266,7 +266,7 @@ func TestDecryptWithVeryLargeEncryptedFile(t *testing.T) {
 	}
 }
 
-// Test 24: Empty encrypted file.
+// Tests decrypt with empty encrypted file.
 func TestDecryptWithEmptyEncryptedFile(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()

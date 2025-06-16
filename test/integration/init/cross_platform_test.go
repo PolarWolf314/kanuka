@@ -18,7 +18,6 @@ func TestSecretsInitCrossPlatform(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 10: Cross-Platform Edge Cases
 	t.Run("InitWithSpecialCharactersInPath", func(t *testing.T) {
 		testInitWithSpecialCharactersInPath(t, originalWd, originalUserSettings)
 	})
@@ -28,7 +27,7 @@ func TestSecretsInitCrossPlatform(t *testing.T) {
 	})
 }
 
-// Category 10: Cross-Platform Edge Cases.
+// Tests init with special characters in path.
 func testInitWithSpecialCharactersInPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory with special characters (but valid for filesystem)
 	specialName := "kanuka-test-init-special-chars-!@#$%^&()_+-=[]{}|;',."

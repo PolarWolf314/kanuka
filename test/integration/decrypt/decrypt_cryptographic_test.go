@@ -10,7 +10,7 @@ import (
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
-// Test 25: Private key doesn't match.
+// Tests decrypt when private key doesn't match.
 func TestDecryptWithWrongPrivateKey(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -68,7 +68,7 @@ MIIEpAIBAAKCAQEAwrongkey123456789abcdefghijklmnopqrstuvwxyz
 	}
 }
 
-// Test 26: Private key file is corrupted.
+// Tests decrypt when private key file is corrupted.
 func TestDecryptWithCorruptedPrivateKey(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -122,7 +122,7 @@ func TestDecryptWithCorruptedPrivateKey(t *testing.T) {
 	}
 }
 
-// Test 27: Private key has wrong format.
+// Tests decrypt when private key has wrong format.
 func TestDecryptWithWrongKeyFormat(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -179,7 +179,7 @@ b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAFwAAAAdzc2gtcn
 	}
 }
 
-// Test 28: Encrypted data has been modified/tampered.
+// Tests decrypt when encrypted data has been modified/tampered.
 func TestDecryptWithTamperedEncryptedData(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()
@@ -244,7 +244,7 @@ func TestDecryptWithTamperedEncryptedData(t *testing.T) {
 	}
 }
 
-// Test 29: File encrypted with different algorithm.
+// Tests decrypt when file was encrypted with different algorithm.
 func TestDecryptWithWrongEncryptionAlgorithm(t *testing.T) {
 	// Create temporary directories
 	tempDir := t.TempDir()

@@ -19,7 +19,6 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 5: Corrupted/Invalid State Recovery
 	t.Run("InitWithPartialKanukaDirectory", func(t *testing.T) {
 		testInitWithPartialKanukaDirectory(t, originalWd, originalUserSettings)
 	})
@@ -28,7 +27,6 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 		testInitAfterPartialFailure(t, originalWd, originalUserSettings)
 	})
 
-	// Category 12: Recovery and Cleanup Scenarios
 	t.Run("InitIdempotencyAfterFailure", func(t *testing.T) {
 		testInitIdempotencyAfterFailure(t, originalWd, originalUserSettings)
 	})
@@ -38,7 +36,7 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	})
 }
 
-// Category 5: Corrupted/Invalid State Recovery.
+// Tests init when .kanuka directory already exists with corrupted content.
 func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-partial-*")
@@ -148,7 +146,7 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	shared.VerifyProjectStructure(t, tempDir)
 }
 
-// Category 12: Recovery and Cleanup Scenarios.
+// Tests init idempotency after failure.
 func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-idempotency-*")

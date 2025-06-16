@@ -19,7 +19,6 @@ func TestSecretsInitFilesystemEdgeCases(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 3: File System Edge Cases
 	t.Run("InitWithKanukaAsRegularFile", func(t *testing.T) {
 		testInitWithKanukaAsRegularFile(t, originalWd, originalUserSettings)
 	})
@@ -33,7 +32,7 @@ func TestSecretsInitFilesystemEdgeCases(t *testing.T) {
 	})
 }
 
-// Category 3: File System Edge Cases.
+// Tests init when project directory is read-only.
 func testInitWithKanukaAsRegularFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-file-conflict-*")
