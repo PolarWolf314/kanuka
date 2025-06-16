@@ -34,22 +34,31 @@ func TestSecretsCreateIntegrationWorkflow(t *testing.T) {
 
 // Tests create then register workflow - verify created keys work with register command.
 func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Create two separate user directories to simulate two different users
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-workflow-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	// User 1 (admin) - will initialize project and grant access
+	tempUserDir1, err := os.MkdirTemp("", "kanuka-user1-*")
 	if err != nil {
-		t.Fatalf("Failed to create temp user directory: %v", err)
+		t.Fatalf("Failed to create temp user directory 1: %v", err)
 	}
-	defer os.RemoveAll(tempUserDir)
+	defer os.RemoveAll(tempUserDir1)
 
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	
-	// Initialize project structure only
-	_, err = shared.CaptureOutput(func() error {
+	// User 2 (new user) - will create keys and request access
+	tempUserDir2, err := os.MkdirTemp("", "kanuka-user2-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory 2: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir2)
+
+	// Step 1: User 1 initializes the project (gets admin access)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
+
+	initOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
@@ -57,18 +66,20 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Clean up any existing keys first
-	username := configs.UserKanukaSettings.Username
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
-	os.Remove(projectPublicKeyPath)
+	// Verify init was successful by checking if kanuka file exists
+	// (init command may only show warnings in test output)
+	t.Logf("Init output: %s", initOutput)
 
-	// Step 1: Create keys
+	user1Name := configs.UserKanukaSettings.Username
+	user1KanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", user1Name+".kanuka")
+	if _, err := os.Stat(user1KanukaFile); os.IsNotExist(err) {
+		t.Fatalf("User 1 kanuka file was not created by init command")
+	}
+
+	// Step 2: User 2 creates keys (joins project)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir2, originalWd, originalUserSettings)
+	configs.UserKanukaSettings.Username = "testuser2" // Different username
+
 	createOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -82,17 +93,20 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 		t.Errorf("Create command didn't show success: %s", createOutput)
 	}
 
-	publicKeyPathCheck := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
-	// Verify public key was created
-	if _, err := os.Stat(publicKeyPathCheck); os.IsNotExist(err) {
-		t.Fatalf("Public key was not created by create command")
+	user2Name := configs.UserKanukaSettings.Username
+	user2PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user2Name+".pub")
+
+	// Verify user 2's public key was created
+	if _, err := os.Stat(user2PublicKeyPath); os.IsNotExist(err) {
+		t.Fatalf("User 2 public key was not created by create command")
 	}
 
-	// Step 2: Try to register the user (simulate someone with permissions granting access)
+	// Step 3: User 1 (admin) grants access to User 2
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
+
 	registerOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", username})
+		cmd.SetArgs([]string{"secrets", "register", "--user", user2Name})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -101,18 +115,18 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	}
 
 	// Verify register was successful
-	if !strings.Contains(registerOutput, "✓") && !strings.Contains(registerOutput, "success") {
+	if !strings.Contains(registerOutput, "✓") {
 		t.Errorf("Register command didn't show success: %s", registerOutput)
 	}
 
-	// Verify .kanuka file was created
-	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
-	if _, err := os.Stat(kanukaFilePath); os.IsNotExist(err) {
-		t.Errorf("Kanuka file was not created by register command")
+	// Verify user 2's .kanuka file was created
+	user2KanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", user2Name+".kanuka")
+	if _, err := os.Stat(user2KanukaFile); os.IsNotExist(err) {
+		t.Errorf("User 2 kanuka file was not created by register command")
 	}
 
 	// Verify the workflow instructions were shown in create output
-	if !strings.Contains(createOutput, "kanuka secrets add "+username) {
+	if !strings.Contains(createOutput, "kanuka secrets add") {
 		t.Errorf("Create output didn't show register instructions: %s", createOutput)
 	}
 }
@@ -132,8 +146,8 @@ func testCreateThenEncryptWorkflow(t *testing.T, originalWd string, originalUser
 	defer os.RemoveAll(tempUserDir)
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	
-	// Initialize project structure only
+
+	// Step 1: Initialize project (this gives the user access automatically)
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
@@ -142,44 +156,21 @@ func testCreateThenEncryptWorkflow(t *testing.T, originalWd string, originalUser
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Clean up any existing keys first
+	// Verify user has access after init
 	username := configs.UserKanukaSettings.Username
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
-	os.Remove(projectPublicKeyPath)
-
-	// Step 1: Create keys
-	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("Create command failed: %v", err)
+	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
+	if _, err := os.Stat(kanukaFilePath); os.IsNotExist(err) {
+		t.Fatalf("Kanuka file was not created by init command")
 	}
 
-	// Step 2: Register user (grant access)
-	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", username})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("Register command failed: %v", err)
-	}
-
-	// Step 3: Create a test .env file to encrypt
+	// Step 2: Create a test .env file to encrypt
 	envFilePath := filepath.Join(tempDir, "test.env")
 	envContent := "DATABASE_URL=postgres://localhost:5432/test\nAPI_KEY=secret123\n"
 	if err := os.WriteFile(envFilePath, []byte(envContent), 0644); err != nil {
 		t.Fatalf("Failed to create test .env file: %v", err)
 	}
 
-	// Step 4: Try to encrypt the file
+	// Step 3: Try to encrypt the file
 	encryptOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "encrypt", envFilePath})
@@ -211,7 +202,7 @@ func testCreateThenEncryptWorkflow(t *testing.T, originalWd string, originalUser
 		}
 	}
 
-	// Step 5: Test decryption to verify the full workflow
+	// Step 4: Test decryption to verify the full workflow
 	// Remove original file first
 	if err := os.Remove(envFilePath); err != nil {
 		t.Errorf("Failed to remove original env file: %v", err)
@@ -262,25 +253,15 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 	}
 	defer os.RemoveAll(tempUserDir2)
 
-	// Initialize project once
+	// User 1: Initialize project (gets admin access automatically)
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
-	
-	// Initialize project structure only
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
 	if err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
-	}
-
-	// User 1: Create keys
-	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("User 1 create failed: %v", err)
 	}
 
 	user1Name := configs.UserKanukaSettings.Username
@@ -293,7 +274,7 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 
 	// User 2: Setup environment and create keys
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir2, originalWd, originalUserSettings)
-	
+
 	// Override username for user 2
 	configs.UserKanukaSettings.Username = "testuser2"
 
@@ -350,21 +331,9 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 		t.Errorf("User 2 (%s) public key not found in project", user2Name)
 	}
 
-	// Test that each user can be registered independently
-	// Register user 1
+	// Test that user 1 (admin) can register user 2
+	// User 1 already has access from init, so they can register user 2
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
-	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", user1Name})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("Failed to register user 1: %v", err)
-	}
-
-	// Register user 2
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir2, originalWd, originalUserSettings)
-	configs.UserKanukaSettings.Username = "testuser2"
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", user2Name})
