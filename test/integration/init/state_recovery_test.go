@@ -38,7 +38,7 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	})
 }
 
-// Category 5: Corrupted/Invalid State Recovery
+// Category 5: Corrupted/Invalid State Recovery.
 func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-partial-*")
@@ -148,7 +148,7 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	shared.VerifyProjectStructure(t, tempDir)
 }
 
-// Category 12: Recovery and Cleanup Scenarios
+// Category 12: Recovery and Cleanup Scenarios.
 func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-idempotency-*")
@@ -215,7 +215,7 @@ func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, origina
 
 	// Create a file where the keys directory should be to cause failure
 	keysPath := filepath.Join(tempUserDir, "keys")
-	if err := os.WriteFile(keysPath, []byte("blocking file"), 0644); err != nil {
+	if err := os.WriteFile(keysPath, []byte("blocking file"), 0600); err != nil {
 		t.Fatalf("Failed to create blocking file: %v", err)
 	}
 

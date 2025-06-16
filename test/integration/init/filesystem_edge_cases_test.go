@@ -33,7 +33,7 @@ func TestSecretsInitFilesystemEdgeCases(t *testing.T) {
 	})
 }
 
-// Category 3: File System Edge Cases
+// Category 3: File System Edge Cases.
 func testInitWithKanukaAsRegularFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-file-conflict-*")
@@ -53,7 +53,7 @@ func testInitWithKanukaAsRegularFile(t *testing.T, originalWd string, originalUs
 
 	// Create a regular file named .kanuka
 	kanukaFile := filepath.Join(tempDir, ".kanuka")
-	if err := os.WriteFile(kanukaFile, []byte("this is a file, not a directory"), 0644); err != nil {
+	if err := os.WriteFile(kanukaFile, []byte("this is a file, not a directory"), 0600); err != nil {
 		t.Fatalf("Failed to create .kanuka file: %v", err)
 	}
 
@@ -94,7 +94,7 @@ func testInitWithKanukaAsSymlinkToFile(t *testing.T, originalWd string, original
 
 	// Create a regular file and symlink .kanuka to it
 	targetFile := filepath.Join(tempDir, "target-file")
-	if err := os.WriteFile(targetFile, []byte("target file content"), 0644); err != nil {
+	if err := os.WriteFile(targetFile, []byte("target file content"), 0600); err != nil {
 		t.Fatalf("Failed to create target file: %v", err)
 	}
 

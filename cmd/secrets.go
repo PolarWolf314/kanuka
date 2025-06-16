@@ -39,22 +39,22 @@ func init() {
 
 // Helper functions for testing
 
-// GetSecretsCmd returns the SecretsCmd for testing
+// GetSecretsCmd returns the SecretsCmd for testing.
 func GetSecretsCmd() *cobra.Command {
 	return SecretsCmd
 }
 
-// SetVerbose sets the verbose flag for testing
+// SetVerbose sets the verbose flag for testing.
 func SetVerbose(v bool) {
 	verbose = v
 }
 
-// SetDebug sets the debug flag for testing
+// SetDebug sets the debug flag for testing.
 func SetDebug(d bool) {
 	debug = d
 }
 
-// SetLogger sets the logger for testing
+// SetLogger sets the logger for testing.
 func SetLogger(l logger.Logger) {
 	Logger = l
 }

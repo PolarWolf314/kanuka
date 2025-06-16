@@ -24,7 +24,7 @@ func TestSecretsInitPermissions(t *testing.T) {
 	})
 }
 
-// Category 1: File System Permission Issues
+// Category 1: File System Permission Issues.
 func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-readonly-*")
@@ -45,7 +45,11 @@ func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to make user directory read-only: %v", err)
 	}
 	// Restore permissions for cleanup
-	defer os.Chmod(tempUserDir, 0755)
+	defer func() {
+		if err := os.Chmod(tempUserDir, 0755); err != nil {
+			t.Logf("Failed to restore permissions on %s: %v", tempUserDir, err)
+		}
+	}()
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 

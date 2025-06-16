@@ -28,7 +28,7 @@ func TestSecretsInitCrossPlatform(t *testing.T) {
 	})
 }
 
-// Category 10: Cross-Platform Edge Cases
+// Category 10: Cross-Platform Edge Cases.
 func testInitWithSpecialCharactersInPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory with special characters (but valid for filesystem)
 	specialName := "kanuka-test-init-special-chars-!@#$%^&()_+-=[]{}|;',."
