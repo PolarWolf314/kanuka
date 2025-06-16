@@ -1,4 +1,4 @@
-package cmd
+package init_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsInitCrossPlatform contains cross-platform edge case tests for the `kanuka secrets init` command.
@@ -17,6 +18,7 @@ func TestSecretsInitCrossPlatform(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
+	// Category 10: Cross-Platform Edge Cases
 	t.Run("InitWithSpecialCharactersInPath", func(t *testing.T) {
 		testInitWithSpecialCharactersInPath(t, originalWd, originalUserSettings)
 	})
@@ -26,6 +28,7 @@ func TestSecretsInitCrossPlatform(t *testing.T) {
 	})
 }
 
+// Category 10: Cross-Platform Edge Cases
 func testInitWithSpecialCharactersInPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory with special characters (but valid for filesystem)
 	specialName := "kanuka-test-init-special-chars-!@#$%^&()_+-=[]{}|;',."
@@ -42,13 +45,14 @@ func testInitWithSpecialCharactersInPath(t *testing.T, originalWd string, origin
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
+
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with special characters in path: %v", err)
@@ -61,7 +65,7 @@ func testInitWithSpecialCharactersInPath(t *testing.T, originalWd string, origin
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }
 
 func testInitWithUnicodeInPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
@@ -80,13 +84,14 @@ func testInitWithUnicodeInPath(t *testing.T, originalWd string, originalUserSett
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
+
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with Unicode in path: %v", err)
@@ -99,5 +104,5 @@ func testInitWithUnicodeInPath(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }

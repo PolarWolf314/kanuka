@@ -1,4 +1,4 @@
-package cmd
+package init_test
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsInitFilesystemEdgeCases contains filesystem edge case tests for the `kanuka secrets init` command.
@@ -18,6 +19,7 @@ func TestSecretsInitFilesystemEdgeCases(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
+	// Category 3: File System Edge Cases
 	t.Run("InitWithKanukaAsRegularFile", func(t *testing.T) {
 		testInitWithKanukaAsRegularFile(t, originalWd, originalUserSettings)
 	})
@@ -31,6 +33,7 @@ func TestSecretsInitFilesystemEdgeCases(t *testing.T) {
 	})
 }
 
+// Category 3: File System Edge Cases
 func testInitWithKanukaAsRegularFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-file-conflict-*")
@@ -46,18 +49,17 @@ func testInitWithKanukaAsRegularFile(t *testing.T, originalWd string, originalUs
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Create a regular file named .kanuka
 	kanukaFile := filepath.Join(tempDir, ".kanuka")
-	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(kanukaFile, []byte("this is a file, not a directory"), 0644); err != nil {
 		t.Fatalf("Failed to create .kanuka file: %v", err)
 	}
 
 	// Capture output and expect failure
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
@@ -88,11 +90,10 @@ func testInitWithKanukaAsSymlinkToFile(t *testing.T, originalWd string, original
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Create a regular file and symlink .kanuka to it
 	targetFile := filepath.Join(tempDir, "target-file")
-	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(targetFile, []byte("target file content"), 0644); err != nil {
 		t.Fatalf("Failed to create target file: %v", err)
 	}
@@ -103,8 +104,8 @@ func testInitWithKanukaAsSymlinkToFile(t *testing.T, originalWd string, original
 	}
 
 	// Capture output and expect failure
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
@@ -135,7 +136,7 @@ func testInitWithKanukaAsSymlinkToNonExistentDir(t *testing.T, originalWd string
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Create symlink to non-existent directory
 	kanukaSymlink := filepath.Join(tempDir, ".kanuka")
@@ -145,8 +146,8 @@ func testInitWithKanukaAsSymlinkToNonExistentDir(t *testing.T, originalWd string
 	}
 
 	// Capture output and expect failure
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 

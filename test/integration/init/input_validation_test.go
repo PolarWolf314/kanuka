@@ -1,4 +1,4 @@
-package cmd
+package init_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsInitInputValidation contains input validation edge case tests for the `kanuka secrets init` command.
@@ -17,6 +18,7 @@ func TestSecretsInitInputValidation(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
+	// Category 13: Input Validation Edge Cases
 	t.Run("InitWithVeryLongProjectName", func(t *testing.T) {
 		testInitWithVeryLongProjectName(t, originalWd, originalUserSettings)
 	})
@@ -26,6 +28,7 @@ func TestSecretsInitInputValidation(t *testing.T) {
 	})
 }
 
+// Category 13: Input Validation Edge Cases
 func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory with very long name (but within filesystem limits)
 	longName := strings.Repeat("a", 100) // 100 characters should be safe on most filesystems
@@ -42,13 +45,14 @@ func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUs
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
+
 	// Command should succeed (100 chars is reasonable)
 	if err != nil {
 		t.Errorf("Command failed with long project name: %v", err)
@@ -61,7 +65,7 @@ func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUs
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }
 
 func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
@@ -80,13 +84,14 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
+
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with special characters in project name: %v", err)
@@ -99,5 +104,5 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }

@@ -1,4 +1,4 @@
-package cmd
+package init_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsInitPermissions contains permission-related edge case tests for the `kanuka secrets init` command.
@@ -17,11 +18,13 @@ func TestSecretsInitPermissions(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
+	// Category 1: File System Permission Issues
 	t.Run("InitWithReadOnlyUserDirectory", func(t *testing.T) {
 		testInitWithReadOnlyUserDirectory(t, originalWd, originalUserSettings)
 	})
 }
 
+// Category 1: File System Permission Issues
 func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-readonly-*")
@@ -42,17 +45,13 @@ func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to make user directory read-only: %v", err)
 	}
 	// Restore permissions for cleanup
-	defer func() {
-		if err := os.Chmod(tempUserDir, 0755); err != nil {
-			t.Logf("failed to reset permissions on tempUserDir: %v", err)
-		}
-	}()
+	defer os.Chmod(tempUserDir, 0755)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output and expect failure
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 

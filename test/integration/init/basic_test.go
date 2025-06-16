@@ -1,4 +1,4 @@
-package cmd
+package init_test
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsInitBasic contains basic integration tests for the `kanuka secrets init` command.
@@ -54,11 +55,11 @@ func testInitInEmptyFolder(t *testing.T, originalWd string, originalUserSettings
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture real stdout/stderr by redirecting them
-	output, err := captureOutput(func() error {
-		cmd := createInitCommand(nil, nil)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
 	// Verify command succeeded
@@ -68,10 +69,10 @@ func testInitInEmptyFolder(t *testing.T, originalWd string, originalUserSettings
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 
 	// Verify user keys were created
-	verifyUserKeys(t, tempUserDir)
+	shared.VerifyUserKeys(t, tempUserDir)
 
 	// Verify that the command ran (check for warning message which is always shown)
 	if !strings.Contains(output, "Warning: Remember: Never commit .env files") {
@@ -96,7 +97,7 @@ func testInitInAlreadyInitializedFolder(t *testing.T, originalWd string, origina
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Pre-create .kanuka directory to simulate already initialized project
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
@@ -105,8 +106,8 @@ func testInitInAlreadyInitializedFolder(t *testing.T, originalWd string, origina
 	}
 
 	// Capture real stdout/stderr by redirecting them
-	_, err = captureOutput(func() error {
-		cmd := createInitCommand(nil, nil)
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
 	// Command should succeed but show already initialized message
@@ -149,11 +150,11 @@ func testInitWithVerboseFlag(t *testing.T, originalWd string, originalUserSettin
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture real stdout/stderr by redirecting them
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Verify command succeeded
@@ -168,7 +169,7 @@ func testInitWithVerboseFlag(t *testing.T, originalWd string, originalUserSettin
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }
 
 // testInitWithDebugFlag tests initialization with debug flag.
@@ -188,11 +189,11 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture real stdout/stderr by redirecting them
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, false, true)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, false, true)
 		return cmd.Execute()
 	})
 	// Verify command succeeded
@@ -212,5 +213,5 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }

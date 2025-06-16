@@ -1,4 +1,4 @@
-package cmd
+package decrypt_test
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsDecryptIntegration contains integration tests for the `kanuka secrets decrypt` command.
@@ -66,11 +67,11 @@ func testDecryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail because kanuka is not initialized
@@ -101,12 +102,12 @@ func testDecryptInInitializedFolderWithNoKanukaFiles(t *testing.T, originalWd st
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed but report no files found
@@ -137,8 +138,8 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create and encrypt a .env file first
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=secret123\n"
@@ -149,8 +150,8 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 	}
 
 	// Encrypt the file first
-	_, err = captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -169,8 +170,8 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -216,8 +217,8 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create multiple .env files
 	envFiles := map[string]string{
@@ -240,8 +241,8 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 	}
 
 	// Encrypt all files first
-	_, err = captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -257,8 +258,8 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -308,8 +309,8 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create and encrypt a .env file first
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
@@ -320,8 +321,8 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	}
 
 	// Encrypt the file first
-	_, err = captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -341,8 +342,8 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail
@@ -373,8 +374,8 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create and encrypt a .env file in root
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
@@ -385,8 +386,8 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 	}
 
 	// Encrypt the file first
-	_, err = captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -408,8 +409,8 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -446,8 +447,8 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create multiple .env files
 	envFiles := map[string]string{
@@ -470,8 +471,8 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 	}
 
 	// Encrypt all files first
-	_, err = captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -496,8 +497,8 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("decrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed

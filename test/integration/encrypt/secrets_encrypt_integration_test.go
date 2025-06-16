@@ -1,4 +1,4 @@
-package cmd
+package encrypt_test
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsEncryptIntegration contains integration tests for the `kanuka secrets encrypt` command.
@@ -66,11 +67,11 @@ func testEncryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail because kanuka is not initialized
@@ -101,12 +102,12 @@ func testEncryptInInitializedFolderWithNoEnvFiles(t *testing.T, originalWd strin
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed but report no files found
@@ -137,8 +138,8 @@ func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd strin
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create a .env file
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=secret123\n"
@@ -149,8 +150,8 @@ func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd strin
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -200,8 +201,8 @@ func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create multiple .env files
 	envFiles := map[string]string{
@@ -224,8 +225,8 @@ func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -265,8 +266,8 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create a .env file
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
@@ -284,8 +285,8 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail
@@ -316,8 +317,8 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create a .env file in root
 	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
@@ -337,8 +338,8 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -376,8 +377,8 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 	defer os.RemoveAll(tempUserDir)
 
 	// Setup test environment and initialize project
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	initializeProject(t)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Create multiple .env files
 	envFiles := map[string]string{
@@ -409,8 +410,8 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 	}
 
 	// Capture output (run in verbose mode to capture final messages)
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("encrypt", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed

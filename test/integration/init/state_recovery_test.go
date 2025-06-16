@@ -1,4 +1,4 @@
-package cmd
+package init_test
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 // TestSecretsInitStateRecovery contains state recovery tests for the `kanuka secrets init` command.
@@ -18,6 +19,7 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
+	// Category 5: Corrupted/Invalid State Recovery
 	t.Run("InitWithPartialKanukaDirectory", func(t *testing.T) {
 		testInitWithPartialKanukaDirectory(t, originalWd, originalUserSettings)
 	})
@@ -26,6 +28,7 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 		testInitAfterPartialFailure(t, originalWd, originalUserSettings)
 	})
 
+	// Category 12: Recovery and Cleanup Scenarios
 	t.Run("InitIdempotencyAfterFailure", func(t *testing.T) {
 		testInitIdempotencyAfterFailure(t, originalWd, originalUserSettings)
 	})
@@ -35,6 +38,7 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	})
 }
 
+// Category 5: Corrupted/Invalid State Recovery
 func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-partial-*")
@@ -50,7 +54,7 @@ func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, origina
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Create partial .kanuka directory structure (missing some subdirectories)
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
@@ -66,10 +70,11 @@ func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, origina
 	// Deliberately omit public_keys directory
 
 	// Capture output - should detect existing .kanuka and report already initialized
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
+
 	// Command should detect existing .kanuka directory
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
@@ -97,7 +102,7 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Simulate partial failure by creating .kanuka directory but making it read-only
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
@@ -106,8 +111,8 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	}
 
 	// First attempt should detect existing .kanuka
-	output1, err1 := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output1, err1 := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
@@ -125,8 +130,8 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	}
 
 	// Second attempt should succeed
-	output2, err2 := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output2, err2 := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
@@ -141,9 +146,10 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	}
 
 	// Verify project structure was created
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }
 
+// Category 12: Recovery and Cleanup Scenarios
 func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-idempotency-*")
@@ -159,11 +165,11 @@ func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUs
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// First init should succeed
-	output1, err1 := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output1, err1 := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
@@ -173,8 +179,8 @@ func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUs
 	}
 
 	// Second init should detect existing initialization
-	output2, err2 := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output2, err2 := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
@@ -188,7 +194,7 @@ func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUs
 	}
 
 	// Project structure should still be intact
-	verifyProjectStructure(t, tempDir)
+	shared.VerifyProjectStructure(t, tempDir)
 }
 
 func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
@@ -206,18 +212,17 @@ func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, origina
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Create a file where the keys directory should be to cause failure
 	keysPath := filepath.Join(tempUserDir, "keys")
-	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(keysPath, []byte("blocking file"), 0644); err != nil {
 		t.Fatalf("Failed to create blocking file: %v", err)
 	}
 
 	// Capture output and expect failure
-	output, err := captureOutput(func() error {
-		cmd := createTestCLI("init", nil, nil, true, false)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 

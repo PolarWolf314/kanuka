@@ -1,7 +1,7 @@
-// Package cmd contains testing utilities shared between integration tests.
+// Package shared contains testing utilities shared between integration tests.
 // This file provides common functions for setting up test environments,
 // capturing output, and verifying expected project structures.
-package cmd
+package shared
 
 import (
 	"bytes"
@@ -12,13 +12,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
 	"github.com/spf13/cobra"
 )
 
-// setupTestEnvironment sets up the test environment with temporary directories.
-func setupTestEnvironment(t *testing.T, tempDir, tempUserDir, originalWd string, originalUserSettings *configs.UserSettings) {
+// SetupTestEnvironment sets up the test environment with temporary directories.
+func SetupTestEnvironment(t *testing.T, tempDir, tempUserDir, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
@@ -46,8 +47,8 @@ func setupTestEnvironment(t *testing.T, tempDir, tempUserDir, originalWd string,
 	}
 }
 
-// captureOutput captures both stdout and stderr during function execution.
-func captureOutput(fn func() error) (string, error) {
+// CaptureOutput captures both stdout and stderr during function execution.
+func CaptureOutput(fn func() error) (string, error) {
 	// Save original stdout and stderr
 	originalStdout := os.Stdout
 	originalStderr := os.Stderr
@@ -100,29 +101,17 @@ func captureOutput(fn func() error) (string, error) {
 	return stdout + stderr, err
 }
 
-// initializeProject initializes a kanuka project in the current directory.
-func initializeProject(t *testing.T) {
-	// Run the init command to set up the project
-	_, err := captureOutput(func() error {
-		cmd := createInitCommand(nil, nil)
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("Failed to initialize project: %v", err)
-	}
-}
-
-// createTestCLI creates a complete CLI instance for testing with the specified command and flags.
-func createTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
+// CreateTestCLI creates a complete CLI instance for testing with the specified command and flags.
+func CreateTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
 	// Set global flags for the actual command (needed for the real command implementations)
-	verbose = verboseFlag
-	debug = debugFlag
+	cmd.SetVerbose(verboseFlag)
+	cmd.SetDebug(debugFlag)
 
 	// Initialize the logger with the test flags
-	Logger = logger.Logger{
-		Verbose: verbose,
-		Debug:   debug,
-	}
+	cmd.SetLogger(logger.Logger{
+		Verbose: verboseFlag,
+		Debug:   debugFlag,
+	})
 
 	// Create a fresh root command for this test
 	rootCmd := &cobra.Command{
@@ -133,55 +122,42 @@ handling project packages using a nix shell environment, and securely storing en
 	}
 
 	// Use the actual SecretsCmd but reset its state
-	rootCmd.AddCommand(SecretsCmd)
+	rootCmd.AddCommand(cmd.GetSecretsCmd())
 
 	// Set output streams
 	if stdout != nil {
 		rootCmd.SetOut(stdout)
-		SecretsCmd.SetOut(stdout)
+		cmd.GetSecretsCmd().SetOut(stdout)
 		// Set output on all subcommands
-		encryptCmd.SetOut(stdout)
-		decryptCmd.SetOut(stdout)
-		createCmd.SetOut(stdout)
-		registerCmd.SetOut(stdout)
-		removeCmd.SetOut(stdout)
-		initCmd.SetOut(stdout)
-		purgeCmd.SetOut(stdout)
+		for _, subcmd := range cmd.GetSecretsCmd().Commands() {
+			subcmd.SetOut(stdout)
+		}
 	}
 	if stderr != nil {
 		rootCmd.SetErr(stderr)
-		SecretsCmd.SetErr(stderr)
+		cmd.GetSecretsCmd().SetErr(stderr)
 		// Set error output on all subcommands
-		encryptCmd.SetErr(stderr)
-		decryptCmd.SetErr(stderr)
-		createCmd.SetErr(stderr)
-		registerCmd.SetErr(stderr)
-		removeCmd.SetErr(stderr)
-		initCmd.SetErr(stderr)
-		purgeCmd.SetErr(stderr)
+		for _, subcmd := range cmd.GetSecretsCmd().Commands() {
+			subcmd.SetErr(stderr)
+		}
 	}
 
 	// Set args to run the specified subcommand
 	rootCmd.SetArgs([]string{"secrets", subcommand})
 
 	// Set the flags on the secrets command
-	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
+	if err := cmd.GetSecretsCmd().PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
 		log.Fatalf("Failed to set verbose flag for testing: %s", err)
 	}
-	if err := SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
+	if err := cmd.GetSecretsCmd().PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
 		log.Fatalf("Failed to set debug flag for testing: %s", err)
 	}
 
 	return rootCmd
 }
 
-// createInitCommand creates a command that uses the actual init command.
-func createInitCommand(stdout, stderr io.Writer) *cobra.Command {
-	return createTestCLI("init", stdout, stderr, false, false)
-}
-
-// verifyProjectStructure verifies that the expected project structure was created.
-func verifyProjectStructure(t *testing.T, tempDir string) {
+// VerifyProjectStructure verifies that the expected project structure was created.
+func VerifyProjectStructure(t *testing.T, tempDir string) {
 	// Check .kanuka directory exists
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
 	if _, err := os.Stat(kanukaDir); os.IsNotExist(err) {
@@ -213,8 +189,8 @@ func verifyProjectStructure(t *testing.T, tempDir string) {
 	}
 }
 
-// verifyUserKeys verifies that user keys were created in the user directory.
-func verifyUserKeys(t *testing.T, tempUserDir string) {
+// VerifyUserKeys verifies that user keys were created in the user directory.
+func VerifyUserKeys(t *testing.T, tempUserDir string) {
 	keysDir := filepath.Join(tempUserDir, "keys")
 
 	// The project name should be the basename of the temp directory
@@ -236,4 +212,20 @@ func verifyUserKeys(t *testing.T, tempUserDir string) {
 	if _, err := os.Stat(publicKeyFile); os.IsNotExist(err) {
 		t.Errorf("Public key file was not created at %s", publicKeyFile)
 	}
+}
+
+// InitializeProject initializes a project by running the init command first.
+func InitializeProject(t *testing.T, tempDir, tempUserDir string) {
+	// Run init command to set up the project
+	_, err := CaptureOutput(func() error {
+		cmd := CreateTestCLI("init", nil, nil, false, false)
+		return cmd.Execute()
+	})
+	
+	if err != nil {
+		t.Fatalf("Failed to initialize project: %v", err)
+	}
+	
+	// Verify the project was initialized correctly
+	VerifyProjectStructure(t, tempDir)
 }

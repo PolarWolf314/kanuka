@@ -1,6 +1,6 @@
-# Integration Tests for Kanuka Secrets Init Command
+# Tests for Kanuka Commands
 
-This directory contains comprehensive integration tests for the `kanuka secrets init` command, organized by test category for better maintainability.
+This directory contains the command implementations and unit tests. Integration tests have been moved to the `test/` directory for better organization.
 
 ## Test File Organization
 
