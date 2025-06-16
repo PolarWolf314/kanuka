@@ -1,88 +1,157 @@
 # Integration Tests for Kanuka Secrets Init Command
 
-This directory contains integration tests for the `kanuka secrets init` command.
+This directory contains comprehensive integration tests for the `kanuka secrets init` command, organized by test category for better maintainability.
 
-## Test File: `secrets_init_integration_test.go`
+## Test File Organization
 
-### Overview
-The integration tests verify the complete functionality of the `kanuka secrets init` command in various scenarios.
+The integration tests have been split into focused test files based on the type of scenarios they test:
 
-### Test Scenarios
+### Core Integration Tests
 
-#### 1. `InitInEmptyFolder`
-- **Purpose**: Tests successful initialization in an empty folder
-- **Verifies**:
-  - Command executes successfully
-  - `.kanuka` directory structure is created (`.kanuka/public_keys`, `.kanuka/secrets`)
-  - RSA key pair is generated in user directory
-  - Public key is copied to project directory
-  - Encrypted symmetric key is created
-  - Warning message about .env files is displayed
+#### `secrets_init_basic_test.go`
+- **Purpose**: Tests basic functionality and common usage scenarios
+- **Test Function**: `TestSecretsInitBasic`
+- **Scenarios**:
+  - `InitInEmptyFolder`: Successful initialization in an empty folder
+  - `InitInAlreadyInitializedFolder`: Behavior when running init in already initialized folder
+  - `InitWithVerboseFlag`: Initialization with `--verbose` flag
+  - `InitWithDebugFlag`: Initialization with `--debug` flag
 
-#### 2. `InitInAlreadyInitializedFolder`
-- **Purpose**: Tests behavior when running init in an already initialized folder
-- **Setup**: Pre-creates `.kanuka` directory to simulate existing initialization
-- **Verifies**:
-  - Command executes without error
-  - `.kanuka` directory still exists
-  - No additional files are created in `public_keys` or `secrets` directories
-  - Command recognizes the project is already initialized
+### Edge Case Tests
 
-#### 3. `InitWithVerboseFlag`
-- **Purpose**: Tests initialization with the `--verbose` flag
-- **Verifies**:
-  - Command executes successfully
-  - Verbose output contains `[info]` log messages
-  - Project structure is created correctly
-  - All initialization steps are logged
+#### `secrets_init_permissions_test.go`
+- **Purpose**: Tests file system permission-related edge cases
+- **Test Function**: `TestSecretsInitPermissions`
+- **Scenarios**:
+  - `InitWithReadOnlyUserDirectory`: Tests behavior when user directory is read-only
 
-#### 4. `InitWithDebugFlag`
-- **Purpose**: Tests initialization with the `--debug` flag
-- **Verifies**:
-  - Command executes successfully
-  - Debug output contains both `[debug]` and `[info]` log messages
-  - Project structure is created correctly
-  - Detailed debugging information is displayed
+#### `secrets_init_filesystem_edge_cases_test.go`
+- **Purpose**: Tests file system conflicts and edge cases
+- **Test Function**: `TestSecretsInitFilesystemEdgeCases`
+- **Scenarios**:
+  - `InitWithKanukaAsRegularFile`: When `.kanuka` exists as a file instead of directory
+  - `InitWithKanukaAsSymlinkToFile`: When `.kanuka` is a symlink pointing to a file
+  - `InitWithKanukaAsSymlinkToNonExistentDir`: Tests broken symlinks
 
-### Test Implementation Details
+#### `secrets_init_state_recovery_test.go`
+- **Purpose**: Tests recovery from corrupted/invalid states and cleanup scenarios
+- **Test Function**: `TestSecretsInitStateRecovery`
+- **Scenarios**:
+  - `InitWithPartialKanukaDirectory`: Tests partial `.kanuka` directory structure
+  - `InitAfterPartialFailure`: Tests recovery after partial failure
+  - `InitIdempotencyAfterFailure`: Tests running init multiple times
+  - `InitCleanupAfterUserKeyFailure`: Tests cleanup after key generation failure
 
-#### Environment Setup
+#### `secrets_init_environment_test.go`
+- **Purpose**: Tests environment variable edge cases
+- **Test Function**: `TestSecretsInitEnvironment`
+- **Scenarios**:
+  - `InitWithInvalidXDGDataHome`: Tests invalid `XDG_DATA_HOME` values
+  - `InitWithXDGDataHomeAsFile`: Tests when `XDG_DATA_HOME` points to a file
+
+#### `secrets_init_cross_platform_test.go`
+- **Purpose**: Tests cross-platform compatibility edge cases
+- **Test Function**: `TestSecretsInitCrossPlatform`
+- **Scenarios**:
+  - `InitWithSpecialCharactersInPath`: Tests special characters in directory paths
+  - `InitWithUnicodeInPath`: Tests Unicode characters in directory paths
+
+#### `secrets_init_input_validation_test.go`
+- **Purpose**: Tests input validation edge cases
+- **Test Function**: `TestSecretsInitInputValidation`
+- **Scenarios**:
+  - `InitWithVeryLongProjectName`: Tests very long project names (100+ chars)
+  - `InitWithSpecialCharactersInProjectName`: Tests special chars in project names
+
+
+## Test Implementation Details
+
+### Environment Setup
 - Each test creates temporary directories for:
   - Project directory (where `.kanuka` will be created)
   - User directory (where RSA keys will be stored)
 - Tests override user settings to use temporary directories
 - Original working directory and settings are restored after each test
 
-#### Output Capture
+### Output Capture
 - Tests use a custom `captureOutput` function that redirects `os.Stdout` and `os.Stderr`
 - This captures all output including logger messages and spinner output
 - Output is combined from both stdout and stderr for verification
 
-#### Command Creation
+### Command Creation
 - Tests create isolated command instances to avoid global state issues
 - Commands are configured with appropriate flags (verbose/debug)
 - Output streams are properly configured for testing
 
-#### Verification Methods
+### Verification Methods
 - **Structure verification**: Checks that expected directories and files are created
 - **Content verification**: Ensures RSA keys and encrypted symmetric keys are properly generated
 - **Output verification**: Validates that appropriate log messages are displayed
-- **Behavior verification**: Confirms correct handling of edge cases (already initialized)
+- **Behavior verification**: Confirms correct handling of edge cases
 
-### Running the Tests
+## Running the Tests
 
+### Run All Init Tests
 ```bash
-# Run all integration tests
-go test -v ./cmd -run TestSecretsInitIntegration
-
-# Run a specific test scenario
-go test -v ./cmd -run TestSecretsInitIntegration/InitInEmptyFolder
-go test -v ./cmd -run TestSecretsInitIntegration/InitInAlreadyInitializedFolder
-go test -v ./cmd -run TestSecretsInitIntegration/InitWithVerboseFlag
-go test -v ./cmd -run TestSecretsInitIntegration/InitWithDebugFlag
+# Run all init-related tests
+go test -v ./cmd -run "TestSecretsInit"
 ```
 
-### Test Dependencies
+### Run Specific Test Categories
+```bash
+# Basic functionality tests
+go test -v ./cmd -run "TestSecretsInitBasic"
+
+# Permission-related edge cases
+go test -v ./cmd -run "TestSecretsInitPermissions"
+
+# Filesystem edge cases
+go test -v ./cmd -run "TestSecretsInitFilesystemEdgeCases"
+
+# State recovery and cleanup tests
+go test -v ./cmd -run "TestSecretsInitStateRecovery"
+
+# Environment variable edge cases
+go test -v ./cmd -run "TestSecretsInitEnvironment"
+
+# Cross-platform compatibility tests
+go test -v ./cmd -run "TestSecretsInitCrossPlatform"
+
+# Input validation edge cases
+go test -v ./cmd -run "TestSecretsInitInputValidation"
+```
+
+### Run Specific Test Scenarios
+```bash
+# Basic scenarios
+go test -v ./cmd -run "TestSecretsInitBasic/InitInEmptyFolder"
+go test -v ./cmd -run "TestSecretsInitBasic/InitWithVerboseFlag"
+
+# Edge case scenarios
+go test -v ./cmd -run "TestSecretsInitPermissions/InitWithReadOnlyUserDirectory"
+go test -v ./cmd -run "TestSecretsInitFilesystemEdgeCases/InitWithKanukaAsRegularFile"
+go test -v ./cmd -run "TestSecretsInitStateRecovery/InitIdempotencyAfterFailure"
+```
+
+## Test Categories and Expected Behavior
+
+### ✅ Passing Tests (Success Scenarios)
+These tests verify the application works correctly under edge conditions:
+- Basic initialization scenarios
+- Cross-platform compatibility (Unicode, special characters)
+- State recovery and idempotency
+- Input validation within reasonable limits
+
+### ⚠️ Correctly Failing Tests (Error Detection)
+These tests verify the application properly detects and handles error conditions:
+- File system permission issues
+- File/directory conflicts
+- Invalid environment variables
+- Broken symlinks
+
+**Note**: Tests that "fail" are actually verifying that the application correctly detects error conditions and exits with appropriate error messages. This is the expected and desired behavior.
+
+## Test Dependencies
 - Uses the actual application code (no mocking)
 - Creates real files and directories in temporary locations
 - Tests the complete integration including:
@@ -91,7 +160,15 @@ go test -v ./cmd -run TestSecretsInitIntegration/InitWithDebugFlag
   - Configuration management
   - Logging and output formatting
 
-### Cleanup
+## Cleanup
 - All temporary directories and files are automatically cleaned up after each test
 - Original working directory and configuration settings are restored
 - No persistent state is left behind after test execution
+
+## Benefits of This Organization
+
+1. **Focused Testing**: Each file focuses on a specific category of tests
+2. **Easier Maintenance**: Easier to locate and modify tests for specific scenarios
+3. **Better Test Discovery**: Clear naming makes it easy to find relevant tests
+4. **Parallel Development**: Different developers can work on different test categories
+5. **Selective Testing**: Can run only the test categories relevant to changes being made
