@@ -31,6 +31,10 @@ func TestSecretsEncryptPermissions(t *testing.T) {
 	t.Run("EncryptWithNoWritePermissionToProject", func(t *testing.T) {
 		testEncryptWithNoWritePermissionToProject(t, originalWd, originalUserSettings)
 	})
+
+	t.Run("EncryptWithoutAccess", func(t *testing.T) {
+		testEncryptWithoutAccess(t, originalWd, originalUserSettings)
+	})
 }
 
 // Test 15: .kanuka directory is read-only.
@@ -192,5 +196,56 @@ func testEncryptWithNoWritePermissionToProject(t *testing.T, originalWd string, 
 	// The CLI command may not return an error code, but should show failure in output
 	if !strings.Contains(output, "Failed to encrypt") || !strings.Contains(output, "permission denied") {
 		t.Errorf("Expected permission-related error message, got: %s", output)
+	}
+}
+
+// testEncryptWithoutAccess tests encrypt when user doesn't have access (missing private key).
+func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Create temporary directory for test
+	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-no-access-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Create temporary user directory for kanuka settings
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	// Setup test environment and initialize project
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProject(t, tempDir, tempUserDir)
+
+	// Create a .env file
+	envContent := "DATABASE_URL=postgres://localhost:5432/mydb\n"
+	envPath := filepath.Join(tempDir, ".env")
+	// #nosec G306 -- Writing a file that should be modifiable
+	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
+		t.Fatalf("Failed to create .env file: %v", err)
+	}
+
+	// Remove the user's private key to simulate no access
+	projectName := filepath.Base(tempDir)
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	if err := os.Remove(privateKeyPath); err != nil {
+		t.Fatalf("Failed to remove private key: %v", err)
+	}
+
+	// Capture output (run in verbose mode to capture final messages)
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
+		return cmd.Execute()
+	})
+	// Command should fail
+	if err != nil {
+		t.Errorf("Command failed unexpectedly: %v", err)
+	}
+
+	// Verify error message about access
+	if !strings.Contains(output, "Failed to get your private key file") {
+		t.Errorf("Expected access error message not found in output: %s", output)
 	}
 }
