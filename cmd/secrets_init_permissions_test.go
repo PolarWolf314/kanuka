@@ -42,7 +42,11 @@ func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to make user directory read-only: %v", err)
 	}
 	// Restore permissions for cleanup
-	defer os.Chmod(tempUserDir, 0755)
+	defer func() {
+		if err := os.Chmod(tempUserDir, 0755); err != nil {
+			t.Logf("failed to reset permissions on tempUserDir: %v", err)
+		}
+	}()
 
 	setupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
