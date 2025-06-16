@@ -242,4 +242,3 @@ func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, origina
 		t.Errorf("Expected .kanuka directory to not exist after failure, but it does")
 	}
 }
-

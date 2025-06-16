@@ -66,4 +66,3 @@ func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, original
 		t.Errorf("Expected permission-related error message, got: %s", output)
 	}
 }
-

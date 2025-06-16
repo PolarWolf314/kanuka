@@ -104,4 +104,3 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
-

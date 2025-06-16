@@ -162,4 +162,3 @@ func testInitWithKanukaAsSymlinkToNonExistentDir(t *testing.T, originalWd string
 		t.Errorf("Expected error about failed directory check, got: %s", output)
 	}
 }
-

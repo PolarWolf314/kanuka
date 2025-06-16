@@ -104,4 +104,3 @@ func testInitWithUnicodeInPath(t *testing.T, originalWd string, originalUserSett
 	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
-

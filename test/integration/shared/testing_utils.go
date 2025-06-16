@@ -228,4 +228,3 @@ func InitializeProject(t *testing.T, tempDir, tempUserDir string) {
 	// Verify the project was initialized correctly
 	VerifyProjectStructure(t, tempDir)
 }
-
