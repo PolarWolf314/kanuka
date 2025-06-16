@@ -37,7 +37,6 @@ func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUs
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -46,23 +45,19 @@ func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUs
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
-	// Capture output
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed (100 chars is reasonable)
 	if err != nil {
 		t.Errorf("Command failed with long project name: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "initialized successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
 
@@ -75,7 +70,6 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -84,22 +78,18 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
-	// Capture output
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with special characters in project name: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "initialized successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }

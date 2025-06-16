@@ -29,7 +29,6 @@ func TestSecretsInitEnvironment(t *testing.T) {
 }
 
 func testInitWithInvalidXDGDataHome(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-invalid-xdg-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -44,7 +43,6 @@ func testInitWithInvalidXDGDataHome(t *testing.T, originalWd string, originalUse
 	invalidPath := "/non/existent/path/with\x00null/chars"
 	os.Setenv("XDG_DATA_HOME", invalidPath)
 
-	// Create temporary user directory (will be overridden by configs)
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -53,7 +51,6 @@ func testInitWithInvalidXDGDataHome(t *testing.T, originalWd string, originalUse
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
-	// Capture output - may succeed or fail depending on how the system handles invalid paths
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
@@ -76,7 +73,6 @@ func testInitWithInvalidXDGDataHome(t *testing.T, originalWd string, originalUse
 }
 
 func testInitWithXDGDataHomeAsFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-xdg-file-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -124,20 +120,17 @@ func testInitWithXDGDataHomeAsFile(t *testing.T, originalWd string, originalUser
 		Username:        "testuser",
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
-	// Command should fail due to trying to create directories under a file path
 	if err == nil {
 		t.Errorf("Expected command to fail due to XDG_DATA_HOME being a file, but it succeeded")
 		t.Errorf("Output: %s", output)
 		return
 	}
 
-	// Should contain error message about directory creation or path issues
 	if !strings.Contains(output, "failed") && !strings.Contains(output, "not a directory") {
 		t.Errorf("Expected error message about failed directory creation, got: %s", output)
 	}

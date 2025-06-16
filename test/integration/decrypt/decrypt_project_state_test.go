@@ -46,7 +46,6 @@ func testDecryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 	tempDir := t.TempDir()
 	tempUserDir := t.TempDir()
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -85,7 +84,6 @@ func testDecryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 		return cmd.Execute()
 	})
 
-	// Command should fail due to corrupted .kanuka directory (missing symmetric key)
 	if !strings.Contains(output, "Failed to obtain your .kanuka file") || !strings.Contains(output, "no such file or directory") {
 		t.Errorf("Expected missing symmetric key error message, got: %s", output)
 	}
@@ -97,7 +95,6 @@ func testDecryptWithMissingUserKeys(t *testing.T, originalWd string, originalUse
 	tempDir := t.TempDir()
 	tempUserDir := t.TempDir()
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -136,7 +133,6 @@ func testDecryptWithMissingUserKeys(t *testing.T, originalWd string, originalUse
 		return cmd.Execute()
 	})
 
-	// Command should fail due to missing user keys
 	if !strings.Contains(output, "Failed to get your private key file") || !strings.Contains(output, "no such file or directory") {
 		t.Errorf("Expected missing private key error message, got: %s", output)
 	}
@@ -144,21 +140,18 @@ func testDecryptWithMissingUserKeys(t *testing.T, originalWd string, originalUse
 
 // testDecryptWithoutAccess tests decrypt when user doesn't have access (missing private key).
 func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-no-access-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -191,17 +184,14 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 		t.Fatalf("Failed to remove private key: %v", err)
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should fail
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// Verify error message about access
 	if !strings.Contains(output, "Failed to get your private key file") {
 		t.Errorf("Expected access error message not found in output: %s", output)
 	}
@@ -209,21 +199,18 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 
 // testDecryptFromSubfolderWithOneKanukaFile tests decrypt from subfolder with one .kanuka file.
 func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-subfolder-one-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -258,23 +245,19 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 		t.Fatalf("Failed to change to subfolder: %v", err)
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify .env file was recreated in the root
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
 		t.Errorf(".env file was not recreated at %s", envPath)
 	}
@@ -282,21 +265,18 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 
 // testDecryptFromSubfolderWithMultipleKanukaFiles tests decrypt from subfolder with multiple .kanuka files.
 func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-subfolder-multi-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -346,23 +326,19 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 		t.Fatalf("Failed to change to subfolder: %v", err)
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify all .env files were recreated
 	for filePath := range envFiles {
 		fullPath := filepath.Join(tempDir, filePath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {

@@ -54,14 +54,12 @@ func TestSecretsEncryptProjectState(t *testing.T) {
 
 // Tests encrypt when .kanuka directory is corrupted/incomplete.
 func testEncryptWithCorruptedKanukaDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-corrupted-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -84,13 +82,11 @@ func testEncryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to remove secrets directory: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, _ := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
-	// Command should fail due to corrupted .kanuka directory (missing secrets dir means no symmetric key)
 	// The CLI command may not return an error code, but should show failure in output
 	if !strings.Contains(output, "Failed to get your .kanuka file") || !strings.Contains(output, "no such file or directory") {
 		t.Errorf("Expected error message about missing symmetric key file, got: %s", output)
@@ -99,14 +95,12 @@ func testEncryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 
 // Tests encrypt when public key file is missing.
 func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-missing-public-key-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -129,7 +123,6 @@ func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to remove public key file: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
@@ -141,7 +134,6 @@ func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUs
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "✓") || !strings.Contains(output, "encrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
@@ -149,14 +141,12 @@ func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUs
 
 // Tests encrypt when symmetric key file is missing.
 func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-missing-symmetric-key-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -179,13 +169,11 @@ func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, origina
 		t.Fatalf("Failed to remove symmetric key file: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, _ := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
-	// Command should fail due to missing symmetric key
 	// The CLI command may not return an error code, but should show failure in output
 	if !strings.Contains(output, "Failed to get your .kanuka file") || !strings.Contains(output, "no such file or directory") {
 		t.Errorf("Expected error message about missing symmetric key file, got: %s", output)
@@ -194,14 +182,12 @@ func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, origina
 
 // Tests encrypt when public key file is corrupted.
 func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-corrupted-public-key-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -225,7 +211,6 @@ func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to corrupt public key file: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
@@ -236,7 +221,6 @@ func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, original
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "✓") || !strings.Contains(output, "encrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
@@ -244,14 +228,12 @@ func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, original
 
 // Tests encrypt when symmetric key file is corrupted.
 func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-corrupted-symmetric-key-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -275,13 +257,11 @@ func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, origi
 		t.Fatalf("Failed to corrupt symmetric key file: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, _ := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
-	// Command should fail due to corrupted symmetric key
 	// The CLI command may not return an error code, but should show failure in output
 	if !strings.Contains(output, "Failed to decrypt your .kanuka file") || !strings.Contains(output, "decryption error") {
 		t.Errorf("Expected error message about decryption failure, got: %s", output)
@@ -290,14 +270,12 @@ func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, origi
 
 // Tests encrypt when key files have wrong format/content.
 func testEncryptWithWrongKeyFormat(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-wrong-key-format-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -323,7 +301,6 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890abcdef
 		t.Fatalf("Failed to write wrong format key: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
@@ -335,7 +312,6 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890abcdef
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "✓") || !strings.Contains(output, "encrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
@@ -343,21 +319,18 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890abcdef
 
 // testEncryptFromSubfolderWithOneEnvFile tests encrypt from subfolder with one .env file.
 func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-subfolder-one-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -378,23 +351,19 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 		t.Fatalf("Failed to change to subfolder: %v", err)
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify success message
 	if !strings.Contains(output, "Environment files encrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify .env.kanuka file was created in the root
 	kanukaPath := envPath + ".kanuka"
 	if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
 		t.Errorf(".env.kanuka file was not created at %s", kanukaPath)
@@ -403,21 +372,18 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 
 // testEncryptFromSubfolderWithMultipleEnvFiles tests encrypt from subfolder with multiple .env files.
 func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-subfolder-multi-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -450,23 +416,19 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 		t.Fatalf("Failed to change to subfolder: %v", err)
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify success message
 	if !strings.Contains(output, "Environment files encrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify all .env.kanuka files were created
 	for filePath := range envFiles {
 		kanukaPath := filepath.Join(tempDir, filePath+".kanuka")
 		if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {

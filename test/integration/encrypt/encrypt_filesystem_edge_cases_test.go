@@ -47,14 +47,12 @@ func TestSecretsEncryptFilesystemEdgeCases(t *testing.T) {
 
 // Tests encrypting an empty .env file.
 func testEncryptWithEmptyEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-empty-env-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -70,23 +68,19 @@ func testEncryptWithEmptyEnvFile(t *testing.T, originalWd string, originalUserSe
 		t.Fatalf("Failed to create empty .env file: %v", err)
 	}
 
-	// Capture output
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed (empty file is valid)
 	if err != nil {
 		t.Errorf("Command failed with empty .env file: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "encrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify encrypted file was created
 	encryptedFile := filepath.Join(tempDir, ".kanuka", "secrets", "testuser.kanuka")
 	if _, err := os.Stat(encryptedFile); os.IsNotExist(err) {
 		t.Errorf("Encrypted file was not created at %s", encryptedFile)
@@ -95,14 +89,12 @@ func testEncryptWithEmptyEnvFile(t *testing.T, originalWd string, originalUserSe
 
 // Tests encrypting a read-only .env file.
 func testEncryptWithReadOnlyEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-readonly-env-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -130,18 +122,15 @@ func testEncryptWithReadOnlyEnvFile(t *testing.T, originalWd string, originalUse
 		}
 	}()
 
-	// Capture output
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed (reading read-only file is fine)
 	if err != nil {
 		t.Errorf("Command failed with read-only .env file: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "encrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
@@ -149,14 +138,12 @@ func testEncryptWithReadOnlyEnvFile(t *testing.T, originalWd string, originalUse
 
 // Tests encrypting when .env exists as a directory instead of file.
 func testEncryptWithEnvFileAsDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-env-as-dir-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -172,18 +159,15 @@ func testEncryptWithEnvFileAsDirectory(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to create .env directory: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed but report no environment files found
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain message about no environment files found
 	if !strings.Contains(output, "No environment files found") {
 		t.Errorf("Expected message about no environment files found, got: %s", output)
 	}
@@ -191,14 +175,12 @@ func testEncryptWithEnvFileAsDirectory(t *testing.T, originalWd string, original
 
 // Tests encrypting when .env is a symlink to another file.
 func testEncryptWithEnvFileAsSymlink(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-env-symlink-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -220,18 +202,15 @@ func testEncryptWithEnvFileAsSymlink(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create symlink: %v", err)
 	}
 
-	// Capture output
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed but report no environment files found (symlinks not detected)
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain message about no environment files found
 	if !strings.Contains(output, "No environment files found") {
 		t.Errorf("Expected message about no environment files found, got: %s", output)
 	}
@@ -239,14 +218,12 @@ func testEncryptWithEnvFileAsSymlink(t *testing.T, originalWd string, originalUs
 
 // Tests encrypting when .env is a broken symlink.
 func testEncryptWithBrokenEnvSymlink(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-broken-symlink-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -263,18 +240,15 @@ func testEncryptWithBrokenEnvSymlink(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create broken symlink: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed but report no environment files found (broken symlinks ignored)
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain message about no environment files found
 	if !strings.Contains(output, "No environment files found") {
 		t.Errorf("Expected message about no environment files found, got: %s", output)
 	}
@@ -282,14 +256,12 @@ func testEncryptWithBrokenEnvSymlink(t *testing.T, originalWd string, originalUs
 
 // Tests encrypting a very large .env file (MB+ size).
 func testEncryptWithVeryLargeEnvFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-encrypt-large-env-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -312,23 +284,19 @@ func testEncryptWithVeryLargeEnvFile(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create large .env file: %v", err)
 	}
 
-	// Capture output
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed (large file should be handled)
 	if err != nil {
 		t.Errorf("Command failed with large .env file: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "encrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify encrypted file was created and is reasonable size
 	encryptedFile := filepath.Join(tempDir, ".kanuka", "secrets", "testuser.kanuka")
 	if stat, err := os.Stat(encryptedFile); os.IsNotExist(err) {
 		t.Errorf("Encrypted file was not created at %s", encryptedFile)

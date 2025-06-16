@@ -18,7 +18,6 @@ func TestDecryptWithCorruptedEncryptedFile(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -61,7 +60,6 @@ func TestDecryptWithCorruptedEncryptedFile(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail due to corrupted file
 	if !strings.Contains(output, "Failed to decrypt") || !strings.Contains(output, "failed to decrypt ciphertext") {
 		t.Errorf("Expected decryption failure message, got: %s", output)
 	}
@@ -75,7 +73,6 @@ func TestDecryptWithReadOnlyEncryptedFile(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -121,18 +118,15 @@ func TestDecryptWithReadOnlyEncryptedFile(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should succeed - read-only encrypted file shouldn't prevent decryption
 	if err != nil {
 		t.Errorf("Expected command to succeed despite read-only encrypted file, but it failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify .env file was created
 	if _, err := os.Stat(envFile); os.IsNotExist(err) {
 		t.Errorf(".env file was not created after decryption")
 	}
@@ -146,7 +140,6 @@ func TestDecryptWithEncryptedFileAsDirectory(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -164,7 +157,6 @@ func TestDecryptWithEncryptedFileAsDirectory(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail because there are no valid encrypted files
 	if !strings.Contains(output, "No encrypted environment") || !strings.Contains(output, "files found") {
 		t.Errorf("Expected 'no encrypted files found' message, got: %s", output)
 	}
@@ -178,7 +170,6 @@ func TestDecryptWithMissingEncryptedFile(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -192,7 +183,6 @@ func TestDecryptWithMissingEncryptedFile(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail because there are no encrypted files
 	if !strings.Contains(output, "No encrypted environment") || !strings.Contains(output, "files found") {
 		t.Errorf("Expected 'no encrypted files found' message, got: %s", output)
 	}
@@ -206,7 +196,6 @@ func TestDecryptWithVeryLargeEncryptedFile(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -247,18 +236,15 @@ func TestDecryptWithVeryLargeEncryptedFile(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify .env file was created and has correct size
 	if fileInfo, err := os.Stat(envFile); err != nil {
 		t.Errorf(".env file was not created after decryption")
 	} else if fileInfo.Size() < 1000000 { // Should be over 1MB
@@ -274,7 +260,6 @@ func TestDecryptWithEmptyEncryptedFile(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -296,7 +281,6 @@ func TestDecryptWithEmptyEncryptedFile(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail due to invalid encrypted data (no ciphertext after nonce)
 	if !strings.Contains(output, "Failed to decrypt") || !strings.Contains(output, "failed to decrypt ciphertext") {
 		t.Errorf("Expected decryption failure message, got: %s", output)
 	}

@@ -38,14 +38,12 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 
 // Tests init when .kanuka directory already exists with corrupted content.
 func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-partial-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -67,32 +65,27 @@ func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, origina
 	}
 	// Deliberately omit public_keys directory
 
-	// Capture output - should detect existing .kanuka and report already initialized
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should detect existing .kanuka directory
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain message about already being initialized
 	if !strings.Contains(output, "already been initialized") {
 		t.Errorf("Expected message about already initialized, got: %s", output)
 	}
 }
 
 func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-after-failure-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -137,25 +130,21 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 		t.Errorf("Output: %s", output2)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output2, "initialized successfully") {
 		t.Errorf("Expected success message, got: %s", output2)
 	}
 
-	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
 
 // Tests init idempotency after failure.
 func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-idempotency-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -185,7 +174,6 @@ func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUs
 		t.Errorf("Second init failed: %v", err2)
 	}
 
-	// Should contain message about already being initialized
 	if !strings.Contains(output2, "already been initialized") {
 		t.Errorf("Expected already initialized message, got: %s", output2)
 	}
@@ -195,14 +183,12 @@ func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUs
 }
 
 func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-cleanup-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
@@ -217,19 +203,16 @@ func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, origina
 		t.Fatalf("Failed to create blocking file: %v", err)
 	}
 
-	// Capture output and expect failure
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 
-	// Command should fail
 	if err == nil {
 		t.Errorf("Expected command to fail due to blocked keys directory, but it succeeded")
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain error message
 	if !strings.Contains(output, "failed") {
 		t.Errorf("Expected error message, got: %s", output)
 	}

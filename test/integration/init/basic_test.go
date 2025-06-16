@@ -40,21 +40,18 @@ func TestSecretsInitBasic(t *testing.T) {
 
 // testInitInEmptyFolder tests successful initialization in an empty folder.
 func testInitInEmptyFolder(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-empty-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture real stdout/stderr by redirecting them
@@ -62,19 +59,15 @@ func testInitInEmptyFolder(t *testing.T, originalWd string, originalUserSettings
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
-	// Verify command succeeded
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 
-	// Verify user keys were created
 	shared.VerifyUserKeys(t, tempUserDir)
 
-	// Verify that the command ran (check for warning message which is always shown)
 	if !strings.Contains(output, "Warning: Remember: Never commit .env files") {
 		t.Errorf("Expected warning message not found in output: %s", output)
 	}
@@ -82,21 +75,18 @@ func testInitInEmptyFolder(t *testing.T, originalWd string, originalUserSettings
 
 // testInitInAlreadyInitializedFolder tests behavior when running init in an already initialized folder.
 func testInitInAlreadyInitializedFolder(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-existing-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Pre-create .kanuka directory to simulate already initialized project
@@ -110,17 +100,14 @@ func testInitInAlreadyInitializedFolder(t *testing.T, originalWd string, origina
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
 		return cmd.Execute()
 	})
-	// Command should succeed but show already initialized message
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 	}
 
-	// Verify that the .kanuka directory still exists and no new files were created
 	if _, statErr := os.Stat(kanukaDir); os.IsNotExist(statErr) {
 		t.Errorf(".kanuka directory should still exist after running init on already initialized project")
 	}
 
-	// Verify no additional files were created (public_keys and secrets dirs should be empty)
 	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
 
@@ -135,21 +122,18 @@ func testInitInAlreadyInitializedFolder(t *testing.T, originalWd string, origina
 
 // testInitWithVerboseFlag tests initialization with verbose flag.
 func testInitWithVerboseFlag(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-verbose-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture real stdout/stderr by redirecting them
@@ -157,38 +141,32 @@ func testInitWithVerboseFlag(t *testing.T, originalWd string, originalUserSettin
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Verify command succeeded
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify verbose output contains info messages
 	if !strings.Contains(output, "[info]") {
 		t.Errorf("Expected verbose [info] messages not found in output: %s", output)
 	}
 
-	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }
 
 // testInitWithDebugFlag tests initialization with debug flag.
 func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-debug-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Capture real stdout/stderr by redirecting them
@@ -196,13 +174,11 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 		cmd := shared.CreateTestCLI("init", nil, nil, false, true)
 		return cmd.Execute()
 	})
-	// Verify command succeeded
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify debug output contains debug messages
 	if !strings.Contains(output, "[debug]") {
 		t.Errorf("Expected debug [debug] messages not found in output: %s", output)
 	}
@@ -212,6 +188,5 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 		t.Errorf("Expected [info] messages not found in debug output: %s", output)
 	}
 
-	// Verify project structure was created
 	shared.VerifyProjectStructure(t, tempDir)
 }

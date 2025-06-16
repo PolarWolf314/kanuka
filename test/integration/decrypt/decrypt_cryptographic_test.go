@@ -18,7 +18,6 @@ func TestDecryptWithWrongPrivateKey(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -62,7 +61,6 @@ MIIEpAIBAAKCAQEAwrongkey123456789abcdefghijklmnopqrstuvwxyz
 		return cmd.Execute()
 	})
 
-	// Command should fail due to wrong private key
 	if !strings.Contains(output, "Failed to get your private key file") || !strings.Contains(output, "failed to decode PEM block") {
 		t.Errorf("Expected private key error message, got: %s", output)
 	}
@@ -76,7 +74,6 @@ func TestDecryptWithCorruptedPrivateKey(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -116,7 +113,6 @@ func TestDecryptWithCorruptedPrivateKey(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail due to corrupted private key
 	if !strings.Contains(output, "Failed to get your private key file") {
 		t.Errorf("Expected private key error message, got: %s", output)
 	}
@@ -130,7 +126,6 @@ func TestDecryptWithWrongKeyFormat(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -173,7 +168,6 @@ b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAFwAAAAdzc2gtcn
 		return cmd.Execute()
 	})
 
-	// Command should fail due to wrong key format
 	if !strings.Contains(output, "Failed to get your private key file") {
 		t.Errorf("Expected private key error message, got: %s", output)
 	}
@@ -187,7 +181,6 @@ func TestDecryptWithTamperedEncryptedData(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -238,7 +231,6 @@ func TestDecryptWithTamperedEncryptedData(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail due to tampered data
 	if !strings.Contains(output, "Failed to decrypt") || !strings.Contains(output, "failed to decrypt ciphertext") {
 		t.Errorf("Expected decryption failure message, got: %s", output)
 	}
@@ -252,7 +244,6 @@ func TestDecryptWithWrongEncryptionAlgorithm(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -276,7 +267,6 @@ func TestDecryptWithWrongEncryptionAlgorithm(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail due to wrong encryption format
 	if !strings.Contains(output, "Failed to decrypt") || !strings.Contains(output, "failed to decrypt ciphertext") {
 		t.Errorf("Expected decryption failure message, got: %s", output)
 	}

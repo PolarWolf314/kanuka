@@ -18,7 +18,6 @@ func TestDecryptAndValidateContent(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -62,18 +61,15 @@ SPACES_VAR=  value with spaces  `
 		return cmd.Execute()
 	})
 
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify .env file was created
 	if _, err := os.Stat(envFile); os.IsNotExist(err) {
 		t.Errorf(".env file was not created after decryption")
 		return
@@ -85,7 +81,6 @@ SPACES_VAR=  value with spaces  `
 		t.Fatalf("Failed to read decrypted .env file: %v", err)
 	}
 
-	// Verify content matches exactly
 	if string(decryptedContent) != originalContent {
 		t.Errorf("Decrypted content does not match original content")
 		t.Errorf("Original:\n%s", originalContent)
@@ -101,7 +96,6 @@ func TestDecryptWithInvalidEncryptedFormat(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -123,7 +117,6 @@ func TestDecryptWithInvalidEncryptedFormat(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should fail due to invalid format
 	if !strings.Contains(output, "Failed to decrypt") || !strings.Contains(output, "failed to decrypt ciphertext") {
 		t.Errorf("Expected decryption failure message, got: %s", output)
 	}
@@ -137,7 +130,6 @@ func TestDecryptMultipleFilesRoundTrip(t *testing.T) {
 	originalWd, _ := os.Getwd()
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Initialize project
@@ -188,18 +180,15 @@ func TestDecryptMultipleFilesRoundTrip(t *testing.T) {
 		return cmd.Execute()
 	})
 
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Should contain success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	// Verify all .env files were recreated with correct content
 	for filePath, expectedContent := range originalContents {
 		fullPath := filepath.Join(tempDir, filePath)
 

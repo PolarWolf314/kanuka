@@ -156,7 +156,6 @@ handling project packages using a nix shell environment, and securely storing en
 	return rootCmd
 }
 
-// VerifyProjectStructure verifies that the expected project structure was created.
 func VerifyProjectStructure(t *testing.T, tempDir string) {
 	// Check .kanuka directory exists
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
@@ -189,7 +188,6 @@ func VerifyProjectStructure(t *testing.T, tempDir string) {
 	}
 }
 
-// VerifyUserKeys verifies that user keys were created in the user directory.
 func VerifyUserKeys(t *testing.T, tempUserDir string) {
 	keysDir := filepath.Join(tempUserDir, "keys")
 
@@ -225,6 +223,5 @@ func InitializeProject(t *testing.T, tempDir, tempUserDir string) {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Verify the project was initialized correctly
 	VerifyProjectStructure(t, tempDir)
 }

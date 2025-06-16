@@ -12,13 +12,11 @@ import (
 
 // TestSecretsDecryptIntegration contains integration tests for the `kanuka secrets decrypt` command.
 func TestSecretsDecryptIntegration(t *testing.T) {
-	// Save original working directory
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get original working directory: %v", err)
 	}
 
-	// Save original user settings to restore later
 	originalUserSettings := configs.UserKanukaSettings
 
 	t.Run("DecryptInEmptyFolder", func(t *testing.T) {
@@ -40,34 +38,28 @@ func TestSecretsDecryptIntegration(t *testing.T) {
 
 // testDecryptInEmptyFolder tests decrypt command in an empty folder (should fail).
 func testDecryptInEmptyFolder(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-empty-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should fail because kanuka is not initialized
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// Verify error message about not being initialized
 	if !strings.Contains(output, "Kanuka has not been initialized") {
 		t.Errorf("Expected 'not initialized' message not found in output: %s", output)
 	}
@@ -75,35 +67,29 @@ func testDecryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 
 // testDecryptInInitializedFolderWithNoKanukaFiles tests decrypt in initialized folder with no .kanuka files.
 func testDecryptInInitializedFolderWithNoKanukaFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-no-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed but report no files found
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// Verify message about no kanuka files found
 	if !strings.Contains(output, "No encrypted environment (.kanuka) files found") {
 		t.Errorf("Expected 'no kanuka files found' message not found in output: %s", output)
 	}
@@ -111,21 +97,18 @@ func testDecryptInInitializedFolderWithNoKanukaFiles(t *testing.T, originalWd st
 
 // testDecryptInInitializedFolderWithOneKanukaFile tests decrypt with one .kanuka file.
 func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-one-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -151,34 +134,28 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 		t.Fatalf("Failed to remove .env file: %v", err)
 	}
 
-	// Verify .env.kanuka file exists
 	kanukaPath := envPath + ".kanuka"
 	if _, err := os.Stat(kanukaPath); os.IsNotExist(err) {
 		t.Fatalf(".env.kanuka file was not created during setup")
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify .env file was recreated
 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
 		t.Errorf(".env file was not recreated at %s", envPath)
 	}
 
-	// Verify the decrypted content matches the original
 	decryptedContent, err := os.ReadFile(envPath)
 	if err != nil {
 		t.Errorf("Failed to read decrypted .env file: %v", err)
@@ -190,21 +167,18 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 
 // testDecryptInInitializedFolderWithMultipleKanukaFiles tests decrypt with multiple .kanuka files.
 func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-decrypt-multi-kanuka-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Create temporary user directory for kanuka settings
 	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp user directory: %v", err)
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Setup test environment and initialize project
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
@@ -245,23 +219,19 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 		}
 	}
 
-	// Capture output (run in verbose mode to capture final messages)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
-	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 		t.Errorf("Output: %s", output)
 	}
 
-	// Verify success message
 	if !strings.Contains(output, "Environment files decrypted successfully") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
-	// Verify all .env files were recreated with correct content
 	for filePath, expectedContent := range envFiles {
 		fullPath := filepath.Join(tempDir, filePath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
