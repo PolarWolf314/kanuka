@@ -1,18 +1,12 @@
 package cmd
 
 import (
-	"fmt"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	logger "github.com/PolarWolf314/kanuka/internal/logging"
-
 	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/spf13/cobra"
 )
 
 // TestSecretsDecryptIntegration contains integration tests for the `kanuka secrets decrypt` command.
@@ -76,7 +70,7 @@ func testDecryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail because kanuka is not initialized
@@ -112,7 +106,7 @@ func testDecryptInInitializedFolderWithNoKanukaFiles(t *testing.T, originalWd st
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed but report no files found
@@ -156,7 +150,7 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 
 	// Encrypt the file first
 	_, err = captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -176,7 +170,7 @@ func testDecryptInInitializedFolderWithOneKanukaFile(t *testing.T, originalWd st
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -247,7 +241,7 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 
 	// Encrypt all files first
 	_, err = captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -264,7 +258,7 @@ func testDecryptInInitializedFolderWithMultipleKanukaFiles(t *testing.T, origina
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -327,7 +321,7 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 
 	// Encrypt the file first
 	_, err = captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -348,7 +342,7 @@ func testDecryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail
@@ -392,7 +386,7 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 
 	// Encrypt the file first
 	_, err = captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -415,7 +409,7 @@ func testDecryptFromSubfolderWithOneKanukaFile(t *testing.T, originalWd string, 
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -477,7 +471,7 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 
 	// Encrypt all files first
 	_, err = captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -503,7 +497,7 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createDecryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("decrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -526,44 +520,3 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 	}
 }
 
-// createDecryptCommandWithFlags creates a command that uses the actual decrypt command with specified flags.
-func createDecryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
-	// Set the global flags for the actual command
-	verbose = verboseFlag
-	debug = debugFlag
-
-	// Initialize the logger with the test flags
-	Logger = logger.Logger{
-		Verbose: verbose,
-		Debug:   debug,
-	}
-
-	// Create a root command that uses the actual SecretsCmd
-	rootCmd := &cobra.Command{Use: "kanuka"}
-	rootCmd.AddCommand(SecretsCmd)
-
-	// Set output streams
-	if stdout != nil {
-		rootCmd.SetOut(stdout)
-		SecretsCmd.SetOut(stdout)
-		decryptCmd.SetOut(stdout)
-	}
-	if stderr != nil {
-		rootCmd.SetErr(stderr)
-		SecretsCmd.SetErr(stderr)
-		decryptCmd.SetErr(stderr)
-	}
-
-	// Set args to run the decrypt command
-	rootCmd.SetArgs([]string{"secrets", "decrypt"})
-
-	// Set the flags on the actual command
-	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
-		log.Fatalf("Failed to set verbose flag for testing: %s", err)
-	}
-	if err := SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
-		log.Fatalf("Failed to set debug flag for testing: %s", err)
-	}
-
-	return rootCmd
-}

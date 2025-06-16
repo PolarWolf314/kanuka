@@ -153,7 +153,7 @@ func testInitWithVerboseFlag(t *testing.T, originalWd string, originalUserSettin
 
 	// Capture real stdout/stderr by redirecting them
 	output, err := captureOutput(func() error {
-		cmd := createInitCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Verify command succeeded
@@ -192,7 +192,7 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 
 	// Capture real stdout/stderr by redirecting them
 	output, err := captureOutput(func() error {
-		cmd := createInitCommandWithFlags(nil, nil, false, true)
+		cmd := createTestCLI("init", nil, nil, false, true)
 		return cmd.Execute()
 	})
 	// Verify command succeeded

@@ -1,17 +1,12 @@
 package cmd
 
 import (
-	"fmt"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
-	logger "github.com/PolarWolf314/kanuka/internal/logging"
-	"github.com/spf13/cobra"
 )
 
 // TestSecretsEncryptIntegration contains integration tests for the `kanuka secrets encrypt` command.
@@ -75,7 +70,7 @@ func testEncryptInEmptyFolder(t *testing.T, originalWd string, originalUserSetti
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail because kanuka is not initialized
@@ -111,7 +106,7 @@ func testEncryptInInitializedFolderWithNoEnvFiles(t *testing.T, originalWd strin
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed but report no files found
@@ -155,7 +150,7 @@ func testEncryptInInitializedFolderWithOneEnvFile(t *testing.T, originalWd strin
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -230,7 +225,7 @@ func testEncryptInInitializedFolderWithMultipleEnvFiles(t *testing.T, originalWd
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -290,7 +285,7 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should fail
@@ -343,7 +338,7 @@ func testEncryptFromSubfolderWithOneEnvFile(t *testing.T, originalWd string, ori
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -415,7 +410,7 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 
 	// Capture output (run in verbose mode to capture final messages)
 	output, err := captureOutput(func() error {
-		cmd := createEncryptCommandWithFlags(nil, nil, true, false)
+		cmd := createTestCLI("encrypt", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	// Command should succeed
@@ -438,44 +433,3 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 	}
 }
 
-// createEncryptCommandWithFlags creates a command that uses the actual encrypt command with specified flags.
-func createEncryptCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
-	// Set the global flags for the actual command
-	verbose = verboseFlag
-	debug = debugFlag
-
-	// Initialize the logger with the test flags
-	Logger = logger.Logger{
-		Verbose: verbose,
-		Debug:   debug,
-	}
-
-	// Create a root command that uses the actual SecretsCmd
-	rootCmd := &cobra.Command{Use: "kanuka"}
-	rootCmd.AddCommand(SecretsCmd)
-
-	// Set output streams
-	if stdout != nil {
-		rootCmd.SetOut(stdout)
-		SecretsCmd.SetOut(stdout)
-		encryptCmd.SetOut(stdout)
-	}
-	if stderr != nil {
-		rootCmd.SetErr(stderr)
-		SecretsCmd.SetErr(stderr)
-		encryptCmd.SetErr(stderr)
-	}
-
-	// Set args to run the encrypt command
-	rootCmd.SetArgs([]string{"secrets", "encrypt"})
-
-	// Set the flags on the actual command
-	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
-		log.Fatalf("Failed to set verbose flag for testing: %s", err)
-	}
-	if err := SecretsCmd.PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
-		log.Fatalf("Failed to set debug flag for testing: %s", err)
-	}
-
-	return rootCmd
-}

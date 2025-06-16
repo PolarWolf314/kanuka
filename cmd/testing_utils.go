@@ -112,14 +112,9 @@ func initializeProject(t *testing.T) {
 	}
 }
 
-// createInitCommand creates a command that uses the actual init command.
-func createInitCommand(stdout, stderr io.Writer) *cobra.Command {
-	return createInitCommandWithFlags(stdout, stderr, false, false)
-}
-
-// createInitCommandWithFlags creates a command that uses the actual init command with specified flags.
-func createInitCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
-	// Set the global flags for the actual command
+// createTestCLI creates a complete CLI instance for testing with the specified command and flags.
+func createTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
+	// Set global flags for the actual command (needed for the real command implementations)
 	verbose = verboseFlag
 	debug = debugFlag
 
@@ -129,26 +124,47 @@ func createInitCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag
 		Debug:   debug,
 	}
 
-	// Create a root command that uses the actual SecretsCmd
-	rootCmd := &cobra.Command{Use: "kanuka"}
+	// Create a fresh root command for this test
+	rootCmd := &cobra.Command{
+		Use:   "kanuka",
+		Short: "Kanuka - A CLI for package management, cloud provisioning, and secrets management.",
+		Long: `Kanuka is a powerful command-line tool for managing infrastructure, 
+handling project packages using a nix shell environment, and securely storing environment secrets.`,
+	}
+
+	// Use the actual SecretsCmd but reset its state
 	rootCmd.AddCommand(SecretsCmd)
 
 	// Set output streams
 	if stdout != nil {
 		rootCmd.SetOut(stdout)
 		SecretsCmd.SetOut(stdout)
+		// Set output on all subcommands
+		encryptCmd.SetOut(stdout)
+		decryptCmd.SetOut(stdout)
+		createCmd.SetOut(stdout)
+		registerCmd.SetOut(stdout)
+		removeCmd.SetOut(stdout)
 		initCmd.SetOut(stdout)
+		purgeCmd.SetOut(stdout)
 	}
 	if stderr != nil {
 		rootCmd.SetErr(stderr)
 		SecretsCmd.SetErr(stderr)
+		// Set error output on all subcommands
+		encryptCmd.SetErr(stderr)
+		decryptCmd.SetErr(stderr)
+		createCmd.SetErr(stderr)
+		registerCmd.SetErr(stderr)
+		removeCmd.SetErr(stderr)
 		initCmd.SetErr(stderr)
+		purgeCmd.SetErr(stderr)
 	}
 
-	// Set args to run the init command
-	rootCmd.SetArgs([]string{"secrets", "init"})
+	// Set args to run the specified subcommand
+	rootCmd.SetArgs([]string{"secrets", subcommand})
 
-	// Set the flags on the actual command
+	// Set the flags on the secrets command
 	if err := SecretsCmd.PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
 		log.Fatalf("Failed to set verbose flag for testing: %s", err)
 	}
@@ -157,6 +173,11 @@ func createInitCommandWithFlags(stdout, stderr io.Writer, verboseFlag, debugFlag
 	}
 
 	return rootCmd
+}
+
+// createInitCommand creates a command that uses the actual init command.
+func createInitCommand(stdout, stderr io.Writer) *cobra.Command {
+	return createTestCLI("init", stdout, stderr, false, false)
 }
 
 // verifyProjectStructure verifies that the expected project structure was created.
