@@ -432,4 +432,3 @@ func testEncryptFromSubfolderWithMultipleEnvFiles(t *testing.T, originalWd strin
 		}
 	}
 }
-

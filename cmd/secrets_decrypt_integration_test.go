@@ -519,4 +519,3 @@ func testDecryptFromSubfolderWithMultipleKanukaFiles(t *testing.T, originalWd st
 		}
 	}
 }
-

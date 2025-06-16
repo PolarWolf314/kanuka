@@ -18,7 +18,6 @@ func TestSecretsInitEnvironment(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 6: Environment Variable Edge Cases
 	t.Run("InitWithInvalidXDGDataHome", func(t *testing.T) {
 		testInitWithInvalidXDGDataHome(t, originalWd, originalUserSettings)
 	})
@@ -28,7 +27,6 @@ func TestSecretsInitEnvironment(t *testing.T) {
 	})
 }
 
-// Category 6: Environment Variable Edge Cases
 func testInitWithInvalidXDGDataHome(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-invalid-xdg-*")
@@ -86,6 +84,7 @@ func testInitWithXDGDataHomeAsFile(t *testing.T, originalWd string, originalUser
 
 	// Create a file to use as XDG_DATA_HOME
 	xdgFile := filepath.Join(tempDir, "xdg-data-file")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(xdgFile, []byte("this is a file"), 0644); err != nil {
 		t.Fatalf("Failed to create XDG file: %v", err)
 	}

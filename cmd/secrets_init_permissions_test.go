@@ -17,13 +17,11 @@ func TestSecretsInitPermissions(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 1: File System Permission Issues
 	t.Run("InitWithReadOnlyUserDirectory", func(t *testing.T) {
 		testInitWithReadOnlyUserDirectory(t, originalWd, originalUserSettings)
 	})
 }
 
-// Category 1: File System Permission Issues
 func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-readonly-*")

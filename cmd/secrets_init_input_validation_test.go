@@ -17,7 +17,6 @@ func TestSecretsInitInputValidation(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 13: Input Validation Edge Cases
 	t.Run("InitWithVeryLongProjectName", func(t *testing.T) {
 		testInitWithVeryLongProjectName(t, originalWd, originalUserSettings)
 	})
@@ -27,7 +26,6 @@ func TestSecretsInitInputValidation(t *testing.T) {
 	})
 }
 
-// Category 13: Input Validation Edge Cases
 func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory with very long name (but within filesystem limits)
 	longName := strings.Repeat("a", 100) // 100 characters should be safe on most filesystems
@@ -51,7 +49,6 @@ func testInitWithVeryLongProjectName(t *testing.T, originalWd string, originalUs
 		cmd := createTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should succeed (100 chars is reasonable)
 	if err != nil {
 		t.Errorf("Command failed with long project name: %v", err)
@@ -90,7 +87,6 @@ func testInitWithSpecialCharactersInProjectName(t *testing.T, originalWd string,
 		cmd := createTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should succeed
 	if err != nil {
 		t.Errorf("Command failed with special characters in project name: %v", err)

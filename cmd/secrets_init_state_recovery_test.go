@@ -18,7 +18,6 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	// Category 5: Corrupted/Invalid State Recovery
 	t.Run("InitWithPartialKanukaDirectory", func(t *testing.T) {
 		testInitWithPartialKanukaDirectory(t, originalWd, originalUserSettings)
 	})
@@ -27,7 +26,6 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 		testInitAfterPartialFailure(t, originalWd, originalUserSettings)
 	})
 
-	// Category 12: Recovery and Cleanup Scenarios
 	t.Run("InitIdempotencyAfterFailure", func(t *testing.T) {
 		testInitIdempotencyAfterFailure(t, originalWd, originalUserSettings)
 	})
@@ -37,7 +35,6 @@ func TestSecretsInitStateRecovery(t *testing.T) {
 	})
 }
 
-// Category 5: Corrupted/Invalid State Recovery
 func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-partial-*")
@@ -73,7 +70,6 @@ func testInitWithPartialKanukaDirectory(t *testing.T, originalWd string, origina
 		cmd := createTestCLI("init", nil, nil, true, false)
 		return cmd.Execute()
 	})
-
 	// Command should detect existing .kanuka directory
 	if err != nil {
 		t.Errorf("Command failed unexpectedly: %v", err)
@@ -148,7 +144,6 @@ func testInitAfterPartialFailure(t *testing.T, originalWd string, originalUserSe
 	verifyProjectStructure(t, tempDir)
 }
 
-// Category 12: Recovery and Cleanup Scenarios
 func testInitIdempotencyAfterFailure(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Create temporary directory for test
 	tempDir, err := os.MkdirTemp("", "kanuka-test-init-idempotency-*")
@@ -215,6 +210,7 @@ func testInitCleanupAfterUserKeyFailure(t *testing.T, originalWd string, origina
 
 	// Create a file where the keys directory should be to cause failure
 	keysPath := filepath.Join(tempUserDir, "keys")
+	// #nosec G306 -- Writing a file that should be modifiable
 	if err := os.WriteFile(keysPath, []byte("blocking file"), 0644); err != nil {
 		t.Fatalf("Failed to create blocking file: %v", err)
 	}
