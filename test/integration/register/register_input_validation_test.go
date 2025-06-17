@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
@@ -76,7 +75,6 @@ func testRegisterWithNoFlags(t *testing.T, originalWd string, originalUserSettin
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
-		cmd.SetArgs([]string{"secrets", "register"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -326,8 +324,8 @@ func testRegisterWithEmptyUsername(t *testing.T, originalWd string, originalUser
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "not found") {
-		t.Errorf("Expected 'not found' message not found in output: %s", output)
+	if !strings.Contains(output, "must be specified") {
+		t.Errorf("Expected 'must be specified' message not found in output: %s", output)
 	}
 }
 

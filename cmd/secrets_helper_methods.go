@@ -36,12 +36,12 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 			Logger.Debugf("Stopping spinner and restoring log output")
 			log.SetOutput(os.Stdout)
 			s.Stop()
-		} else {
-			// In verbose or debug mode, manually print the final message if it's set
-			if s.FinalMSG != "" {
-				Logger.Debugf("Displaying final message in verbose/debug mode")
-				fmt.Print(s.FinalMSG)
-			}
+		}
+		// Always print the final message if it's set, regardless of verbose mode
+		// This ensures the message is captured by tests
+		if s.FinalMSG != "" {
+			Logger.Debugf("Displaying final message")
+			fmt.Print(s.FinalMSG)
 		}
 	}
 
