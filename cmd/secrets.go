@@ -45,7 +45,6 @@ func GetSecretsCmd() *cobra.Command {
 	return SecretsCmd
 }
 
-
 // ResetGlobalState resets all global variables to their default values for testing.
 func ResetGlobalState() {
 	verbose = false
@@ -58,7 +57,7 @@ func ResetGlobalState() {
 	resetCobraFlagState()
 }
 
-// resetCobraFlagState resets the flag state for all commands to prevent test pollution
+// resetCobraFlagState resets the flag state for all commands to prevent test pollution.
 func resetCobraFlagState() {
 	// Reset the register command flags specifically
 	if RegisterCmd != nil && RegisterCmd.Flags() != nil {
@@ -66,7 +65,7 @@ func resetCobraFlagState() {
 			flag.Changed = false
 		})
 	}
-	
+
 	// Reset the main secrets command flags
 	if SecretsCmd != nil && SecretsCmd.Flags() != nil {
 		SecretsCmd.Flags().VisitAll(func(flag *pflag.Flag) {

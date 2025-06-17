@@ -26,7 +26,6 @@ func resetRegisterCommandState() {
 	publicKeyText = ""
 }
 
-
 func init() {
 	RegisterCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
 	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
