@@ -218,7 +218,7 @@ func testForceWithoutExistingKeys(t *testing.T, originalWd string, originalUserS
 	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
 	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
-	
+
 	os.Remove(privateKeyPath)
 	os.Remove(publicKeyPath)
 	os.Remove(projectPublicKeyPath)
