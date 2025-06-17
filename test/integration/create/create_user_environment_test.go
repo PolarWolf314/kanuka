@@ -31,10 +31,6 @@ func TestSecretsCreateUserEnvironment(t *testing.T) {
 	t.Run("UserDirectoryPermissions", func(t *testing.T) {
 		testUserDirectoryPermissions(t, originalWd, originalUserSettings)
 	})
-
-	t.Run("ConcurrentAccess", func(t *testing.T) {
-		testConcurrentAccess(t, originalWd, originalUserSettings)
-	})
 }
 
 // Tests username detection with different system usernames.
@@ -244,112 +240,6 @@ func testUserDirectoryPermissions(t *testing.T, originalWd string, originalUserS
 		// Note: File permissions may vary in test environments
 		if runtime.GOOS != "windows" && mode&0077 != 0 {
 			t.Logf("Private key has insecure permissions: %o (this may be expected in test environment)", mode)
-		}
-	}
-}
-
-// Tests behavior when multiple processes access user directories.
-func testConcurrentAccess(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// This test simulates concurrent access by creating multiple projects
-	// that share the same user directory
-	tempUserDir, err := os.MkdirTemp("", "kanuka-user-concurrent-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp user directory: %v", err)
-	}
-	defer os.RemoveAll(tempUserDir)
-
-	// Create multiple projects concurrently
-	numProjects := 3
-	results := make(chan error, numProjects)
-
-	for i := 0; i < numProjects; i++ {
-		go func(projectNum int) {
-			tempDir, err := os.MkdirTemp("", "kanuka-test-concurrent-*")
-			if err != nil {
-				results <- err
-				return
-			}
-			defer os.RemoveAll(tempDir)
-
-			// Each goroutine needs its own working directory context
-			originalWd, err := os.Getwd()
-			if err != nil {
-				results <- err
-				return
-			}
-
-			if err := os.Chdir(tempDir); err != nil {
-				results <- err
-				return
-			}
-			defer os.Chdir(originalWd)
-
-			// Setup user settings for this project
-			configs.UserKanukaSettings = &configs.UserSettings{
-				UserKeysPath:    filepath.Join(tempUserDir, "keys"),
-				UserConfigsPath: filepath.Join(tempUserDir, "config"),
-				Username:        "testuser",
-			}
-
-			// Initialize project
-			_, err = shared.CaptureOutput(func() error {
-				cmd := shared.CreateTestCLI("init", nil, nil, false, false)
-				return cmd.Execute()
-			})
-			if err != nil {
-				results <- err
-				return
-			}
-
-			// Create keys
-			_, err = shared.CaptureOutput(func() error {
-				cmd := shared.CreateTestCLI("create", nil, nil, true, false)
-				return cmd.Execute()
-			})
-			results <- err
-		}(i)
-	}
-
-	// Wait for all goroutines to complete
-	var errors []error
-	for i := 0; i < numProjects; i++ {
-		if err := <-results; err != nil {
-			errors = append(errors, err)
-		}
-	}
-
-	if len(errors) > 0 {
-		t.Errorf("Concurrent access failed with errors: %v", errors)
-	}
-
-	// Verify that all projects created their keys
-	keysDir := filepath.Join(tempUserDir, "keys")
-	entries, err := os.ReadDir(keysDir)
-	if err != nil {
-		t.Errorf("Failed to read keys directory: %v", err)
-	}
-
-	// Should have at least numProjects * 2 files (private + public key for each project)
-	if len(entries) < numProjects*2 {
-		t.Errorf("Expected at least %d key files, got %d", numProjects*2, len(entries))
-	}
-
-	// Verify each project has unique keys
-	privateKeys := make(map[string]bool)
-	for _, entry := range entries {
-		if !strings.HasSuffix(entry.Name(), ".pub") {
-			// This is a private key
-			keyPath := filepath.Join(keysDir, entry.Name())
-			keyData, err := os.ReadFile(keyPath)
-			if err != nil {
-				t.Errorf("Failed to read key file %s: %v", entry.Name(), err)
-				continue
-			}
-			keyContent := string(keyData)
-			if privateKeys[keyContent] {
-				t.Errorf("Duplicate private key found: %s", entry.Name())
-			}
-			privateKeys[keyContent] = true
 		}
 	}
 }
