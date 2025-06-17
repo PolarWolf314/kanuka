@@ -206,7 +206,7 @@ func testExistingProjectStructure(t *testing.T, originalWd string, originalUserS
 
 	// Add some existing files
 	existingFile := filepath.Join(publicKeysDir, "existing.pub")
-	if err := os.WriteFile(existingFile, []byte("existing key"), 0644); err != nil {
+	if err := os.WriteFile(existingFile, []byte("existing key"), 0600); err != nil {
 		t.Fatalf("Failed to create existing file: %v", err)
 	}
 
@@ -261,12 +261,12 @@ func testCorruptedProjectState(t *testing.T, originalWd string, originalUserSett
 
 	// Create .kanuka as a file instead of directory (corrupted state)
 	kanukaPath := filepath.Join(tempDir, ".kanuka")
-	if err := os.WriteFile(kanukaPath, []byte("corrupted"), 0644); err != nil {
+	if err := os.WriteFile(kanukaPath, []byte("corrupted"), 0600); err != nil {
 		t.Fatalf("Failed to create corrupted .kanuka file: %v", err)
 	}
 
 	// Try to create - should handle corruption gracefully
-	output, err := shared.CaptureOutput(func() error {
+	output, _ := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
 	})

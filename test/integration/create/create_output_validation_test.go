@@ -150,7 +150,7 @@ func testErrorMessages(t *testing.T, originalWd string, originalUserSettings *co
 			}
 
 			// Run the command that should fail
-			output, err := shared.CaptureOutput(func() error {
+			output, _ := shared.CaptureOutput(func() error {
 				// For ExistingKeys test, we need to see the output, so use verbose mode
 				// but the test setup should ensure we get the "already exists" message
 				cmd := shared.CreateTestCLI("create", nil, nil, true, false)
@@ -159,10 +159,7 @@ func testErrorMessages(t *testing.T, originalWd string, originalUserSettings *co
 
 			// With the new RunE implementation, some "error" cases return success but show error messages
 			// This is the correct behavior for user-facing errors vs. system errors
-			if tc.name == "UninitializedProject" || tc.name == "ExistingKeys" {
-				// These cases show error messages but don't return errors (this is expected)
-				// The command succeeds but shows a user-friendly error message
-			}
+			// For UninitializedProject and ExistingKeys cases, the command succeeds but shows error messages
 
 			// Check for expected error message
 			if !strings.Contains(output, tc.expectedError) {

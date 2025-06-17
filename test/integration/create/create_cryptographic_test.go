@@ -235,11 +235,11 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 	}
 
 	// Verify the public key from the private key matches the loaded public key
-	if privateKey.PublicKey.N.Cmp(publicKey.N) != 0 {
+	if privateKey.N.Cmp(publicKey.N) != 0 {
 		t.Errorf("Public key modulus doesn't match private key's public key modulus")
 	}
 
-	if privateKey.PublicKey.E != publicKey.E {
+	if privateKey.E != publicKey.E {
 		t.Errorf("Public key exponent doesn't match private key's public key exponent")
 	}
 
