@@ -121,7 +121,10 @@ func CreateTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, deb
 handling project packages using a nix shell environment, and securely storing environment secrets.`,
 	}
 
-	// Use the actual SecretsCmd but reset its state
+	// Reset global state before creating command to avoid shared state
+	cmd.ResetGlobalState()
+
+	// Use the actual SecretsCmd but with reset state
 	rootCmd.AddCommand(cmd.GetSecretsCmd())
 
 	// Set output streams
@@ -234,7 +237,7 @@ func InitializeProjectStructureOnly(t *testing.T, tempDir, tempUserDir string) {
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
 	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
-	
+
 	if err := os.MkdirAll(publicKeysDir, 0755); err != nil {
 		t.Fatalf("Failed to create public keys directory: %v", err)
 	}

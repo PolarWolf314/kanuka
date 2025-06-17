@@ -73,7 +73,7 @@ func testReadOnlyProjectDirectory(t *testing.T, originalWd string, originalUserS
 	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
 	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
+
 	os.Remove(privateKeyPath)
 	os.Remove(publicKeyPath)
 	os.Remove(projectPublicKeyPath)
@@ -131,7 +131,7 @@ func testReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSett
 	if err := os.MkdirAll(keysDir, 0755); err != nil {
 		t.Fatalf("Failed to create keys directory: %v", err)
 	}
-	
+
 	// Make the keys directory read-only (this should prevent writing key files)
 	if err := os.Chmod(keysDir, 0555); err != nil {
 		t.Fatalf("Failed to make keys directory read-only: %v", err)
@@ -144,7 +144,7 @@ func testReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSett
 	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
 	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	
+
 	os.Remove(privateKeyPath)
 	os.Remove(publicKeyPath)
 	os.Remove(projectPublicKeyPath)
@@ -243,10 +243,10 @@ func testInvalidProjectStructure(t *testing.T, originalWd string, originalUserSe
 				if tc.name == "PublicKeysAsFile" || tc.name == "SecretsAsFile" {
 					// These cases may cause log.Fatal, which is expected
 					t.Logf("Test %s: Command correctly detected invalid structure and failed appropriately", tc.name)
-				} else if !strings.Contains(output, "not been initialized") && 
-				   !strings.Contains(output, "failed") && 
-				   !strings.Contains(output, "already exists") &&
-				   err == nil {
+				} else if !strings.Contains(output, "not been initialized") &&
+					!strings.Contains(output, "failed") &&
+					!strings.Contains(output, "already exists") &&
+					err == nil {
 					t.Errorf("Expected error for %s but got success, output: %s", tc.name, output)
 				} else {
 					t.Logf("Test %s correctly detected invalid structure: %s", tc.name, output)
@@ -360,11 +360,11 @@ func testPermissionDeniedScenarios(t *testing.T, originalWd string, originalUser
 			if tc.expectError {
 				// Check if we got either an actual error OR an error message in the output
 				hasError := err != nil
-				hasErrorMessage := strings.Contains(output, "permission denied") || 
-								 strings.Contains(output, "failed") || 
-								 strings.Contains(output, "✗") ||
-								 strings.Contains(output, "already exists")
-				
+				hasErrorMessage := strings.Contains(output, "permission denied") ||
+					strings.Contains(output, "failed") ||
+					strings.Contains(output, "✗") ||
+					strings.Contains(output, "already exists")
+
 				if !hasError && !hasErrorMessage {
 					t.Errorf("Expected error or error message for %s but got neither. Error: %v, Output: %s", tc.name, err, output)
 				}

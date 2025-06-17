@@ -17,6 +17,11 @@ func init() {
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
 }
 
+// resetCreateCommandState resets the create command's global state for testing.
+func resetCreateCommandState() {
+	force = false
+}
+
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",

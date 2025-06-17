@@ -44,6 +44,14 @@ func GetSecretsCmd() *cobra.Command {
 	return SecretsCmd
 }
 
+// ResetGlobalState resets all global variables to their default values for testing.
+func ResetGlobalState() {
+	verbose = false
+	debug = false
+	// Reset the force flag from secrets_create.go
+	resetCreateCommandState()
+}
+
 // SetVerbose sets the verbose flag for testing.
 func SetVerbose(v bool) {
 	verbose = v
