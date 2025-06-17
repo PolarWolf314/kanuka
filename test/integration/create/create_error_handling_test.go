@@ -65,7 +65,7 @@ func testReadOnlyProjectDirectory(t *testing.T, originalWd string, originalUserS
 	if err := os.Chmod(tempDir, 0555); err != nil {
 		t.Fatalf("Failed to make project directory read-only: %v", err)
 	}
-	defer os.Chmod(tempDir, 0755) // Restore permissions for cleanup
+	defer func() { _ = os.Chmod(tempDir, 0755) }() // Restore permissions for cleanup
 
 	// Clean up any existing keys first to test actual permission behavior
 	username := configs.UserKanukaSettings.Username
@@ -136,7 +136,7 @@ func testReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSett
 	if err := os.Chmod(keysDir, 0555); err != nil {
 		t.Fatalf("Failed to make keys directory read-only: %v", err)
 	}
-	defer os.Chmod(keysDir, 0755) // Restore permissions for cleanup
+	defer func() { _ = os.Chmod(keysDir, 0755) }() // Restore permissions for cleanup
 
 	// Clean up any existing keys first to test actual permission behavior
 	username := configs.UserKanukaSettings.Username
@@ -181,7 +181,7 @@ func testInvalidProjectStructure(t *testing.T, originalWd string, originalUserSe
 		{
 			name: "KanukaAsFile",
 			setupFunc: func(tempDir string) error {
-				return os.WriteFile(filepath.Join(tempDir, ".kanuka"), []byte("not a directory"), 0644)
+				return os.WriteFile(filepath.Join(tempDir, ".kanuka"), []byte("not a directory"), 0600)
 			},
 			expectError: true,
 		},
@@ -192,7 +192,7 @@ func testInvalidProjectStructure(t *testing.T, originalWd string, originalUserSe
 				if err := os.MkdirAll(kanukaDir, 0755); err != nil {
 					return err
 				}
-				return os.WriteFile(filepath.Join(kanukaDir, "public_keys"), []byte("not a directory"), 0644)
+				return os.WriteFile(filepath.Join(kanukaDir, "public_keys"), []byte("not a directory"), 0600)
 			},
 			expectError: true,
 		},
@@ -204,7 +204,7 @@ func testInvalidProjectStructure(t *testing.T, originalWd string, originalUserSe
 				if err := os.MkdirAll(publicKeysDir, 0755); err != nil {
 					return err
 				}
-				return os.WriteFile(filepath.Join(kanukaDir, "secrets"), []byte("not a directory"), 0644)
+				return os.WriteFile(filepath.Join(kanukaDir, "secrets"), []byte("not a directory"), 0600)
 			},
 			expectError: true,
 		},
@@ -343,10 +343,10 @@ func testPermissionDeniedScenarios(t *testing.T, originalWd string, originalUser
 			// Cleanup function to restore permissions
 			defer func() {
 				// Restore permissions for cleanup
-				os.Chmod(filepath.Join(tempDir, ".kanuka"), 0755)
-				os.Chmod(filepath.Join(tempDir, ".kanuka", "public_keys"), 0755)
-				os.Chmod(filepath.Join(tempDir, ".kanuka", "secrets"), 0755)
-				os.Chmod(filepath.Join(tempUserDir, "keys"), 0755)
+				_ = os.Chmod(filepath.Join(tempDir, ".kanuka"), 0755)
+				_ = os.Chmod(filepath.Join(tempDir, ".kanuka", "public_keys"), 0755)
+				_ = os.Chmod(filepath.Join(tempDir, ".kanuka", "secrets"), 0755)
+				_ = os.Chmod(filepath.Join(tempUserDir, "keys"), 0755)
 			}()
 
 			// Try to create keys

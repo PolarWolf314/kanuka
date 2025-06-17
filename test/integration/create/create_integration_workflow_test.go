@@ -166,7 +166,7 @@ func testCreateThenEncryptWorkflow(t *testing.T, originalWd string, originalUser
 	// Step 2: Create a test .env file to encrypt
 	envFilePath := filepath.Join(tempDir, "test.env")
 	envContent := "DATABASE_URL=postgres://localhost:5432/test\nAPI_KEY=secret123\n"
-	if err := os.WriteFile(envFilePath, []byte(envContent), 0644); err != nil {
+	if err := os.WriteFile(envFilePath, []byte(envContent), 0600); err != nil {
 		t.Fatalf("Failed to create test .env file: %v", err)
 	}
 
