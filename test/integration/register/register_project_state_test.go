@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 

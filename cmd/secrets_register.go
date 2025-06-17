@@ -50,6 +50,14 @@ var registerCmd = &cobra.Command{
 			return nil
 		}
 
+		// Check if pubkey flag was explicitly used but with empty content
+		if cmd.Flags().Changed("pubkey") && publicKeyText == "" {
+			finalMessage := color.RedString("✗") + " Invalid public key format provided\n" +
+				color.RedString("Error: ") + "public key text cannot be empty\n"
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
 			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
