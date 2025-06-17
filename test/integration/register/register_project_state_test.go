@@ -249,7 +249,7 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 	}
 
 	// Verify the target user can still decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
 // testRegisterInCorruptedProjectStructure tests handling missing directories gracefully.
