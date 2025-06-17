@@ -3,6 +3,7 @@ package cmd
 import (
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -31,7 +32,7 @@ func init() {
 	SecretsCmd.AddCommand(encryptCmd)
 	SecretsCmd.AddCommand(decryptCmd)
 	SecretsCmd.AddCommand(createCmd)
-	SecretsCmd.AddCommand(registerCmd)
+	SecretsCmd.AddCommand(RegisterCmd)
 	SecretsCmd.AddCommand(removeCmd)
 	SecretsCmd.AddCommand(initCmd)
 	SecretsCmd.AddCommand(purgeCmd)
@@ -44,12 +45,34 @@ func GetSecretsCmd() *cobra.Command {
 	return SecretsCmd
 }
 
+
 // ResetGlobalState resets all global variables to their default values for testing.
 func ResetGlobalState() {
 	verbose = false
 	debug = false
 	// Reset the force flag from secrets_create.go
 	resetCreateCommandState()
+	// Reset the register command flags
+	resetRegisterCommandState()
+	// Reset Cobra flag state to prevent pollution between tests
+	resetCobraFlagState()
+}
+
+// resetCobraFlagState resets the flag state for all commands to prevent test pollution
+func resetCobraFlagState() {
+	// Reset the register command flags specifically
+	if RegisterCmd != nil && RegisterCmd.Flags() != nil {
+		RegisterCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+	
+	// Reset the main secrets command flags
+	if SecretsCmd != nil && SecretsCmd.Flags() != nil {
+		SecretsCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
 }
 
 // SetVerbose sets the verbose flag for testing.

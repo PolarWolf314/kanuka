@@ -19,13 +19,21 @@ var (
 	publicKeyText  string
 )
 
-func init() {
-	registerCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
-	registerCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
-	registerCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified username")
+// resetRegisterCommandState resets all register command global variables to their default values for testing.
+func resetRegisterCommandState() {
+	username = ""
+	customFilePath = ""
+	publicKeyText = ""
 }
 
-var registerCmd = &cobra.Command{
+
+func init() {
+	RegisterCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
+	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
+	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified username")
+}
+
+var RegisterCmd = &cobra.Command{
 	Use:   "register",
 	Short: "Registers a new user to be given access to the repository's secrets",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,7 +59,11 @@ var registerCmd = &cobra.Command{
 		}
 
 		// Check if pubkey flag was explicitly used but with empty content
-		if cmd.Flags().Changed("pubkey") && publicKeyText == "" {
+		// Only validate pubkey emptiness if we're in the pubkey text registration path
+		if publicKeyText != "" {
+			// We're already in the pubkey path, so this validation is handled below
+		} else if cmd.Flags().Changed("pubkey") {
+			// The pubkey flag was explicitly set but is empty
 			finalMessage := color.RedString("✗") + " Invalid public key format provided\n" +
 				color.RedString("Error: ") + "public key text cannot be empty\n"
 			spinner.FinalMSG = finalMessage
