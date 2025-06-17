@@ -371,7 +371,7 @@ func testRegisterWithSpecialCharactersInUsername(t *testing.T, originalWd string
 	}
 
 	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
 // testRegisterWithVeryLongUsername tests handling very long usernames (within limits).
@@ -416,5 +416,5 @@ func testRegisterWithVeryLongUsername(t *testing.T, originalWd string, originalU
 	}
 
 	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }

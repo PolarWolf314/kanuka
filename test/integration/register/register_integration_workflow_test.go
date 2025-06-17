@@ -75,7 +75,7 @@ func testInitCreateRegisterWorkflow(t *testing.T, originalWd string, originalUse
 
 	// Step 2: Create secrets file
 	secretsFile := filepath.Join(tempDir, "test.env")
-	if err := os.WriteFile(secretsFile, []byte("TEST_VAR=test_value\n"), 0644); err != nil {
+	if err := os.WriteFile(secretsFile, []byte("TEST_VAR=test_value\n"), 0600); err != nil {
 		t.Fatalf("Failed to create test secrets file: %v", err)
 	}
 
@@ -167,7 +167,7 @@ func testMultipleUserRegistrationWorkflow(t *testing.T, originalWd string, origi
 
 	// Verify all users can decrypt the symmetric key
 	for _, user := range users {
-		verifyUserCanDecrypt(t, user, userKeyPairs[user].privateKey, tempDir)
+		verifyUserCanDecrypt(t, user, userKeyPairs[user].privateKey)
 	}
 }
 
@@ -208,7 +208,7 @@ func testRegisterThenEncryptDecryptWorkflow(t *testing.T, originalWd string, ori
 
 	// Create a test secrets file
 	secretsFile := filepath.Join(tempDir, "test.env")
-	if err := os.WriteFile(secretsFile, []byte("TEST_VAR=test_value\nANOTHER_VAR=another_value\n"), 0644); err != nil {
+	if err := os.WriteFile(secretsFile, []byte("TEST_VAR=test_value\nANOTHER_VAR=another_value\n"), 0600); err != nil {
 		t.Fatalf("Failed to create test secrets file: %v", err)
 	}
 
@@ -447,8 +447,8 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	}
 
 	// Verify both users can decrypt the symmetric key
-	verifyUserCanDecrypt(t, userB, userBKeyPair.privateKey, tempDir)
-	verifyUserCanDecrypt(t, userC, userCKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, userB, userBKeyPair.privateKey)
+	verifyUserCanDecrypt(t, userC, userCKeyPair.privateKey)
 }
 
 // testRegisterAfterPurgeWorkflow tests register user after project purge.
@@ -484,7 +484,7 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 
 	// Create and encrypt a secrets file
 	secretsFile := filepath.Join(tempDir, "test.env")
-	if err := os.WriteFile(secretsFile, []byte("TEST_VAR=test_value\n"), 0644); err != nil {
+	if err := os.WriteFile(secretsFile, []byte("TEST_VAR=test_value\n"), 0600); err != nil {
 		t.Fatalf("Failed to create test secrets file: %v", err)
 	}
 
@@ -501,7 +501,7 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 	// Remove all files in .kanuka/secrets/ and .kanuka/public_keys/
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
 	publicKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
-	
+
 	// Remove all files in secrets directory
 	if entries, err := os.ReadDir(secretsDir); err == nil {
 		for _, entry := range entries {
@@ -510,7 +510,7 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 			}
 		}
 	}
-	
+
 	// Remove all files in public_keys directory
 	if entries, err := os.ReadDir(publicKeysDir); err == nil {
 		for _, entry := range entries {
@@ -582,6 +582,6 @@ func savePrivateKeyToFile(privateKey *rsa.PrivateKey, filePath string) error {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privateKeyBytes,
 	}
-	
+
 	return os.WriteFile(filePath, pem.EncodeToMemory(privateKeyPEM), 0600)
 }

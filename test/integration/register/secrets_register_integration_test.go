@@ -92,7 +92,7 @@ func testRegisterExistingUser(t *testing.T, originalWd string, originalUserSetti
 	}
 
 	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
 // testRegisterWithCustomFile tests registering using --file flag with a custom public key file.
@@ -146,7 +146,7 @@ func testRegisterWithCustomFile(t *testing.T, originalWd string, originalUserSet
 	}
 
 	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
 // testRegisterWithPubkeyText tests registering using --pubkey and --user flags.
@@ -202,7 +202,7 @@ func testRegisterWithPubkeyText(t *testing.T, originalWd string, originalUserSet
 	}
 
 	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey, tempDir)
+	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
 // testRegisterWithVerboseFlag tests register command with verbose flag.
@@ -363,7 +363,7 @@ func convertPublicKeyToPEM(t *testing.T, publicKey *rsa.PublicKey) string {
 }
 
 // verifyUserCanDecrypt verifies that a user can decrypt the symmetric key with their private key.
-func verifyUserCanDecrypt(t *testing.T, username string, privateKey *rsa.PrivateKey, projectDir string) {
+func verifyUserCanDecrypt(t *testing.T, username string, privateKey *rsa.PrivateKey) {
 	// Get the user's encrypted symmetric key
 	encryptedSymKey, err := secrets.GetProjectKanukaKey(username)
 	if err != nil {

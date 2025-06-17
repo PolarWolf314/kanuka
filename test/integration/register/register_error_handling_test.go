@@ -74,14 +74,14 @@ func testRegisterWithNetworkInterruption(t *testing.T, originalWd string, origin
 	// Check if command actually failed (either through error return or error symbol in output)
 	hasErrorSymbol := strings.Contains(output, "✗")
 	hasErrorMessage := strings.Contains(output, "Error:") || strings.Contains(output, "error") || strings.Contains(output, "failed")
-	
+
 	if err == nil && !hasErrorSymbol && !hasErrorMessage {
 		t.Errorf("Expected command to fail or show error, but got success. Output: %s", output)
 	}
 
 	// Check for permission-related error messages
-	hasPermissionError := strings.Contains(output, "permission denied") || 
-		strings.Contains(output, "Permission denied") || 
+	hasPermissionError := strings.Contains(output, "permission denied") ||
+		strings.Contains(output, "Permission denied") ||
 		strings.Contains(output, "read-only") ||
 		strings.Contains(output, "cannot create")
 
@@ -89,7 +89,7 @@ func testRegisterWithNetworkInterruption(t *testing.T, originalWd string, origin
 	// Some systems may handle this differently
 	targetKanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
 	_, fileExists := os.Stat(targetKanukaFile)
-	
+
 	if strings.Contains(output, "✓") && fileExists == nil {
 		t.Logf("Command succeeded despite read-only directory - this may be system-dependent behavior")
 	} else if !hasPermissionError {
@@ -198,7 +198,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 	// Check if command actually failed (either through error return or error symbol in output)
 	hasErrorSymbol := strings.Contains(output, "✗")
 	hasErrorMessage := strings.Contains(output, "Error:") || strings.Contains(output, "error") || strings.Contains(output, "failed")
-	
+
 	if err == nil && !hasErrorSymbol && !hasErrorMessage {
 		t.Errorf("Expected command to fail or show error in first attempt, but got success. Output: %s", output)
 	}
