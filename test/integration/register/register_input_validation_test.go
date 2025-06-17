@@ -235,7 +235,7 @@ func testRegisterWithInvalidFileExtension(t *testing.T, originalWd string, origi
 
 	// Create a file with wrong extension
 	invalidFile := filepath.Join(tempUserDir, "key.txt")
-	if err := os.WriteFile(invalidFile, []byte("some content"), 0644); err != nil {
+	if err := os.WriteFile(invalidFile, []byte("some content"), 0600); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
