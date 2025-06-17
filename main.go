@@ -20,8 +20,9 @@ Features:
   - Enter a nix shell without having to worry about your environment
   - Provision cloud resources using Pulumi
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("Welcome to Kānuka! Run 'kanuka --help' to see available commands.")
+		return nil
 	},
 }
 
