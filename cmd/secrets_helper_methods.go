@@ -18,7 +18,8 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	s.Suffix = " " + message
 	err := s.Color("cyan")
 	if err != nil {
-		Logger.Fatalf("Failed to create a spinner: %v", err)
+		// If we can't set spinner color, just continue without it
+		Logger.Warnf("Failed to set spinner color: %v", err)
 	}
 
 	if !verbose && !debug {
