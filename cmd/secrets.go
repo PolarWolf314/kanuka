@@ -53,6 +53,8 @@ func ResetGlobalState() {
 	resetCreateCommandState()
 	// Reset the register command flags
 	resetRegisterCommandState()
+	// Reset the remove command flags
+	resetRemoveCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -62,6 +64,13 @@ func resetCobraFlagState() {
 	// Reset the register command flags specifically
 	if RegisterCmd != nil && RegisterCmd.Flags() != nil {
 		RegisterCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the remove command flags specifically
+	if removeCmd != nil && removeCmd.Flags() != nil {
+		removeCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}
