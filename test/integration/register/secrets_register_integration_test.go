@@ -64,7 +64,7 @@ func testRegisterExistingUser(t *testing.T, originalWd string, originalUserSetti
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -122,7 +122,7 @@ func testRegisterWithCustomFile(t *testing.T, originalWd string, originalUserSet
 	}
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--file", customKeyFile})
 		return cmd.Execute()
 	})
@@ -172,7 +172,7 @@ func testRegisterWithPubkeyText(t *testing.T, originalWd string, originalUserSet
 	pubkeyText := convertPublicKeyToPEM(t, targetUserKeyPair.publicKey)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pubkeyText, "--user", targetUser})
 		return cmd.Execute()
 	})

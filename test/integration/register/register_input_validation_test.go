@@ -74,7 +74,7 @@ func testRegisterWithNoFlags(t *testing.T, originalWd string, originalUserSettin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -120,7 +120,7 @@ func testRegisterWithPubkeyButNoUser(t *testing.T, originalWd string, originalUs
 	pubkeyText := convertPublicKeyToPEM(t, keyPair.publicKey)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pubkeyText})
 		return cmd.Execute()
 	})
@@ -162,7 +162,7 @@ func testRegisterWithInvalidPubkeyFormat(t *testing.T, originalWd string, origin
 	targetUser := "invaliduser"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", invalidPubkeyText, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -199,7 +199,7 @@ func testRegisterWithNonExistentFile(t *testing.T, originalWd string, originalUs
 	nonExistentFile := filepath.Join(tempUserDir, "nonexistent.pub")
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--file", nonExistentFile})
 		return cmd.Execute()
 	})
@@ -240,7 +240,7 @@ func testRegisterWithInvalidFileExtension(t *testing.T, originalWd string, origi
 	}
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--file", invalidFile})
 		return cmd.Execute()
 	})
@@ -277,7 +277,7 @@ func testRegisterWithEmptyPubkeyText(t *testing.T, originalWd string, originalUs
 	targetUser := "emptyuser"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", "", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -312,7 +312,7 @@ func testRegisterWithEmptyUsername(t *testing.T, originalWd string, originalUser
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", ""})
 		return cmd.Execute()
 	})
@@ -351,7 +351,7 @@ func testRegisterWithSpecialCharactersInUsername(t *testing.T, originalWd string
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -396,7 +396,7 @@ func testRegisterWithVeryLongUsername(t *testing.T, originalWd string, originalU
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})

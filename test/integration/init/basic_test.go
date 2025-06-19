@@ -68,7 +68,7 @@ func testInitInEmptyFolder(t *testing.T, originalWd string, originalUserSettings
 
 	shared.VerifyUserKeys(t, tempUserDir)
 
-	if !strings.Contains(output, "Warning: Remember: Never commit .env files") {
+	if !strings.Contains(output, "Warning: Remember to never commit .env files") {
 		t.Errorf("Expected warning message not found in output: %s", output)
 	}
 }
