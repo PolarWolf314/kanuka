@@ -95,8 +95,12 @@ func testRemoveWithNoWritePermissionOnDirectory(t *testing.T, originalWd string,
 
 	// Ensure permissions are restored for cleanup
 	defer func() {
-		os.Chmod(publicKeysDir, 0755)
-		os.Chmod(secretsDir, 0755)
+		if err := os.Chmod(publicKeysDir, 0755); err != nil {
+			t.Logf("Warning: Failed to restore permissions on public keys directory: %v", err)
+		}
+		if err := os.Chmod(secretsDir, 0755); err != nil {
+			t.Logf("Warning: Failed to restore permissions on secrets directory: %v", err)
+		}
 	}()
 
 	// Remove the user

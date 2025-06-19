@@ -71,13 +71,13 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 
 	// Define multiple users
 	users := []string{"user1", "user2", "user3"}
-	
+
 	// Create key pairs and register all users
 	for i, user := range users {
 		// Generate key pair for user
 		privateKeyPath := filepath.Join(tempUserDir, user+".key")
 		publicKeyPath := filepath.Join(tempUserDir, user+".pub")
-		
+
 		if err := shared.GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
 			t.Fatalf("Failed to generate RSA key pair for user %s: %v", user, err)
 		}
@@ -89,7 +89,7 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		if err := secretsCmd.Execute(); err != nil {
 			t.Fatalf("Failed to register user %s: %v", user, err)
 		}
-		
+
 		t.Logf("Registered user %d: %s", i+1, user)
 	}
 
@@ -97,7 +97,7 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
 	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
-	
+
 	// List all files in the directories to debug
 	publicKeyFiles, err := os.ReadDir(publicKeysDir)
 	if err != nil {
@@ -107,7 +107,7 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	for _, file := range publicKeyFiles {
 		t.Logf("  - %s", file.Name())
 	}
-	
+
 	secretFiles, err := os.ReadDir(secretsDir)
 	if err != nil {
 		t.Fatalf("Failed to read secrets directory: %v", err)
@@ -116,13 +116,13 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	for _, file := range secretFiles {
 		t.Logf("  - %s", file.Name())
 	}
-	
+
 	// The register command might be using a different naming convention
 	// Let's check what files actually exist and use those for our test
 
 	// Based on the output, we can see that the register command creates files with the user's name
 	// Let's remove one of the users we registered
-	
+
 	// Remove the second user
 	userToRemove := users[1] // user2
 	cmd.ResetGlobalState()
@@ -141,7 +141,7 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	for _, file := range publicKeyFilesAfter {
 		t.Logf("  - %s", file.Name())
 	}
-	
+
 	secretFilesAfter, err := os.ReadDir(secretsDir)
 	if err != nil {
 		t.Fatalf("Failed to read secrets directory after removal: %v", err)
@@ -150,29 +150,29 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	for _, file := range secretFilesAfter {
 		t.Logf("  - %s", file.Name())
 	}
-	
+
 	// Verify that the kanuka key file for the removed user is gone
 	// The public key file might not be created with the expected name, so we'll focus on the kanuka key
 	removedUserKanukaKeyPath := filepath.Join(secretsDir, userToRemove+".kanuka")
-	
+
 	if _, err := os.Stat(removedUserKanukaKeyPath); !os.IsNotExist(err) {
 		t.Errorf("Kanuka key file for removed user %s should be gone", userToRemove)
 	}
-	
+
 	// Verify that the number of secret files has decreased
 	if len(secretFilesAfter) >= len(secretFiles) {
-		t.Errorf("Expected fewer secret files after removal, but got %d before and %d after", 
+		t.Errorf("Expected fewer secret files after removal, but got %d before and %d after",
 			len(secretFiles), len(secretFilesAfter))
 	}
-	
+
 	// Verify other users' kanuka key files still exist
 	for _, user := range users {
 		if user == userToRemove {
 			continue // Skip the removed user
 		}
-		
+
 		kanukaKeyPath := filepath.Join(secretsDir, user+".kanuka")
-		
+
 		if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 			t.Errorf("Kanuka key file for user %s should still exist", user)
 		}

@@ -74,7 +74,7 @@ var removeCmd = &cobra.Command{
 func handleUserRemoval(spinner *spinner.Spinner) error {
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-	
+
 	Logger.Debugf("Project public key path: %s, Project secrets path: %s", projectPublicKeyPath, projectSecretsPath)
 
 	// Define file paths for the user

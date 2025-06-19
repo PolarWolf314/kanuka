@@ -80,7 +80,7 @@ func testRemoveWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 	publicKeyPath := filepath.Join(publicKeysDir, testUser+".pub")
 
 	// Create dummy public key file
-	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0644)
+	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create public key file: %v", err)
 	}
@@ -253,5 +253,7 @@ func testRemoveWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 	}
 
 	// Restore permissions to allow cleanup
-	os.Chmod(publicKeyPath, 0644)
+	if err := os.Chmod(publicKeyPath, 0600); err != nil {
+		t.Logf("Warning: Failed to restore permissions on public key file: %v", err)
+	}
 }

@@ -71,11 +71,11 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 
 	// Register a second user
 	secondUser := "seconduser"
-	
+
 	// Generate key pair for second user
 	privateKeyPath := filepath.Join(tempUserDir, "private.key")
 	publicKeyPath := filepath.Join(tempUserDir, "public.pub")
-	
+
 	if err := shared.GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
 		t.Fatalf("Failed to generate RSA key pair: %v", err)
 	}
@@ -92,7 +92,7 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
 	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
-	
+
 	// List all files in the directories to debug
 	publicKeyFiles, err := os.ReadDir(publicKeysDir)
 	if err != nil {
@@ -102,7 +102,7 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 	for _, file := range publicKeyFiles {
 		t.Logf("  - %s", file.Name())
 	}
-	
+
 	secretFiles, err := os.ReadDir(secretsDir)
 	if err != nil {
 		t.Fatalf("Failed to read secrets directory: %v", err)
@@ -111,17 +111,17 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 	for _, file := range secretFiles {
 		t.Logf("  - %s", file.Name())
 	}
-	
+
 	// Based on the output, the register command is creating files with these names
 	// For the integration test, we'll just check for the kanuka key file
 	// since that's what's being created with the expected name
 	registeredKanukaKeyPath := filepath.Join(secretsDir, "public.kanuka")
-	
+
 	var statErr error
 	if _, statErr = os.Stat(registeredKanukaKeyPath); os.IsNotExist(statErr) {
 		t.Fatal("Kanuka key file should exist after registration")
 	}
-	
+
 	t.Logf("Found kanuka key file: %v", registeredKanukaKeyPath)
 
 	// Remove the user - we need to use "public" since that's the filename being used
