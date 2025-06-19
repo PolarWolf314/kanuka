@@ -84,8 +84,10 @@ var decryptCmd = &cobra.Command{
 		// Security warning: Check private key file permissions
 		if fileInfo, err := os.Stat(privateKeyPath); err == nil {
 			if fileInfo.Mode().Perm() != 0600 {
+				spinner.Stop()
 				Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'",
 					fileInfo.Mode().Perm(), privateKeyPath)
+				spinner.Restart()
 			}
 		}
 
@@ -122,8 +124,10 @@ var decryptCmd = &cobra.Command{
 		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
 		Logger.Infof("Decrypt command completed successfully. Created %d environment files", len(listOfEnvFiles))
 
+		spinner.Stop()
 		// Security reminder
 		Logger.WarnfUser("Decrypted .env files contain sensitive data - ensure they're in your .gitignore")
+		spinner.Restart()
 
 		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
 			"The following files were created:" + formattedListOfFiles +
