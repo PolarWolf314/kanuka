@@ -39,7 +39,7 @@ var createCmd = &cobra.Command{
 
 		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -64,13 +64,15 @@ var createCmd = &cobra.Command{
 
 			if userPublicKey != nil {
 				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
-					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
+					"To override, run: " + color.YellowString("kanuka secrets create --force")
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 		} else {
 			Logger.Infof("Force flag set, will override existing keys if present")
+			spinner.Stop()
 			Logger.WarnfUser("Using --force flag will overwrite existing keys - ensure you have backups")
+			spinner.Restart()
 		}
 
 		Logger.Debugf("Creating and saving RSA key pair")
@@ -113,7 +115,7 @@ var createCmd = &cobra.Command{
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
-			"     " + color.YellowString("kanuka secrets add "+currentUsername+"\n")
+			"     " + color.YellowString("kanuka secrets add "+currentUsername)
 
 		spinner.FinalMSG = finalMessage
 		return nil

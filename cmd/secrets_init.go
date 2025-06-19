@@ -22,7 +22,7 @@ var initCmd = &cobra.Command{
 		}
 		if kanukaExists {
 			finalMessage := color.RedString("✗") + " Kanuka has already been initialized\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets create") + " instead\n"
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets create") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -61,11 +61,13 @@ var initCmd = &cobra.Command{
 
 		Logger.Infof("Init command completed successfully")
 
+		spinner.Stop()
 		// Security reminder about .env files
-		Logger.WarnfUser("Remember: Never commit .env files to version control - only commit .kanuka files")
+		Logger.WarnfUser("Remember to never commit .env files to version control - only commit .kanuka files")
+		spinner.Restart()
 
 		finalMessage := color.GreenString("✓") + " Kanuka initialized successfully!\n" +
-			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files\n"
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files"
 
 		spinner.FinalMSG = finalMessage
 		return nil

@@ -68,7 +68,7 @@ func testRegisterInUninitializedProject(t *testing.T, originalWd string, origina
 	targetUser := "targetuser"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -113,7 +113,7 @@ func testRegisterWhenCurrentUserHasNoAccess(t *testing.T, originalWd string, ori
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -163,7 +163,7 @@ func testRegisterWhenCurrentUserPrivateKeyMissing(t *testing.T, originalWd strin
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -207,7 +207,7 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 
 	// Register the user first time
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -224,7 +224,7 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 
 	// Register the user again
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -280,7 +280,7 @@ func testRegisterInCorruptedProjectStructure(t *testing.T, originalWd string, or
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -326,7 +326,7 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -376,7 +376,7 @@ func testRegisterWithCorruptedPrivateKey(t *testing.T, originalWd string, origin
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})

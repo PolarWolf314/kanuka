@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -16,6 +17,7 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	Logger.Debugf("Starting spinner with message: %s", message)
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	s.Suffix = " " + message
+
 	err := s.Color("cyan")
 	if err != nil {
 		// If we can't set spinner color, just continue without it
@@ -32,15 +34,24 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	}
 
 	cleanup := func() {
+		// Restore log output first
 		if !verbose && !debug {
-			Logger.Debugf("Stopping spinner and restoring log output")
+			Logger.Debugf("Restoring log output")
 			log.SetOutput(os.Stdout)
-			s.Stop()
 		}
-		// Always print the final message if it's set, regardless of verbose mode
-		// This ensures the message is captured by tests
-		if s.FinalMSG != "" {
-			Logger.Debugf("Displaying final message")
+
+		// Ensure the final message ends with a newline
+		if s.FinalMSG != "" && !strings.HasSuffix(s.FinalMSG, "\n") {
+			s.FinalMSG += "\n"
+		}
+
+		if !verbose && !debug {
+			// Stop the spinner if it was started
+			Logger.Debugf("Stopping spinner")
+			s.Stop()
+		} else if s.FinalMSG != "" {
+			// In verbose/debug mode, the spinner doesn't run, so we need to print the message manually
+			Logger.Debugf("Displaying final message in verbose/debug mode")
 			fmt.Print(s.FinalMSG)
 		}
 	}
