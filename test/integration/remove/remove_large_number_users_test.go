@@ -78,13 +78,13 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	t.Logf("Creating %d users...", numUsers)
 	for i := 1; i <= numUsers; i++ {
 		username := fmt.Sprintf("user%d", i)
-		
+
 		// Create dummy public key file
 		publicKeyPath := filepath.Join(publicKeysDir, username+".pub")
 		if err := os.WriteFile(publicKeyPath, []byte(fmt.Sprintf("dummy public key for %s", username)), 0644); err != nil {
 			t.Fatalf("Failed to create public key file for user %s: %v", username, err)
 		}
-		
+
 		// Create dummy kanuka key file
 		kanukaKeyPath := filepath.Join(secretsDir, username+".kanuka")
 		if err := os.WriteFile(kanukaKeyPath, []byte(fmt.Sprintf("dummy kanuka key for %s", username)), 0600); err != nil {
@@ -94,7 +94,7 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 
 	// Measure time to remove a user
 	start := time.Now()
-	
+
 	// Remove the user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
@@ -102,18 +102,18 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
-	
+
 	duration := time.Since(start)
 	t.Logf("Time to remove user from %d users: %v", numUsers, duration)
 
 	// Verify the user's files are removed
 	publicKeyPath := filepath.Join(publicKeysDir, userToRemove+".pub")
 	kanukaKeyPath := filepath.Join(secretsDir, userToRemove+".kanuka")
-	
+
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
 		t.Error("Public key file should be removed")
 	}
-	
+
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
 		t.Error("Kanuka key file should be removed")
 	}
@@ -125,14 +125,14 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 		if username == userToRemove {
 			continue
 		}
-		
+
 		publicKeyPath := filepath.Join(publicKeysDir, username+".pub")
 		kanukaKeyPath := filepath.Join(secretsDir, username+".kanuka")
-		
+
 		if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
 			t.Errorf("Public key file for user %s should still exist", username)
 		}
-		
+
 		if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 			t.Errorf("Kanuka key file for user %s should still exist", username)
 		}

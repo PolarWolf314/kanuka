@@ -27,7 +27,11 @@ func TestRemoveCommand_RequiresUserFlag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
@@ -87,7 +91,11 @@ func TestRemoveCommand_UserNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
@@ -147,7 +155,11 @@ func TestRemoveCommand_SuccessfulRemoval(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
@@ -184,7 +196,7 @@ func TestRemoveCommand_SuccessfulRemoval(t *testing.T) {
 	kanukaKeyPath := filepath.Join(secretsDir, testUser+".kanuka")
 
 	// Create dummy files
-	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0644)
+	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create public key file: %v", err)
 	}
