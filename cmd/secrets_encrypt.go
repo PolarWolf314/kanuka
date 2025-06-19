@@ -83,8 +83,10 @@ var encryptCmd = &cobra.Command{
 		// Security warning: Check private key file permissions
 		if fileInfo, err := os.Stat(privateKeyPath); err == nil {
 			if fileInfo.Mode().Perm() != 0600 {
+				spinner.Stop()
 				Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'",
 					fileInfo.Mode().Perm(), privateKeyPath)
+				spinner.Start()
 			}
 		}
 

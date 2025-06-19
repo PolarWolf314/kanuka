@@ -64,13 +64,15 @@ var createCmd = &cobra.Command{
 
 			if userPublicKey != nil {
 				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
-					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
+					"To override, run: " + color.YellowString("kanuka secrets create --force")
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 		} else {
 			Logger.Infof("Force flag set, will override existing keys if present")
+			spinner.Stop()
 			Logger.WarnfUser("Using --force flag will overwrite existing keys - ensure you have backups")
+			spinner.Restart()
 		}
 
 		Logger.Debugf("Creating and saving RSA key pair")
