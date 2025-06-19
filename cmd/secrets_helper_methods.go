@@ -17,7 +17,7 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	Logger.Debugf("Starting spinner with message: %s", message)
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	s.Suffix = " " + message
-	
+
 	err := s.Color("cyan")
 	if err != nil {
 		// If we can't set spinner color, just continue without it
@@ -39,12 +39,12 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 			Logger.Debugf("Restoring log output")
 			log.SetOutput(os.Stdout)
 		}
-		
+
 		// Ensure the final message ends with a newline
 		if s.FinalMSG != "" && !strings.HasSuffix(s.FinalMSG, "\n") {
 			s.FinalMSG += "\n"
 		}
-		
+
 		if !verbose && !debug {
 			// Stop the spinner if it was started
 			Logger.Debugf("Stopping spinner")

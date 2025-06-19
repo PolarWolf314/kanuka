@@ -84,7 +84,7 @@ func testRegisterWithOpenSSHFormatKey(t *testing.T, originalWd string, originalU
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -144,7 +144,7 @@ func testRegisterWithPEMFormatKey(t *testing.T, originalWd string, originalUserS
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -207,7 +207,7 @@ func testRegisterVerifyEncryptedKeyUniqueness(t *testing.T, originalWd string, o
 		cmd.ResetGlobalState()
 
 		_, err = shared.CaptureOutput(func() error {
-			cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+			cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 			cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", user})
 			return cmd.Execute()
 		})
@@ -260,7 +260,7 @@ func testRegisterVerifyDecryptionWorks(t *testing.T, originalWd string, original
 	cmd.ResetGlobalState()
 
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -321,7 +321,7 @@ func testRegisterWithDifferentKeySizes(t *testing.T, originalWd string, original
 			cmd.ResetGlobalState()
 
 			output, err := shared.CaptureOutput(func() error {
-				cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+				cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 				cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUser})
 				return cmd.Execute()
 			})
@@ -377,7 +377,7 @@ func testRegisterCrossFormatCompatibility(t *testing.T, originalWd string, origi
 	cmd.ResetGlobalState()
 
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", "opensshuser"})
 		return cmd.Execute()
 	})
@@ -396,7 +396,7 @@ func testRegisterCrossFormatCompatibility(t *testing.T, originalWd string, origi
 	cmd.ResetGlobalState()
 
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", "pemuser"})
 		return cmd.Execute()
 	})

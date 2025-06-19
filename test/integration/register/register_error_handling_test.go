@@ -67,7 +67,7 @@ func testRegisterWithNetworkInterruption(t *testing.T, originalWd string, origin
 	}()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -132,7 +132,7 @@ func testRegisterWithPermissionDenied(t *testing.T, originalWd string, originalU
 	}()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -187,7 +187,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 
 	// Try to register (this should fail)
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -217,7 +217,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 	}
 
 	output, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -252,7 +252,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 	createTestUserKeyPair(t, tempDir, anotherUser)
 
 	output, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", anotherUser})
 		return cmd.Execute()
 	})
