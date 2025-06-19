@@ -5,6 +5,10 @@ package shared
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"log"
@@ -244,4 +248,80 @@ func InitializeProjectStructureOnly(t *testing.T, tempDir, tempUserDir string) {
 	if err := os.MkdirAll(secretsDir, 0755); err != nil {
 		t.Fatalf("Failed to create secrets directory: %v", err)
 	}
+}
+
+// RegisterTestUser registers a test user with the project.
+func RegisterTestUser(t *testing.T, username string) {
+	// Reset command state
+	cmd.ResetGlobalState()
+
+	// Create and register user
+	secretsCmd := cmd.GetSecretsCmd()
+	secretsCmd.SetArgs([]string{"register", "--user", username})
+
+	err := secretsCmd.Execute()
+	if err != nil {
+		t.Fatalf("Failed to register test user %s: %v", username, err)
+	}
+}
+
+// GetFileMode returns the file mode of a file or directory.
+func GetFileMode(path string) (os.FileMode, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, err
+	}
+	return info.Mode(), nil
+}
+
+// GenerateRSAKeyPair creates a new RSA key pair and saves them to disk.
+// This is a utility function for tests that need to create RSA key pairs.
+func GenerateRSAKeyPair(privatePath string, publicPath string) error {
+	// Generate private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("failed to generate private key: %w", err)
+	}
+
+	// Create private key PEM
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privateKeyPEM := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	}
+
+	// Save private key to file
+	privateKeyFile, err := os.Create(privatePath)
+	if err != nil {
+		return fmt.Errorf("failed to create private key file: %w", err)
+	}
+	defer privateKeyFile.Close()
+
+	if err := pem.Encode(privateKeyFile, privateKeyPEM); err != nil {
+		return fmt.Errorf("failed to encode private key: %w", err)
+	}
+
+	// Create public key PEM
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to marshal public key: %w", err)
+	}
+
+	publicKeyPEM := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: publicKeyBytes,
+	}
+
+	// Save public key to file
+	publicKeyFile, err := os.Create(publicPath)
+	if err != nil {
+		return fmt.Errorf("failed to create public key file: %w", err)
+	}
+	defer publicKeyFile.Close()
+
+	if err := pem.Encode(publicKeyFile, publicKeyPEM); err != nil {
+		return fmt.Errorf("failed to encode public key: %w", err)
+	}
+
+	return nil
 }
