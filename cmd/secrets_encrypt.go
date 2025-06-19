@@ -30,7 +30,7 @@ var encryptCmd = &cobra.Command{
 
 		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -43,7 +43,7 @@ var encryptCmd = &cobra.Command{
 		}
 		Logger.Debugf("Found %d .env files", len(listOfEnvFiles))
 		if len(listOfEnvFiles) == 0 {
-			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(projectPath) + "\n"
+			finalMessage := color.RedString("✗") + " No environment files found in " + color.YellowString(projectPath)
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -63,7 +63,7 @@ var encryptCmd = &cobra.Command{
 			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", username, err)
 			finalMessage := color.RedString("✗") + " Failed to get your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error() + "\n"
+				color.RedString("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -74,7 +74,7 @@ var encryptCmd = &cobra.Command{
 		if err != nil {
 			Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
 			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error() + "\n"
+				color.RedString("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -96,7 +96,7 @@ var encryptCmd = &cobra.Command{
 			Logger.Errorf("Failed to decrypt symmetric key: %v", err)
 			finalMessage := color.RedString("✗") + " Failed to decrypt your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error() + "\n"
+				color.RedString("Error: ") + err.Error()
 
 			spinner.FinalMSG = finalMessage
 			return nil
@@ -108,7 +108,7 @@ var encryptCmd = &cobra.Command{
 			Logger.Errorf("Failed to encrypt files: %v", err)
 			finalMessage := color.RedString("✗") + " Failed to encrypt the project's " +
 				color.YellowString(".env") + " files. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error() + "\n"
+				color.RedString("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -125,7 +125,7 @@ var encryptCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +
-			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository\n"
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository"
 
 		spinner.FinalMSG = finalMessage
 		return nil
