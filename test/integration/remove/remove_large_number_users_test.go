@@ -47,7 +47,11 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
@@ -81,7 +85,7 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 
 		// Create dummy public key file
 		publicKeyPath := filepath.Join(publicKeysDir, username+".pub")
-		if err := os.WriteFile(publicKeyPath, []byte(fmt.Sprintf("dummy public key for %s", username)), 0644); err != nil {
+		if err := os.WriteFile(publicKeyPath, []byte(fmt.Sprintf("dummy public key for %s", username)), 0600); err != nil {
 			t.Fatalf("Failed to create public key file for user %s: %v", username, err)
 		}
 

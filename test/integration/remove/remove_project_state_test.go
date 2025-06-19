@@ -44,7 +44,11 @@ func testRemoveWithoutInitialization(t *testing.T, originalWd string, originalUs
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
@@ -85,7 +89,11 @@ func testRemoveInNonKanukaProject(t *testing.T, originalWd string, originalUserS
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
