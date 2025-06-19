@@ -49,7 +49,7 @@ func testRegisterSuccessMessageFormat(t *testing.T, originalWd string, originalU
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -110,7 +110,7 @@ func testRegisterErrorMessageFormat(t *testing.T, originalWd string, originalUse
 	nonExistentUser := "nonexistentuser"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", nonExistentUser})
 		return cmd.Execute()
 	})

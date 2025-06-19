@@ -93,7 +93,7 @@ func testInitCreateRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -145,7 +145,7 @@ func testMultipleUserRegistrationWorkflow(t *testing.T, originalWd string, origi
 		userKeyPairs[user] = keyPair
 
 		output, err := shared.CaptureOutput(func() error {
-			cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+			cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 			cmd.SetArgs([]string{"secrets", "register", "--user", user})
 			return cmd.Execute()
 		})
@@ -193,7 +193,7 @@ func testRegisterThenEncryptDecryptWorkflow(t *testing.T, originalWd string, ori
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -309,7 +309,7 @@ func testRegisterThenRemoveWorkflow(t *testing.T, originalWd string, originalUse
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -373,7 +373,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	userBKeyPair := createTestUserKeyPair(t, tempDir, userB)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", userB})
 		return cmd.Execute()
 	})
@@ -418,7 +418,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 
 	// User B registers User C
 	output, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", userC})
 		return cmd.Execute()
 	})
@@ -473,7 +473,7 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 	createTestUserKeyPair(t, tempDir, initialUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", initialUser})
 		return cmd.Execute()
 	})
