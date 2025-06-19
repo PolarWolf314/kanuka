@@ -39,7 +39,7 @@ var createCmd = &cobra.Command{
 
 		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -115,7 +115,7 @@ var createCmd = &cobra.Command{
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
-			"     " + color.YellowString("kanuka secrets add "+currentUsername+"\n")
+			"     " + color.YellowString("kanuka secrets add "+currentUsername)
 
 		spinner.FinalMSG = finalMessage
 		return nil

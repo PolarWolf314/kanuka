@@ -44,7 +44,7 @@ var RegisterCmd = &cobra.Command{
 		Logger.Debugf("Checking command flags: username=%s, customFilePath=%s, publicKeyText provided=%t", username, customFilePath, publicKeyText != "")
 		if username == "" && customFilePath == "" && publicKeyText == "" {
 			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + ", " + color.YellowString("--file") + ", or " + color.YellowString("--pubkey") + " must be specified.\n" +
-				"Please run " + color.YellowString("kanuka secrets register --help") + " to see the available commands.\n"
+				"Please run " + color.YellowString("kanuka secrets register --help") + " to see the available commands"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -52,7 +52,7 @@ var RegisterCmd = &cobra.Command{
 		// When using --pubkey, username is required
 		if publicKeyText != "" && username == "" {
 			finalMessage := color.RedString("✗") + " When using " + color.YellowString("--pubkey") + ", the " + color.YellowString("--user") + " flag is required.\n" +
-				"Please specify a username with " + color.YellowString("--user") + ".\n"
+				"Please specify a username with " + color.YellowString("--user")
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -64,7 +64,7 @@ var RegisterCmd = &cobra.Command{
 		} else if cmd.Flags().Changed("pubkey") {
 			// The pubkey flag was explicitly set but is empty
 			finalMessage := color.RedString("✗") + " Invalid public key format provided\n" +
-				color.RedString("Error: ") + "public key text cannot be empty\n"
+				color.RedString("Error: ") + "public key text cannot be empty"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -95,7 +95,7 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -106,7 +106,7 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		Logger.Errorf("Invalid public key format provided: %v", err)
 		finalMessage := color.RedString("✗") + " Invalid public key format provided\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -118,7 +118,7 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	if err := secrets.SavePublicKeyToFile(publicKey, pubKeyFilePath); err != nil {
 		Logger.Errorf("Failed to save public key to %s: %v", pubKeyFilePath, err)
 		finalMessage := color.RedString("✗") + " Failed to save public key to " + color.YellowString(pubKeyFilePath) + "\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -129,14 +129,14 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	if err := registerUserWithPublicKey(username, publicKey); err != nil {
 		Logger.Errorf("Failed to register user %s with public key: %v", username, err)
 		finalMessage := color.RedString("✗") + " Failed to register user with the provided public key\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
 
 	Logger.Infof("Public key registration completed successfully for user: %s", username)
 	finalMessage := color.GreenString("✓") + " Public key for " + color.YellowString(username) + " has been saved and registered successfully!\n" +
-		color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
+		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
@@ -202,7 +202,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -216,7 +216,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		Logger.Errorf("Failed to load public key for user %s from %s: %v", username, targetPubkeyPath, err)
 		finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(username) + " not found\n" +
-			username + " must first run: " + color.YellowString("kanuka secrets create\n")
+			username + " must first run: " + color.YellowString("kanuka secrets create")
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -231,7 +231,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUsername, err)
 		finalMessage := color.RedString("✗") + " Couldn't get your Kanuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -245,7 +245,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
 		finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -259,7 +259,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 			"    Kanuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
 			"    Private key path: " + color.YellowString(privateKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -279,7 +279,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 
 	Logger.Infof("User registration completed successfully for: %s", username)
 	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(username+".pub") + " has been registered successfully!\n" +
-		color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
+		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
@@ -294,13 +294,13 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
+			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
 
 	if !strings.HasSuffix(customFilePath, ".pub") {
-		finalMessage := color.RedString("✗ ") + color.YellowString(customFilePath) + " is not a valid path to a public key file.\n"
+		finalMessage := color.RedString("✗ ") + color.YellowString(customFilePath) + " is not a valid path to a public key file"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -311,7 +311,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		Logger.Errorf("Failed to load public key from %s: %v", customFilePath, err)
 		finalMessage := color.RedString("✗") + " Public key could not be loaded from " + color.YellowString(customFilePath) + "\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -324,7 +324,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Couldn't get your Kanuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -336,7 +336,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -348,7 +348,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 			"    Kanuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
 			"    Private key path: " + color.YellowString(privateKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -368,7 +368,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	Logger.Infof("Custom file registration completed successfully for: %s", targetName)
 	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetName+".pub") + " has been registered successfully!\n" +
-		color.CyanString("→") + " They now have access to decrypt the repository's secrets\n"
+		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
