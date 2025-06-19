@@ -51,7 +51,11 @@ func testRemoveWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
@@ -124,7 +128,11 @@ func testRemoveWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
@@ -197,7 +205,11 @@ func testRemoveWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
-	defer os.Chdir(originalWd)
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
 
 	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
@@ -227,7 +239,7 @@ func testRemoveWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 	kanukaKeyPath := filepath.Join(secretsDir, testUser+".kanuka")
 
 	// Create dummy files
-	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0644)
+	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
 	if err != nil {
 		t.Fatalf("Failed to create public key file: %v", err)
 	}
