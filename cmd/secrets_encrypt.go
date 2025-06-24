@@ -29,7 +29,7 @@ var encryptCmd = &cobra.Command{
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
