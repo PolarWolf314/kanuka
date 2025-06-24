@@ -31,7 +31,7 @@ var decryptCmd = &cobra.Command{
 
 		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
+				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}

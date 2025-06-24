@@ -11,9 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	removeUsername string
-)
+var removeUsername string
 
 // resetRemoveCommandState resets all remove command global variables to their default values for testing.
 func resetRemoveCommandState() {
@@ -36,7 +34,7 @@ var removeCmd = &cobra.Command{
 		Logger.Debugf("Checking command flags: removeUsername=%s", removeUsername)
 		if removeUsername == "" {
 			finalMessage := color.RedString("✗") + " The " + color.YellowString("--user") + " flag is required.\n" +
-				"Please run " + color.YellowString("kanuka secrets remove --help") + " to see the available commands.\n"
+				"Run " + color.YellowString("kanuka secrets remove --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -50,7 +48,7 @@ var removeCmd = &cobra.Command{
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " first\n"
+				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -62,7 +60,7 @@ var removeCmd = &cobra.Command{
 		}
 		if !exists {
 			finalMessage := color.RedString("✗") + " Kānuka project not found\n" +
-				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " first\n"
+				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
