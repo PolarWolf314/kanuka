@@ -80,7 +80,7 @@ func testRegisterInUninitializedProject(t *testing.T, originalWd string, origina
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Kanuka has not been initialized") {
+	if !strings.Contains(output, "Kānuka has not been initialized") {
 		t.Errorf("Expected 'not initialized' message not found in output: %s", output)
 	}
 
@@ -125,7 +125,7 @@ func testRegisterWhenCurrentUserHasNoAccess(t *testing.T, originalWd string, ori
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Couldn't get your Kanuka key") {
+	if !strings.Contains(output, "Couldn't get your Kānuka key") {
 		t.Errorf("Expected 'no access' message not found in output: %s", output)
 	}
 
@@ -292,7 +292,7 @@ func testRegisterInCorruptedProjectStructure(t *testing.T, originalWd string, or
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Couldn't get your Kanuka key") {
+	if !strings.Contains(output, "Couldn't get your Kānuka key") {
 		t.Errorf("Expected 'no kanuka key' message not found in output: %s", output)
 	}
 }
@@ -338,7 +338,7 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Failed to decrypt your Kanuka key") {
+	if !strings.Contains(output, "Failed to decrypt your Kānuka key") {
 		t.Errorf("Expected decryption failure message not found in output: %s", output)
 	}
 

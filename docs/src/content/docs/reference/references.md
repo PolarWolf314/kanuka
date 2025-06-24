@@ -3,7 +3,7 @@ title: Kānuka CLI Reference
 description: An explanation for how Kānuka handles configuration.
 ---
 
-Kanuka is a powerful command-line tool for managing infrastructure, handling project packages using a nix shell environment, and securely storing environment secrets.
+Kānuka is a powerful command-line tool for managing infrastructure, handling project packages using a nix shell environment, and securely storing environment secrets.
 
 ## Features
 
@@ -59,8 +59,8 @@ Usage:
 
 Available Commands:
   create      Creates and adds your public key, and gives instructions on how to gain access
-  decrypt     Decrypts the .env.kanuka file back into .env using your Kanuka key
-  encrypt     Encrypts the .env file into .env.kanuka using your Kanuka key
+  decrypt     Decrypts the .env.kanuka file back into .env using your Kānuka key
+  encrypt     Encrypts the .env file into .env.kanuka using your Kānuka key
   init        Initializes the secrets store
   purge       Purges all secrets, including from the git history
   register    Registers a new user to be given access to the repository's secrets
@@ -86,7 +86,7 @@ Flags:
 
 ### `kanuka secrets decrypt`
 
-Decrypts the `.env.kanuka` file back into `.env` using your Kanuka key.
+Decrypts the `.env.kanuka` file back into `.env` using your Kānuka key.
 
 ```
 Usage:
@@ -99,7 +99,7 @@ Flags:
 
 ### `kanuka secrets encrypt`
 
-Encrypts the `.env` file into `.env.kanuka` using your Kanuka key.
+Encrypts the `.env` file into `.env.kanuka` using your Kānuka key.
 
 ```
 Usage:

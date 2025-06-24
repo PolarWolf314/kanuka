@@ -14,7 +14,7 @@ import (
 
 var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
-	Short: "Encrypts the .env file into .env.kanuka using your Kanuka key",
+	Short: "Encrypts the .env file into .env.kanuka using your Kānuka key",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting encrypt command")
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)

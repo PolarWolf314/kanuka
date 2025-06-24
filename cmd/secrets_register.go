@@ -94,7 +94,7 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	Logger.Debugf("Project path: %s, Public key path: %s", projectPath, projectPublicKeyPath)
 
 	if projectPath == "" {
-		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -201,7 +201,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	Logger.Debugf("Current user: %s, Project: %s, Project path: %s", currentUsername, projectName, projectPath)
 
 	if projectPath == "" {
-		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -229,7 +229,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
 	if err != nil {
 		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUsername, err)
-		finalMessage := color.RedString("✗") + " Couldn't get your Kanuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
+		finalMessage := color.RedString("✗") + " Couldn't get your Kānuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
@@ -255,8 +255,8 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
 		Logger.Errorf("Failed to decrypt symmetric key: %v", err)
-		finalMessage := color.RedString("✗") + " Failed to decrypt your Kanuka key using your private key: \n" +
-			"    Kanuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
+		finalMessage := color.RedString("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
+			"    Kānuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
 			"    Private key path: " + color.YellowString(privateKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
@@ -293,7 +293,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	Logger.Debugf("Current user: %s, Project: %s, Custom file path: %s", currentUsername, projectName, customFilePath)
 
 	if projectPath == "" {
-		finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -322,7 +322,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
 	if err != nil {
-		finalMessage := color.RedString("✗") + " Couldn't get your Kanuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
+		finalMessage := color.RedString("✗") + " Couldn't get your Kānuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
@@ -344,8 +344,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// Decrypt symmetric key with current user's private key
 	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
-		finalMessage := color.RedString("✗") + " Failed to decrypt your Kanuka key using your private key: \n" +
-			"    Kanuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
+		finalMessage := color.RedString("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
+			"    Kānuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
 			"    Private key path: " + color.YellowString(privateKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()

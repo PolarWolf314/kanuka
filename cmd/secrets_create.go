@@ -27,7 +27,7 @@ var createCmd = &cobra.Command{
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting create command")
-		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
+		spinner, cleanup := startSpinner("Creating Kānuka file...", verbose)
 		defer cleanup()
 
 		Logger.Debugf("Initializing project settings")
@@ -38,7 +38,7 @@ var createCmd = &cobra.Command{
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil

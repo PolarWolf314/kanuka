@@ -12,7 +12,7 @@ var initCmd = &cobra.Command{
 	Short: "Initializes the secrets store",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting init command")
-		spinner, cleanup := startSpinner("Initializing Kanuka...", verbose)
+		spinner, cleanup := startSpinner("Initializing Kānuka...", verbose)
 		defer cleanup()
 
 		Logger.Debugf("Checking if project kanuka settings already exist")
@@ -21,7 +21,7 @@ var initCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("Failed to check if project kanuka settings exists: %v", err)
 		}
 		if kanukaExists {
-			finalMessage := color.RedString("✗") + " Kanuka has already been initialized\n" +
+			finalMessage := color.RedString("✗") + " Kānuka has already been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets create") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
@@ -66,7 +66,7 @@ var initCmd = &cobra.Command{
 		Logger.WarnfUser("Remember to never commit .env files to version control - only commit .kanuka files")
 		spinner.Restart()
 
-		finalMessage := color.GreenString("✓") + " Kanuka initialized successfully!\n" +
+		finalMessage := color.GreenString("✓") + " Kānuka initialized successfully!\n" +
 			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files"
 
 		spinner.FinalMSG = finalMessage

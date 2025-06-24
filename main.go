@@ -11,8 +11,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "kanuka",
-	Short: "Kanuka - A CLI for package management, cloud provisioning, and secrets management.",
-	Long: `Kanuka is a powerful command-line tool for managing infrastructure, 
+	Short: "Kānuka - A CLI for package management, cloud provisioning, and secrets management.",
+	Long: `Kānuka is a powerful command-line tool for managing infrastructure, 
 handling project packages using a nix shell environment, and securely storing environment secrets.
 
 Features:
