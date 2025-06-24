@@ -44,7 +44,7 @@ var RegisterCmd = &cobra.Command{
 		Logger.Debugf("Checking command flags: username=%s, customFilePath=%s, publicKeyText provided=%t", username, customFilePath, publicKeyText != "")
 		if username == "" && customFilePath == "" && publicKeyText == "" {
 			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + ", " + color.YellowString("--file") + ", or " + color.YellowString("--pubkey") + " must be specified.\n" +
-				"Please run " + color.YellowString("kanuka secrets register --help") + " to see the available commands"
+				"Run " + color.YellowString("kanuka secrets register --help") + " to see the available commands"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -52,7 +52,7 @@ var RegisterCmd = &cobra.Command{
 		// When using --pubkey, username is required
 		if publicKeyText != "" && username == "" {
 			finalMessage := color.RedString("✗") + " When using " + color.YellowString("--pubkey") + ", the " + color.YellowString("--user") + " flag is required.\n" +
-				"Please specify a username with " + color.YellowString("--user")
+				"Specify a username with " + color.YellowString("--user")
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -95,7 +95,7 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -202,7 +202,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -294,7 +294,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-			color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
