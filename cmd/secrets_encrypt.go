@@ -125,7 +125,7 @@ var encryptCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +
-			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files in your repository"
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control"
 
 		spinner.FinalMSG = finalMessage
 		return nil
