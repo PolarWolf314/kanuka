@@ -15,7 +15,7 @@ import (
 
 var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
-	Short: "Decrypts the .env.kanuka file back into .env using your Kanuka key",
+	Short: "Decrypts the .env.kanuka file back into .env using your Kānuka key",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting decrypt command")
 		spinner, cleanup := startSpinner("Decrypting environment files...", verbose)
@@ -30,7 +30,7 @@ var decryptCmd = &cobra.Command{
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil

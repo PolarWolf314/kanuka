@@ -49,7 +49,7 @@ var removeCmd = &cobra.Command{
 		// Check if project is initialized
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
+			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
 			return nil
@@ -61,7 +61,7 @@ var removeCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("failed to check if project exists: %v", err)
 		}
 		if !exists {
-			finalMessage := color.RedString("✗") + " Kanuka project not found\n" +
+			finalMessage := color.RedString("✗") + " Kānuka project not found\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
 			return nil

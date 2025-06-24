@@ -109,7 +109,7 @@ func testErrorMessages(t *testing.T, originalWd string, originalUserSettings *co
 				// Don't initialize the project
 				return nil
 			},
-			expectedError:  "Kanuka has not been initialized",
+			expectedError:  "Kānuka has not been initialized",
 			expectedAction: "kanuka secrets init",
 		},
 		{
@@ -207,7 +207,7 @@ func testProgressIndicators(t *testing.T, originalWd string, originalUserSetting
 
 	// Check for progress-related messages
 	progressIndicators := []string{
-		"Creating Kanuka file",
+		"Creating Kānuka file",
 		"✓", // Final success indicator
 	}
 
