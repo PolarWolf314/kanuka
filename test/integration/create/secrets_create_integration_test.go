@@ -60,7 +60,7 @@ func testCreateInUninitializedProject(t *testing.T, originalWd string, originalU
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	if !strings.Contains(output, "Kanuka has not been initialized") {
+	if !strings.Contains(output, "Kānuka has not been initialized") {
 		t.Errorf("Expected 'not initialized' message not found in output: %s", output)
 	}
 
