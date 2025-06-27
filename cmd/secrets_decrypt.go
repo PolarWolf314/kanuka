@@ -16,15 +16,14 @@ import (
 var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
 	Short: "Decrypts the .env.kanuka file back into .env using your Kanuka key",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting decrypt command")
 		spinner, cleanup := startSpinner("Decrypting environment files...", verbose)
 		defer cleanup()
 
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
-			Logger.Fatalf("failed to init project settings: %v", err)
-			return
+			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 		projectName := configs.ProjectKanukaSettings.ProjectName
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
@@ -34,21 +33,20 @@ var decryptCmd = &cobra.Command{
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
 		Logger.Debugf("Searching for .kanuka files in project path")
 		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
 		if err != nil {
-			Logger.Fatalf("Failed to find environment files: %v", err)
-			return
+			return Logger.ErrorfAndReturn("Failed to find environment files: %v", err)
 		}
 		Logger.Debugf("Found %d .kanuka files", len(listOfKanukaFiles))
 		if len(listOfKanukaFiles) == 0 {
 			finalMessage := color.RedString("✗") + " No encrypted environment (" + color.YellowString(".kanuka") + ") files found in " + color.YellowString(projectPath) + "\n"
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 
 		// Performance warning for large number of files
@@ -68,7 +66,7 @@ var decryptCmd = &cobra.Command{
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 
 		privateKeyPath := filepath.Join(userKeysPath, projectName)
@@ -79,7 +77,7 @@ var decryptCmd = &cobra.Command{
 			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 		Logger.Infof("Private key loaded successfully")
 
@@ -100,7 +98,7 @@ var decryptCmd = &cobra.Command{
 				color.RedString("Error: ") + err.Error() + "\n"
 
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
 
@@ -111,15 +109,14 @@ var decryptCmd = &cobra.Command{
 				color.YellowString(".kanuka") + " files. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 
 		// we can be sure they exist if the previous function ran without errors
 		Logger.Debugf("Finding decrypted environment files")
 		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
 		if err != nil {
-			Logger.Fatalf("Failed to find environment files after decryption: %v", err)
-			return
+			return Logger.ErrorfAndReturn("Failed to find environment files after decryption: %v", err)
 		}
 
 		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
@@ -133,5 +130,6 @@ var decryptCmd = &cobra.Command{
 			color.CyanString("→") + " Your environment files are now ready to use\n"
 
 		spinner.FinalMSG = finalMessage
+		return nil
 	},
 }

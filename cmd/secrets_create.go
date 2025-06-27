@@ -17,18 +17,22 @@ func init() {
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
 }
 
+// resetCreateCommandState resets the create command's global state for testing.
+func resetCreateCommandState() {
+	force = false
+}
+
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting create command")
 		spinner, cleanup := startSpinner("Creating Kanuka file...", verbose)
 		defer cleanup()
 
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
-			Logger.Fatalf("failed to init project settings: %v", err)
-			return
+			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		Logger.Debugf("Project path: %s", projectPath)
@@ -37,13 +41,12 @@ var createCmd = &cobra.Command{
 			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
 				color.CyanString("→") + " Please run " + color.YellowString("kanuka secrets init") + " instead\n"
 			spinner.FinalMSG = finalMessage
-			return
+			return nil
 		}
 
 		Logger.Debugf("Ensuring user settings")
 		if err := secrets.EnsureUserSettings(); err != nil {
-			Logger.Fatalf("Failed ensuring user settings: %v", err)
-			return
+			return Logger.ErrorfAndReturn("Failed ensuring user settings: %v", err)
 		}
 
 		currentUsername := configs.UserKanukaSettings.Username
@@ -63,7 +66,7 @@ var createCmd = &cobra.Command{
 				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force\n")
 				spinner.FinalMSG = finalMessage
-				return
+				return nil
 			}
 		} else {
 			Logger.Infof("Force flag set, will override existing keys if present")
@@ -72,16 +75,14 @@ var createCmd = &cobra.Command{
 
 		Logger.Debugf("Creating and saving RSA key pair")
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
-			Logger.Fatalf("Failed to generate and save RSA key pair: %v", err)
-			return
+			return Logger.ErrorfAndReturn("Failed to generate and save RSA key pair: %v", err)
 		}
 		Logger.Infof("RSA key pair created successfully")
 
 		Logger.Debugf("Copying user public key to project")
 		destPath, err := secrets.CopyUserPublicKeyToProject()
 		if err != nil {
-			Logger.Fatalf("Failed to copy public key to project: %v", err)
-			return
+			return Logger.ErrorfAndReturn("Failed to copy public key to project: %v", err)
 		}
 		Logger.Infof("Public key copied to: %s", destPath)
 
@@ -115,5 +116,6 @@ var createCmd = &cobra.Command{
 			"     " + color.YellowString("kanuka secrets add "+currentUsername+"\n")
 
 		spinner.FinalMSG = finalMessage
+		return nil
 	},
 }
