@@ -66,15 +66,26 @@ Examples:
 			parsedPackage, err = grove.ParsePackageName(packageName)
 		}
 		if err != nil {
-			// Handle validation errors with proper spinner cleanup
+			// Handle validation errors with proper spinner cleanup and enhanced suggestions
 			var finalMessage string
-			if strings.Contains(err.Error(), "nix command not found") {
-				finalMessage = color.RedString("✗") + " Nix package manager not found\n" +
-					color.CyanString("→") + " Please install Nix to validate packages\n" +
+			if strings.Contains(err.Error(), "failed to create search client") {
+				finalMessage = color.RedString("✗") + " Failed to connect to package search service\n" +
+					color.CyanString("→") + " Check your internet connection and try again\n" +
 					color.CyanString("→") + " Or use " + color.YellowString("--skip-validation") + " flag for testing"
 			} else if strings.Contains(err.Error(), "not found in nixpkgs") {
+				// Try to provide helpful suggestions using the new search capabilities
+				suggestions := getPackageSuggestions(packageName)
 				finalMessage = color.RedString("✗") + " Package '" + packageName + "' not found in nixpkgs\n" +
 					color.CyanString("→") + " Try " + color.YellowString("kanuka grove search " + packageName) + " to find similar packages"
+				
+				if len(suggestions) > 0 {
+					finalMessage += "\n" + color.CyanString("→") + " Similar packages: " + color.YellowString(strings.Join(suggestions, ", "))
+				}
+				
+				// Suggest program-based search if the package name looks like a binary
+				if isLikelyProgramName(packageName) {
+					finalMessage += "\n" + color.CyanString("→") + " Or search by program: " + color.YellowString("kanuka grove search --program " + packageName)
+				}
 			} else {
 				finalMessage = color.RedString("✗") + " Failed to validate package: " + err.Error()
 			}
@@ -128,6 +139,42 @@ Examples:
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+// getPackageSuggestions tries to find similar package names for better error messages
+func getPackageSuggestions(packageName string) []string {
+	// Try a general search to find similar packages
+	results, err := grove.SearchPackagesGeneral(packageName, 3)
+	if err != nil {
+		return nil
+	}
+	
+	var suggestions []string
+	for _, result := range results {
+		if result.AttrName != packageName && len(suggestions) < 3 {
+			suggestions = append(suggestions, result.AttrName)
+		}
+	}
+	
+	return suggestions
+}
+
+// isLikelyProgramName checks if a package name looks like it could be a program/binary name
+func isLikelyProgramName(name string) bool {
+	// Simple heuristics: short names, common program patterns
+	if len(name) <= 10 && !strings.Contains(name, "_") && !strings.Contains(name, "-") {
+		return true
+	}
+	
+	// Common program name patterns
+	commonPrograms := []string{"go", "node", "python", "java", "rust", "gcc", "git", "vim", "curl", "wget"}
+	for _, prog := range commonPrograms {
+		if strings.Contains(name, prog) {
+			return true
+		}
+	}
+	
+	return false
 }
 
 func init() {
