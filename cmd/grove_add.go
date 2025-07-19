@@ -28,7 +28,7 @@ Examples:
 		packageName := args[0]
 		
 		GroveLogger.Infof("Starting grove add command for package: %s", packageName)
-		spinner, cleanup := startGroveSpinner("Adding package...", groveVerbose)
+		spinner, cleanup := startGroveSpinner("Searching and validating package...", groveVerbose)
 		defer cleanup()
 
 		// Check if we're in a grove project
@@ -126,6 +126,9 @@ Examples:
 			}
 		}
 
+		// Update spinner message for the actual addition step
+		spinner.Suffix = " Adding package to devenv.nix..."
+		
 		// Add package to devenv.nix
 		GroveLogger.Debugf("Adding package to devenv.nix")
 		if err := grove.AddPackageToDevenv(parsedPackage); err != nil {
