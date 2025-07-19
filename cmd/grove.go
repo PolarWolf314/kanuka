@@ -30,6 +30,7 @@ func init() {
 	GroveCmd.PersistentFlags().BoolVarP(&groveDebug, "debug", "d", false, "enable debug output")
 
 	GroveCmd.AddCommand(groveInitCmd)
+	GroveCmd.AddCommand(groveAddCmd)
 }
 
 // Helper functions for testing
