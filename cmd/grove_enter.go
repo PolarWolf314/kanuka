@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/grove"
+	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -73,9 +77,12 @@ Examples:
 			GroveLogger.Debugf("Authentication requested")
 			spinner.Suffix = " Setting up authentication..."
 			
-			err := handleAuthentication()
+			err := handleAuthentication(spinner)
 			if err != nil {
-				return GroveLogger.ErrorfAndReturn("Failed to set up authentication: %v", err)
+				// Handle authentication errors gracefully with spinner
+				finalMessage := formatAuthenticationError(err)
+				spinner.FinalMSG = finalMessage
+				return nil
 			}
 		}
 
@@ -132,13 +139,276 @@ func enterDevenvShell() error {
 }
 
 // handleAuthentication sets up AWS SSO authentication
-func handleAuthentication() error {
+func handleAuthentication(spinner *spinner.Spinner) error {
 	GroveLogger.Debugf("Setting up AWS SSO authentication")
 	
-	// TODO: Implement AWS SSO authentication
-	// For now, this is a placeholder that will be implemented in a future iteration
-	GroveLogger.Infof("Authentication setup requested (not yet implemented)")
+	// Check if AWS CLI is available
+	awsPath, err := exec.LookPath("aws")
+	if err != nil {
+		return &AuthenticationError{
+			Type:    "aws_cli_missing",
+			Message: "AWS CLI not found",
+			Suggestion: "kanuka grove add awscli2",
+		}
+	}
 	
+	// Check for AWS SSO configuration
+	ssoConfig, err := findAWSSSoConfig()
+	if err != nil {
+		return &AuthenticationError{
+			Type:    "sso_config_missing",
+			Message: "AWS SSO configuration not found",
+			Details: err.Error(),
+			Suggestion: "aws configure sso",
+		}
+	}
+	
+	GroveLogger.Infof("Found AWS SSO configuration: %s", ssoConfig.ProfileName)
+	
+	// Check if already authenticated
+	if isAWSSSoAuthenticated(ssoConfig.ProfileName) {
+		GroveLogger.Infof("Already authenticated with AWS SSO profile: %s", ssoConfig.ProfileName)
+		return nil
+	}
+	
+	// Perform AWS SSO login
+	GroveLogger.Infof("Initiating AWS SSO login for profile: %s", ssoConfig.ProfileName)
+	spinner.Stop() // Stop spinner for interactive login
+	err = performAWSSSoLogin(ssoConfig.ProfileName, awsPath)
+	if err != nil {
+		return &AuthenticationError{
+			Type:    "sso_login_failed",
+			Message: "AWS SSO login failed",
+			Details: err.Error(),
+			Suggestion: "aws sso login --profile " + ssoConfig.ProfileName,
+		}
+	}
+	
+	// Verify authentication succeeded
+	if !isAWSSSoAuthenticated(ssoConfig.ProfileName) {
+		return &AuthenticationError{
+			Type:    "sso_verification_failed",
+			Message: "AWS SSO authentication verification failed",
+			Details: "Login completed but unable to verify credentials",
+			Suggestion: "aws sso login --profile " + ssoConfig.ProfileName,
+		}
+	}
+	
+	GroveLogger.Infof("AWS SSO authentication successful")
+	
+	// Set AWS environment variables for the shell
+	err = setAWSEnvironmentVariables(ssoConfig.ProfileName)
+	if err != nil {
+		return &AuthenticationError{
+			Type:    "env_setup_failed",
+			Message: "Failed to set AWS environment variables",
+			Details: err.Error(),
+		}
+	}
+	
+	return nil
+}
+
+// AuthenticationError represents a structured authentication error
+type AuthenticationError struct {
+	Type       string
+	Message    string
+	Details    string
+	Suggestion string
+}
+
+func (e *AuthenticationError) Error() string {
+	return e.Message
+}
+
+// formatAuthenticationError creates a user-friendly error message for authentication failures
+func formatAuthenticationError(err error) string {
+	authErr, ok := err.(*AuthenticationError)
+	if !ok {
+		// Fallback for unexpected errors
+		return color.RedString("✗") + " Authentication failed: " + err.Error()
+	}
+
+	var message strings.Builder
+	
+	switch authErr.Type {
+	case "aws_cli_missing":
+		message.WriteString(color.RedString("✗") + " AWS CLI not found\n")
+		message.WriteString(color.CyanString("→") + " Install AWS CLI: " + color.YellowString(authErr.Suggestion) + "\n")
+		message.WriteString(color.CyanString("→") + " Then run: " + color.YellowString("kanuka grove enter --auth"))
+		
+	case "sso_config_missing":
+		message.WriteString(color.RedString("✗") + " AWS SSO configuration not found\n")
+		if authErr.Details != "" {
+			message.WriteString(color.CyanString("→") + " " + authErr.Details + "\n")
+		}
+		message.WriteString(color.CyanString("→") + " Configure AWS SSO: " + color.YellowString(authErr.Suggestion) + "\n")
+		message.WriteString(color.CyanString("→") + " Then run: " + color.YellowString("kanuka grove enter --auth"))
+		
+	case "sso_login_failed":
+		message.WriteString(color.RedString("✗") + " AWS SSO login failed\n")
+		if authErr.Details != "" {
+			message.WriteString(color.CyanString("→") + " " + authErr.Details + "\n")
+		}
+		message.WriteString(color.CyanString("→") + " Try again: " + color.YellowString(authErr.Suggestion) + "\n")
+		message.WriteString(color.CyanString("→") + " Or run: " + color.YellowString("kanuka grove enter --auth"))
+		
+	case "sso_verification_failed":
+		message.WriteString(color.RedString("✗") + " AWS SSO authentication verification failed\n")
+		message.WriteString(color.CyanString("→") + " " + authErr.Details + "\n")
+		message.WriteString(color.CyanString("→") + " Try logging in again: " + color.YellowString(authErr.Suggestion) + "\n")
+		message.WriteString(color.CyanString("→") + " Or check your AWS configuration")
+		
+	case "env_setup_failed":
+		message.WriteString(color.RedString("✗") + " Failed to set up AWS environment\n")
+		if authErr.Details != "" {
+			message.WriteString(color.CyanString("→") + " " + authErr.Details + "\n")
+		}
+		message.WriteString(color.CyanString("→") + " Try running: " + color.YellowString("kanuka grove enter --auth") + " again")
+		
+	default:
+		message.WriteString(color.RedString("✗") + " Authentication failed: " + authErr.Message)
+		if authErr.Suggestion != "" {
+			message.WriteString("\n" + color.CyanString("→") + " Try: " + color.YellowString(authErr.Suggestion))
+		}
+	}
+	
+	return message.String()
+}
+
+// AWSSSoConfig holds AWS SSO configuration details
+type AWSSSoConfig struct {
+	ProfileName string
+	SSOStartURL string
+	SSORegion   string
+	Region      string
+}
+
+// findAWSSSoConfig looks for AWS SSO configuration in ~/.aws/config
+func findAWSSSoConfig() (*AWSSSoConfig, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
+	}
+	
+	configPath := filepath.Join(homeDir, ".aws", "config")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read AWS config file: %w", err)
+	}
+	
+	lines := strings.Split(string(content), "\n")
+	var currentProfile string
+	var ssoConfig *AWSSSoConfig
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		
+		// Check for profile section
+		if strings.HasPrefix(line, "[profile ") && strings.HasSuffix(line, "]") {
+			currentProfile = strings.TrimSuffix(strings.TrimPrefix(line, "[profile "), "]")
+			continue
+		}
+		
+		// Check for default profile
+		if line == "[default]" {
+			currentProfile = "default"
+			continue
+		}
+		
+		// Look for SSO configuration in current profile
+		if currentProfile != "" && strings.Contains(line, "sso_start_url") {
+			if ssoConfig == nil {
+				ssoConfig = &AWSSSoConfig{ProfileName: currentProfile}
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				ssoConfig.SSOStartURL = strings.TrimSpace(parts[1])
+			}
+		}
+		
+		if currentProfile != "" && strings.Contains(line, "sso_region") {
+			if ssoConfig != nil {
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) == 2 {
+					ssoConfig.SSORegion = strings.TrimSpace(parts[1])
+				}
+			}
+		}
+		
+		if currentProfile != "" && strings.Contains(line, "region") && !strings.Contains(line, "sso_region") {
+			if ssoConfig != nil {
+				parts := strings.SplitN(line, "=", 2)
+				if len(parts) == 2 {
+					ssoConfig.Region = strings.TrimSpace(parts[1])
+				}
+			}
+		}
+	}
+	
+	if ssoConfig == nil {
+		return nil, fmt.Errorf("no AWS SSO configuration found in ~/.aws/config")
+	}
+	
+	return ssoConfig, nil
+}
+
+// isAWSSSoAuthenticated checks if the user is currently authenticated with AWS SSO
+func isAWSSSoAuthenticated(profileName string) bool {
+	// Try to get caller identity using the SSO profile
+	cmd := exec.Command("aws", "sts", "get-caller-identity", "--profile", profileName)
+	cmd.Env = os.Environ()
+	
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	
+	// If we get valid JSON output, we're authenticated
+	return strings.Contains(string(output), "UserId")
+}
+
+// performAWSSSoLogin initiates AWS SSO login
+func performAWSSSoLogin(profileName, awsPath string) error {
+	GroveLogger.Infof("Starting AWS SSO login process...")
+	
+	// Execute aws sso login
+	cmd := exec.Command(awsPath, "sso", "login", "--profile", profileName)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Env = os.Environ()
+	
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("aws sso login failed: %w", err)
+	}
+	
+	// Give a moment for the login to complete
+	time.Sleep(2 * time.Second)
+	
+	return nil
+}
+
+// setAWSEnvironmentVariables sets AWS environment variables for the shell
+func setAWSEnvironmentVariables(profileName string) error {
+	// Set AWS_PROFILE environment variable
+	err := os.Setenv("AWS_PROFILE", profileName)
+	if err != nil {
+		return fmt.Errorf("failed to set AWS_PROFILE: %w", err)
+	}
+	
+	// Try to get and set additional AWS environment variables
+	cmd := exec.Command("aws", "configure", "get", "region", "--profile", profileName)
+	if output, err := cmd.Output(); err == nil {
+		region := strings.TrimSpace(string(output))
+		if region != "" {
+			os.Setenv("AWS_DEFAULT_REGION", region)
+			os.Setenv("AWS_REGION", region)
+		}
+	}
+	
+	GroveLogger.Infof("Set AWS_PROFILE=%s", profileName)
 	return nil
 }
 

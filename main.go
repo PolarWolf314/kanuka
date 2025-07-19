@@ -49,7 +49,7 @@ func main() {
 				enterCmd.Flags().Set("env", envFlag)
 			}
 			
-			// Execute grove enter command
+			// Execute grove enter command (errors are handled gracefully within the command)
 			return enterCmd.RunE(enterCmd, args)
 		},
 	}

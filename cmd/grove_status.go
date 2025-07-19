@@ -71,6 +71,12 @@ type EnvironmentStatus struct {
 	DevenvVersion    string
 	NixInstalled     bool
 	
+	// AWS SSO status
+	AWSCLIInstalled  bool
+	AWSSSoConfigured bool
+	AWSSSoProfile    string
+	AWSAuthenticated bool
+	
 	// Errors
 	Errors           []string
 }
@@ -147,6 +153,20 @@ func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 	// Check nix installation
 	if _, err := exec.LookPath("nix"); err == nil {
 		status.NixInstalled = true
+	}
+
+	// Check AWS CLI and SSO status
+	if _, err := exec.LookPath("aws"); err == nil {
+		status.AWSCLIInstalled = true
+		
+		// Check for AWS SSO configuration
+		if ssoConfig, err := findAWSSSoConfigForStatus(); err == nil {
+			status.AWSSSoConfigured = true
+			status.AWSSSoProfile = ssoConfig.ProfileName
+			
+			// Check if authenticated
+			status.AWSAuthenticated = isAWSSSoAuthenticatedForStatus(ssoConfig.ProfileName)
+		}
 	}
 
 	return status, nil
@@ -266,6 +286,23 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 		output.WriteString(fmt.Sprintf("   %s Install: %s\n", color.CyanString("→"), color.YellowString("nix profile install nixpkgs#devenv")))
 	}
 
+	// AWS SSO Status
+	if status.AWSCLIInstalled {
+		output.WriteString(fmt.Sprintf("   %s AWS CLI\n", color.GreenString("✓")))
+		
+		if status.AWSSSoConfigured {
+			if status.AWSAuthenticated {
+				output.WriteString(fmt.Sprintf("   %s AWS SSO (%s) - authenticated\n", color.GreenString("✓"), color.WhiteString(status.AWSSSoProfile)))
+			} else {
+				output.WriteString(fmt.Sprintf("   %s AWS SSO (%s) - not authenticated\n", color.YellowString("!"), color.WhiteString(status.AWSSSoProfile)))
+				output.WriteString(fmt.Sprintf("   %s Authenticate: %s\n", color.CyanString("→"), color.YellowString("kanuka grove enter --auth")))
+			}
+		} else {
+			output.WriteString(fmt.Sprintf("   %s AWS SSO (not configured)\n", color.YellowString("!")))
+			output.WriteString(fmt.Sprintf("   %s Configure: %s\n", color.CyanString("→"), color.YellowString("aws configure sso")))
+		}
+	}
+
 	// Errors
 	if len(status.Errors) > 0 {
 		output.WriteString(fmt.Sprintf("\n%s Issues\n", color.RedString("Issues")))
@@ -315,6 +352,61 @@ func formatCompactStatus(status *EnvironmentStatus) string {
 
 	output.WriteString("\n")
 	return output.String()
+}
+
+// findAWSSSoConfigForStatus is a simplified version for status checking
+func findAWSSSoConfigForStatus() (*AWSSSoConfigForStatus, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	
+	configPath := filepath.Join(homeDir, ".aws", "config")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+	
+	lines := strings.Split(string(content), "\n")
+	var currentProfile string
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		
+		if strings.HasPrefix(line, "[profile ") && strings.HasSuffix(line, "]") {
+			currentProfile = strings.TrimSuffix(strings.TrimPrefix(line, "[profile "), "]")
+			continue
+		}
+		
+		if line == "[default]" {
+			currentProfile = "default"
+			continue
+		}
+		
+		if currentProfile != "" && strings.Contains(line, "sso_start_url") {
+			return &AWSSSoConfigForStatus{ProfileName: currentProfile}, nil
+		}
+	}
+	
+	return nil, fmt.Errorf("no AWS SSO configuration found")
+}
+
+// AWSSSoConfigForStatus holds minimal AWS SSO config for status checking
+type AWSSSoConfigForStatus struct {
+	ProfileName string
+}
+
+// isAWSSSoAuthenticatedForStatus checks authentication status for status display
+func isAWSSSoAuthenticatedForStatus(profileName string) bool {
+	cmd := exec.Command("aws", "sts", "get-caller-identity", "--profile", profileName)
+	cmd.Env = os.Environ()
+	
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	
+	return strings.Contains(string(output), "UserId")
 }
 
 func init() {
