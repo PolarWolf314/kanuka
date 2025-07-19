@@ -499,3 +499,46 @@ func RemoveLanguageFromDevenv(languageName string) error {
 
 	return nil
 }
+
+// GetKanukaManagedLanguages returns a list of languages that are managed by Kanuka.
+func GetKanukaManagedLanguages() ([]string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvPath := filepath.Join(currentDir, "devenv.nix")
+	content, err := os.ReadFile(devenvPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read devenv.nix: %w", err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var languages []string
+	inKanukaSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.Contains(trimmed, "# Kanuka-managed languages - DO NOT EDIT MANUALLY") {
+			inKanukaSection = true
+			continue
+		}
+
+		if strings.Contains(trimmed, "# End Kanuka-managed languages") {
+			inKanukaSection = false
+			continue
+		}
+
+		if inKanukaSection && strings.Contains(trimmed, "languages.") && strings.Contains(trimmed, ".enable = true;") {
+			// Extract language name from "languages.LANGUAGE.enable = true;"
+			parts := strings.Split(trimmed, ".")
+			if len(parts) >= 2 {
+				languageName := parts[1]
+				languages = append(languages, languageName)
+			}
+		}
+	}
+
+	return languages, nil
+}

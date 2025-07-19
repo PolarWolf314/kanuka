@@ -32,6 +32,7 @@ func init() {
 	GroveCmd.AddCommand(groveInitCmd)
 	GroveCmd.AddCommand(groveAddCmd)
 	GroveCmd.AddCommand(groveRemoveCmd)
+	GroveCmd.AddCommand(groveListCmd)
 	GroveCmd.AddCommand(groveSearchCmd)
 }
 
