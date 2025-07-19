@@ -27,10 +27,11 @@ var (
 
 func init() {
 	GroveCmd.PersistentFlags().BoolVarP(&groveVerbose, "verbose", "v", false, "enable verbose output")
-	GroveCmd.PersistentFlags().BoolVarP(&groveDebug, "debug", "d", false, "enable debug output")
+	GroveCmd.PersistentFlags().BoolVar(&groveDebug, "debug", false, "enable debug output")
 
 	GroveCmd.AddCommand(groveInitCmd)
 	GroveCmd.AddCommand(groveAddCmd)
+	GroveCmd.AddCommand(groveSearchCmd)
 }
 
 // Helper functions for testing

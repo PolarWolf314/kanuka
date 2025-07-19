@@ -8,6 +8,16 @@ import (
 	"github.com/peterldowns/nix-search-cli/pkg/nixsearch"
 )
 
+// NixSearchPackage represents a package from nix-search-cli for external use
+type NixSearchPackage struct {
+	AttrName    string
+	Name        string
+	Version     string
+	Description string
+	Programs    []string
+	Homepage    []string
+}
+
 // NixSearchResult represents a single package from nix search output
 // This maintains compatibility with existing code while using nix-search-cli internally
 type NixSearchResult struct {
@@ -102,8 +112,20 @@ func SearchPackages(searchTerm string) (map[string]NixSearchResult, error) {
 	return searchResults, nil
 }
 
+// convertNixSearchPackage converts nixsearch.Package to our NixSearchPackage type
+func convertNixSearchPackage(pkg nixsearch.Package) NixSearchPackage {
+	return NixSearchPackage{
+		AttrName:    pkg.AttrName,
+		Name:        pkg.Name,
+		Version:     pkg.Version,
+		Description: pkg.Description,
+		Programs:    pkg.Programs,
+		Homepage:    pkg.Homepage,
+	}
+}
+
 // SearchPackagesByName searches for packages by exact name match
-func SearchPackagesByName(packageName string) ([]nixsearch.Package, error) {
+func SearchPackagesByName(packageName string) ([]NixSearchPackage, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create search client: %w", err)
@@ -115,11 +137,21 @@ func SearchPackagesByName(packageName string) ([]nixsearch.Package, error) {
 		Name:       &nixsearch.MatchName{Name: packageName},
 	}
 
-	return client.Search(context.Background(), query)
+	results, err := client.Search(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	packages := make([]NixSearchPackage, len(results))
+	for i, result := range results {
+		packages[i] = convertNixSearchPackage(result)
+	}
+
+	return packages, nil
 }
 
 // SearchPackagesByProgram searches for packages that provide a specific program/binary
-func SearchPackagesByProgram(programName string) ([]nixsearch.Package, error) {
+func SearchPackagesByProgram(programName string) ([]NixSearchPackage, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create search client: %w", err)
@@ -131,11 +163,21 @@ func SearchPackagesByProgram(programName string) ([]nixsearch.Package, error) {
 		Program:    &nixsearch.MatchProgram{Program: programName},
 	}
 
-	return client.Search(context.Background(), query)
+	results, err := client.Search(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	packages := make([]NixSearchPackage, len(results))
+	for i, result := range results {
+		packages[i] = convertNixSearchPackage(result)
+	}
+
+	return packages, nil
 }
 
 // SearchPackagesGeneral performs a general search across all package fields
-func SearchPackagesGeneral(searchTerm string, maxResults int) ([]nixsearch.Package, error) {
+func SearchPackagesGeneral(searchTerm string, maxResults int) ([]NixSearchPackage, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create search client: %w", err)
@@ -151,7 +193,17 @@ func SearchPackagesGeneral(searchTerm string, maxResults int) ([]nixsearch.Packa
 		Search:     &nixsearch.MatchSearch{Search: searchTerm},
 	}
 
-	return client.Search(context.Background(), query)
+	results, err := client.Search(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	packages := make([]NixSearchPackage, len(results))
+	for i, result := range results {
+		packages[i] = convertNixSearchPackage(result)
+	}
+
+	return packages, nil
 }
 
 // GetPackageNixName extracts the proper nix package name from search results
