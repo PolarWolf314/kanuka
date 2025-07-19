@@ -109,7 +109,7 @@ func isLikelyProgramName(name string) bool {
 	return false
 }
 
-// handlePackageAddition handles the addition of a package to devenv.nix
+// handlePackageAddition handles the addition of a package to devenv.nix.
 func handlePackageAddition(packageName string, spinner *spinner.Spinner, skipValidation bool) error {
 	// Parse package name and version
 	GroveLogger.Debugf("Parsing package name: %s", packageName)
@@ -201,7 +201,7 @@ func handlePackageAddition(packageName string, spinner *spinner.Spinner, skipVal
 	return nil
 }
 
-// handleLanguageAddition handles the addition of a language to devenv.nix
+// handleLanguageAddition handles the addition of a language to devenv.nix.
 func handleLanguageAddition(languageName string, spinner *spinner.Spinner) error {
 	// Check if language already exists
 	GroveLogger.Debugf("Checking if language already exists in devenv.nix")

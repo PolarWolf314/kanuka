@@ -70,7 +70,7 @@ Examples:
 	},
 }
 
-// handlePackageRemoval handles the removal of a package from devenv.nix
+// handlePackageRemoval handles the removal of a package from devenv.nix.
 func handlePackageRemoval(packageName string, spinner *spinner.Spinner) error {
 	// Parse package name to get the proper nix name format
 	GroveLogger.Debugf("Parsing package name: %s", packageName)
@@ -138,7 +138,7 @@ func handlePackageRemoval(packageName string, spinner *spinner.Spinner) error {
 	return nil
 }
 
-// handleLanguageRemoval handles the removal of a language from devenv.nix
+// handleLanguageRemoval handles the removal of a language from devenv.nix.
 func handleLanguageRemoval(languageName string, spinner *spinner.Spinner) error {
 	// Check if language exists and is managed by Kanuka
 	GroveLogger.Debugf("Checking if language exists in devenv.nix")

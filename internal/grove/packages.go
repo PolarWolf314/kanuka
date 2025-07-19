@@ -260,7 +260,7 @@ func GetKanukaManagedPackages() ([]string, error) {
 	return packages, nil
 }
 
-// Common devenv supported languages
+// Common devenv supported languages.
 var supportedLanguages = map[string]bool{
 	"ansible":        true,
 	"c":              true,
