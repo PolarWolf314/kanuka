@@ -97,6 +97,15 @@ Examples:
 			}
 		}
 
+		// Run devenv gc to clear cache before entering shell
+		spinner.Suffix = " Clearing devenv cache..."
+		GroveLogger.Debugf("Running devenv gc to clear cache")
+		err = runDevenvGC()
+		if err != nil {
+			GroveLogger.Warnf("Failed to clear devenv cache: %v", err)
+			// Continue anyway - this is not a fatal error
+		}
+
 		// Stop spinner before entering shell
 		spinner.Stop()
 
@@ -206,6 +215,29 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 		}
 	}
 	
+	return nil
+}
+
+// runDevenvGC runs devenv gc to clear the cache
+func runDevenvGC() error {
+	// Find devenv executable
+	devenvPath, err := exec.LookPath("devenv")
+	if err != nil {
+		return fmt.Errorf("devenv command not found: %w", err)
+	}
+
+	// Execute devenv gc
+	cmd := exec.Command(devenvPath, "gc")
+	cmd.Env = os.Environ()
+	
+	// Capture output but don't show it unless there's an error
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		GroveLogger.Debugf("devenv gc output: %s", string(output))
+		return fmt.Errorf("devenv gc failed: %w", err)
+	}
+	
+	GroveLogger.Debugf("devenv gc completed successfully")
 	return nil
 }
 
