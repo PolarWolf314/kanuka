@@ -2,9 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"github.com/PolarWolf314/kanuka/internal/grove"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+)
+
+var (
+	skipValidation bool
 )
 
 var groveAddCmd = &cobra.Command{
@@ -54,9 +59,27 @@ Examples:
 
 		// Parse package name and version
 		GroveLogger.Debugf("Parsing package name: %s", packageName)
-		parsedPackage, err := grove.ParsePackageName(packageName)
+		var parsedPackage *grove.Package
+		if skipValidation {
+			parsedPackage, err = grove.ParsePackageNameWithoutValidation(packageName)
+		} else {
+			parsedPackage, err = grove.ParsePackageName(packageName)
+		}
 		if err != nil {
-			return GroveLogger.ErrorfAndReturn("Invalid package name: %v", err)
+			// Handle validation errors with proper spinner cleanup
+			var finalMessage string
+			if strings.Contains(err.Error(), "nix command not found") {
+				finalMessage = color.RedString("✗") + " Nix package manager not found\n" +
+					color.CyanString("→") + " Please install Nix to validate packages\n" +
+					color.CyanString("→") + " Or use " + color.YellowString("--skip-validation") + " flag for testing"
+			} else if strings.Contains(err.Error(), "not found in nixpkgs") {
+				finalMessage = color.RedString("✗") + " Package '" + packageName + "' not found in nixpkgs\n" +
+					color.CyanString("→") + " Try " + color.YellowString("kanuka grove search " + packageName) + " to find similar packages"
+			} else {
+				finalMessage = color.RedString("✗") + " Failed to validate package: " + err.Error()
+			}
+			spinner.FinalMSG = finalMessage
+			return nil
 		}
 		GroveLogger.Infof("Parsed package: %s", parsedPackage.NixName)
 
@@ -105,4 +128,8 @@ Examples:
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+func init() {
+	groveAddCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "skip nixpkgs validation (for testing)")
 }

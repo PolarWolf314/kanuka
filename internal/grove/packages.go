@@ -17,15 +17,45 @@ type Package struct {
 	Version     string // Version if specified
 }
 
-// ParsePackageName parses a package name with optional version
+// ParsePackageName parses a package name with optional version and validates it exists in nixpkgs
 // Examples: "nodejs", "nodejs_18", "typescript"
 func ParsePackageName(packageName string) (*Package, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("package name cannot be empty")
 	}
 
-	// For now, we'll keep it simple and assume the package name is valid
-	// In the future, we could add validation against nixpkgs
+	// Validate package exists in nixpkgs
+	exists, result, err := ValidatePackageExists(packageName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate package: %w", err)
+	}
+
+	if !exists {
+		return nil, fmt.Errorf("package '%s' not found in nixpkgs", packageName)
+	}
+
+	// Create package with validated information
+	pkg := &Package{
+		Name:        packageName,
+		NixName:     "pkgs." + packageName,
+		DisplayName: packageName,
+		Version:     "",
+	}
+
+	// If we have result information, we could use it for better display
+	if result != nil && result.Description != "" {
+		pkg.DisplayName = packageName + " (" + result.Description + ")"
+	}
+
+	return pkg, nil
+}
+
+// ParsePackageNameWithoutValidation parses a package name without nixpkgs validation (for testing)
+func ParsePackageNameWithoutValidation(packageName string) (*Package, error) {
+	if packageName == "" {
+		return nil, fmt.Errorf("package name cannot be empty")
+	}
+
 	pkg := &Package{
 		Name:        packageName,
 		NixName:     "pkgs." + packageName,
