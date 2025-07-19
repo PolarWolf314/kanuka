@@ -33,6 +33,7 @@ func init() {
 	GroveCmd.AddCommand(groveAddCmd)
 	GroveCmd.AddCommand(groveRemoveCmd)
 	GroveCmd.AddCommand(groveListCmd)
+	GroveCmd.AddCommand(groveEnterCmd)
 	GroveCmd.AddCommand(groveSearchCmd)
 }
 
@@ -74,4 +75,9 @@ func SetGroveDebug(d bool) {
 // SetGroveLogger sets the logger for testing.
 func SetGroveLogger(l logger.Logger) {
 	GroveLogger = l
+}
+
+// GetGroveEnterCmd returns the groveEnterCmd for the dev alias.
+func GetGroveEnterCmd() *cobra.Command {
+	return groveEnterCmd
 }

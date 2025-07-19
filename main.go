@@ -30,6 +30,36 @@ func main() {
 	rootCmd.AddCommand(cmd.SecretsCmd)
 	rootCmd.AddCommand(cmd.GroveCmd)
 
+	// Add 'kanuka dev' as an alias for 'kanuka grove enter'
+	devCmd := &cobra.Command{
+		Use:   "dev",
+		Short: "Enter the development shell environment (alias for 'grove enter')",
+		Long:  `Enter the development shell environment using devenv. This is an alias for 'kanuka grove enter'.`,
+		RunE: func(devCmd *cobra.Command, args []string) error {
+			// Get the flags from dev command
+			authFlag, _ := devCmd.Flags().GetBool("auth")
+			envFlag, _ := devCmd.Flags().GetString("env")
+			
+			// Get the grove enter command and set its flags
+			enterCmd := cmd.GetGroveEnterCmd()
+			
+			// Set the flags on the enter command
+			enterCmd.Flags().Set("auth", fmt.Sprintf("%t", authFlag))
+			if envFlag != "" {
+				enterCmd.Flags().Set("env", envFlag)
+			}
+			
+			// Execute grove enter command
+			return enterCmd.RunE(enterCmd, args)
+		},
+	}
+	
+	// Copy flags from grove enter command
+	devCmd.Flags().Bool("auth", false, "enable AWS SSO authentication")
+	devCmd.Flags().String("env", "", "use named environment configuration")
+	
+	rootCmd.AddCommand(devCmd)
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
