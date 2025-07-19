@@ -93,7 +93,7 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -155,7 +155,7 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -217,7 +217,7 @@ func testRegisterWithSymlinkedPublicKey(t *testing.T, originalWd string, origina
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--file", symlinkPath})
 		return cmd.Execute()
 	})
@@ -278,7 +278,7 @@ func testRegisterWithRelativeFilePaths(t *testing.T, originalWd string, original
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--file", relativePath})
 		return cmd.Execute()
 	})
@@ -337,7 +337,7 @@ func testRegisterWithAbsoluteFilePaths(t *testing.T, originalWd string, original
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--file", absolutePath})
 		return cmd.Execute()
 	})
@@ -387,7 +387,7 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
 		return cmd.Execute()
 	})

@@ -89,7 +89,7 @@ func testRegisterWithDifferentUserDirectories(t *testing.T, originalWd string, o
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -140,7 +140,7 @@ func testRegisterWithMissingUserDirectory(t *testing.T, originalWd string, origi
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -183,7 +183,7 @@ func testRegisterWithCorruptedUserSettings(t *testing.T, originalWd string, orig
 	configs.UserKanukaSettings.UserConfigsPath = "/invalid/nonexistent/path"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -204,7 +204,7 @@ func testRegisterWithCorruptedUserSettings(t *testing.T, originalWd string, orig
 	configs.UserKanukaSettings.UserConfigsPath = filepath.Join(tempUserDir, "config")
 
 	output, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})

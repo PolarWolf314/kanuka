@@ -78,7 +78,7 @@ func testRegisterWithWindowsLineSeparators(t *testing.T, originalWd string, orig
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", windowsPemKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -149,7 +149,7 @@ func testRegisterWithUnixLineSeparators(t *testing.T, originalWd string, origina
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -232,7 +232,7 @@ func testRegisterWithMixedLineSeparators(t *testing.T, originalWd string, origin
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--pubkey", mixedPemKey, "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -323,7 +323,7 @@ func testRegisterWithDifferentFilePermissions(t *testing.T, originalWd string, o
 			cmd.ResetGlobalState()
 
 			output, err := shared.CaptureOutput(func() error {
-				cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+				cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 				cmd.SetArgs([]string{"secrets", "register", "--file", keyPath})
 				return cmd.Execute()
 			})
@@ -388,7 +388,7 @@ func testRegisterWithUnicodeUsernames(t *testing.T, originalWd string, originalU
 			cmd.ResetGlobalState()
 
 			output, err := shared.CaptureOutput(func() error {
-				cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+				cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 				cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", user.username})
 				return cmd.Execute()
 			})

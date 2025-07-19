@@ -6,7 +6,7 @@ Kānuka is a powerful command-line tool written in Go for managing secrets in yo
 
 ## What's with the name?
 
-Kānuka (*Kunzea ericoides*) is a tree that is endemic to Aotearoa New Zealand. It is a robust species, critical to restoring wildlife destroyed by fire as it quickly propagates and regenerates the land. Its leaves have a characteristically soft touch, and it's one of few plants that can survive the heat of geothermal features.
+Kānuka (_Kunzea ericoides_) is a tree that is endemic to Aotearoa New Zealand. It is a robust species, critical to restoring wildlife destroyed by fire as it quickly propagates and regenerates the land. Its leaves have a characteristically soft touch, and it's one of few plants that can survive the heat of geothermal features.
 
 It is fast, resilient, yet pleasant to touch. This is the vision of Kānuka.
 
@@ -45,22 +45,27 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 ## Quick Start
 
 1. **Check Installation**:
+
    ```bash
    kanuka
    ```
+
    You should see: `Welcome to Kānuka! Run 'kanuka --help' to see available commands.`
 
 2. **Initialize a Project**:
+
    ```bash
    kanuka secrets init
    ```
 
 3. **Create Your Secrets**:
+
    ```bash
    kanuka secrets create
    ```
 
 4. **Encrypt Your Secrets**:
+
    ```bash
    kanuka secrets encrypt
    ```
@@ -111,6 +116,7 @@ project/
 ```
 
 User-specific private keys are stored in your system's data directory:
+
 - Linux/macOS: `~/.local/share/kanuka/keys/`
 - Windows: `%APPDATA%\kanuka\keys\`
 
@@ -162,3 +168,4 @@ Contributions are welcome! Feel free to submit issues or pull requests.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+

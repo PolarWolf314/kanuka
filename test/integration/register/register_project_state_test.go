@@ -68,7 +68,7 @@ func testRegisterInUninitializedProject(t *testing.T, originalWd string, origina
 	targetUser := "targetuser"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -80,7 +80,7 @@ func testRegisterInUninitializedProject(t *testing.T, originalWd string, origina
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Kanuka has not been initialized") {
+	if !strings.Contains(output, "Kānuka has not been initialized") {
 		t.Errorf("Expected 'not initialized' message not found in output: %s", output)
 	}
 
@@ -113,7 +113,7 @@ func testRegisterWhenCurrentUserHasNoAccess(t *testing.T, originalWd string, ori
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -125,7 +125,7 @@ func testRegisterWhenCurrentUserHasNoAccess(t *testing.T, originalWd string, ori
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Couldn't get your Kanuka key") {
+	if !strings.Contains(output, "Couldn't get your Kānuka key") {
 		t.Errorf("Expected 'no access' message not found in output: %s", output)
 	}
 
@@ -163,7 +163,7 @@ func testRegisterWhenCurrentUserPrivateKeyMissing(t *testing.T, originalWd strin
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -207,7 +207,7 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 
 	// Register the user first time
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -224,7 +224,7 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 
 	// Register the user again
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -280,7 +280,7 @@ func testRegisterInCorruptedProjectStructure(t *testing.T, originalWd string, or
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -292,7 +292,7 @@ func testRegisterInCorruptedProjectStructure(t *testing.T, originalWd string, or
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Couldn't get your Kanuka key") {
+	if !strings.Contains(output, "Couldn't get your Kānuka key") {
 		t.Errorf("Expected 'no kanuka key' message not found in output: %s", output)
 	}
 }
@@ -326,7 +326,7 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
@@ -338,7 +338,7 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "Failed to decrypt your Kanuka key") {
+	if !strings.Contains(output, "Failed to decrypt your Kānuka key") {
 		t.Errorf("Expected decryption failure message not found in output: %s", output)
 	}
 
@@ -376,7 +376,7 @@ func testRegisterWithCorruptedPrivateKey(t *testing.T, originalWd string, origin
 	createTestUserKeyPair(t, tempDir, targetUser)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, false, false)
+		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
 		return cmd.Execute()
 	})
