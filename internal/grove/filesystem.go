@@ -92,6 +92,9 @@ func CreateDevenvNix() error {
     # End Kanuka-managed packages
   ];
 
+  # Enable dotenv integration
+  dotenv.enable = true;
+
   enterShell = ''
     echo "Welcome to your development environment!"
     echo "Managed by Kanuka Grove"
