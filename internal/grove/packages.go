@@ -259,3 +259,243 @@ func GetKanukaManagedPackages() ([]string, error) {
 
 	return packages, nil
 }
+
+// Common devenv supported languages
+var supportedLanguages = map[string]bool{
+	"ansible":        true,
+	"c":              true,
+	"clojure":        true,
+	"cplusplus":      true,
+	"crystal":        true,
+	"cue":            true,
+	"dart":           true,
+	"deno":           true,
+	"dotnet":         true,
+	"elixir":         true,
+	"elm":            true,
+	"erlang":         true,
+	"fortran":        true,
+	"gawk":           true,
+	"gleam":          true,
+	"go":             true,
+	"haskell":        true,
+	"idris":          true,
+	"java":           true,
+	"javascript":     true,
+	"jsonnet":        true,
+	"julia":          true,
+	"kotlin":         true,
+	"lean4":          true,
+	"lua":            true,
+	"nim":            true,
+	"nix":            true,
+	"ocaml":          true,
+	"odin":           true,
+	"opentofu":       true,
+	"pascal":         true,
+	"perl":           true,
+	"php":            true,
+	"purescript":     true,
+	"python":         true,
+	"r":              true,
+	"racket":         true,
+	"raku":           true,
+	"robotframework": true,
+	"ruby":           true,
+	"rust":           true,
+	"scala":          true,
+	"shell":          true,
+	"solidity":       true,
+	"standardml":     true,
+	"swift":          true,
+	"terraform":      true,
+	"texlive":        true,
+	"typescript":     true,
+	"typst":          true,
+	"unison":         true,
+	"v":              true,
+	"vala":           true,
+	"zig":            true,
+}
+
+// IsLanguage checks if the given name is a supported devenv language.
+func IsLanguage(name string) bool {
+	return supportedLanguages[name]
+}
+
+// DoesLanguageExistInDevenv checks if a language is already enabled in devenv.nix
+// Returns: exists, isKanukaManaged, error.
+func DoesLanguageExistInDevenv(languageName string) (bool, bool, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return false, false, fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvPath := filepath.Join(currentDir, "devenv.nix")
+	content, err := os.ReadFile(devenvPath)
+	if err != nil {
+		return false, false, fmt.Errorf("failed to read devenv.nix: %w", err)
+	}
+
+	contentStr := string(content)
+
+	// Check if language exists anywhere in the file.
+	languagePattern := fmt.Sprintf("languages.%s", languageName)
+	languageExists := strings.Contains(contentStr, languagePattern)
+
+	// Check if it's in the Kanuka-managed section.
+	kanukaManaged := false
+	if languageExists {
+		kanukaManaged = isLanguageInKanukaManagedSection(contentStr, languageName)
+	}
+
+	return languageExists, kanukaManaged, nil
+}
+
+// isLanguageInKanukaManagedSection checks if a language is in the Kanuka-managed section.
+func isLanguageInKanukaManagedSection(content, languageName string) bool {
+	lines := strings.Split(content, "\n")
+	inKanukaSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.Contains(trimmed, "# Kanuka-managed languages - DO NOT EDIT MANUALLY") {
+			inKanukaSection = true
+			continue
+		}
+
+		if strings.Contains(trimmed, "# End Kanuka-managed languages") {
+			inKanukaSection = false
+			continue
+		}
+
+		if inKanukaSection && strings.Contains(line, fmt.Sprintf("languages.%s", languageName)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// AddLanguageToDevenv adds a language to the Kanuka-managed section of devenv.nix.
+func AddLanguageToDevenv(languageName string) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvPath := filepath.Join(currentDir, "devenv.nix")
+	content, err := os.ReadFile(devenvPath)
+	if err != nil {
+		return fmt.Errorf("failed to read devenv.nix: %w", err)
+	}
+
+	contentStr := string(content)
+
+	// Check if Kanuka-managed languages section exists, if not create it
+	if !strings.Contains(contentStr, "# Kanuka-managed languages - DO NOT EDIT MANUALLY") {
+		// Add the languages section before the enterShell section
+		lines := strings.Split(contentStr, "\n")
+		var newLines []string
+
+		for i, line := range lines {
+			if strings.Contains(strings.TrimSpace(line), "enterShell") {
+				// Insert languages section before enterShell
+				newLines = append(newLines, "")
+				newLines = append(newLines, "  # Kanuka-managed languages - DO NOT EDIT MANUALLY")
+				newLines = append(newLines, fmt.Sprintf("  languages.%s.enable = true;", languageName))
+				newLines = append(newLines, "  # End Kanuka-managed languages")
+				newLines = append(newLines, "")
+				newLines = append(newLines, line)
+				// Add remaining lines
+				newLines = append(newLines, lines[i+1:]...)
+				break
+			} else {
+				newLines = append(newLines, line)
+			}
+		}
+
+		// Write the updated content back
+		newContent := strings.Join(newLines, "\n")
+		err = os.WriteFile(devenvPath, []byte(newContent), 0600)
+		if err != nil {
+			return fmt.Errorf("failed to write devenv.nix: %w", err)
+		}
+		return nil
+	}
+
+	// Find the Kanuka-managed languages section and add the language
+	lines := strings.Split(contentStr, "\n")
+	var newLines []string
+
+	for _, line := range lines {
+		// Look for the end of Kanuka-managed languages section
+		if strings.Contains(strings.TrimSpace(line), "# End Kanuka-managed languages") {
+			// Insert the language before this line
+			newLines = append(newLines, fmt.Sprintf("  languages.%s.enable = true;", languageName))
+			newLines = append(newLines, line)
+		} else {
+			newLines = append(newLines, line)
+		}
+	}
+
+	// Write the updated content back
+	newContent := strings.Join(newLines, "\n")
+	err = os.WriteFile(devenvPath, []byte(newContent), 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write devenv.nix: %w", err)
+	}
+
+	return nil
+}
+
+// RemoveLanguageFromDevenv removes a language from the Kanuka-managed section.
+func RemoveLanguageFromDevenv(languageName string) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvPath := filepath.Join(currentDir, "devenv.nix")
+	content, err := os.ReadFile(devenvPath)
+	if err != nil {
+		return fmt.Errorf("failed to read devenv.nix: %w", err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+	inKanukaSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.Contains(trimmed, "# Kanuka-managed languages - DO NOT EDIT MANUALLY") {
+			inKanukaSection = true
+			newLines = append(newLines, line)
+			continue
+		}
+
+		if strings.Contains(trimmed, "# End Kanuka-managed languages") {
+			inKanukaSection = false
+			newLines = append(newLines, line)
+			continue
+		}
+
+		// Skip the line if it's in Kanuka section and contains our language
+		if inKanukaSection && strings.Contains(line, fmt.Sprintf("languages.%s", languageName)) {
+			continue
+		}
+
+		newLines = append(newLines, line)
+	}
+
+	// Write the updated content back
+	newContent := strings.Join(newLines, "\n")
+	err = os.WriteFile(devenvPath, []byte(newContent), 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write devenv.nix: %w", err)
+	}
+
+	return nil
+}
