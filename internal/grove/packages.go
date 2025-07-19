@@ -9,22 +9,22 @@ import (
 	"strings"
 )
 
-// Package represents a parsed package with version information
+// Package represents a parsed package with version information.
 type Package struct {
-	Name        string // Original name as provided by user
+	Name        string // Original name as provided by user.
 	NixName     string // Nix package name (e.g., pkgs.nodejs_18)
-	DisplayName string // Display name for user feedback
-	Version     string // Version if specified
+	DisplayName string // Display name for user feedback.
+	Version     string // Version if specified.
 }
 
-// ParsePackageName parses a package name with optional version and validates it exists in nixpkgs
-// Examples: "nodejs", "nodejs_18", "typescript"
+// ParsePackageName parses a package name with optional version and validates it exists in nixpkgs.
+// Examples: "nodejs", "nodejs_18", "typescript".
 func ParsePackageName(packageName string) (*Package, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("package name cannot be empty")
 	}
 
-	// Validate package exists in nixpkgs
+	// Validate package exists in nixpkgs.
 	exists, result, err := ValidatePackageExists(packageName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate package: %w", err)
@@ -34,7 +34,7 @@ func ParsePackageName(packageName string) (*Package, error) {
 		return nil, fmt.Errorf("package '%s' not found in nixpkgs", packageName)
 	}
 
-	// Create package with validated information
+	// Create package with validated information.
 	pkg := &Package{
 		Name:        packageName,
 		NixName:     "pkgs." + packageName,
@@ -42,7 +42,7 @@ func ParsePackageName(packageName string) (*Package, error) {
 		Version:     "",
 	}
 
-	// If we have result information, we could use it for better display
+	// If we have result information, we could use it for better display.
 	if result != nil && result.Description != "" {
 		pkg.DisplayName = packageName + " (" + result.Description + ")"
 	}
@@ -50,7 +50,7 @@ func ParsePackageName(packageName string) (*Package, error) {
 	return pkg, nil
 }
 
-// ParsePackageNameWithoutValidation parses a package name without nixpkgs validation (for testing)
+// ParsePackageNameWithoutValidation parses a package name without nixpkgs validation (for testing).
 func ParsePackageNameWithoutValidation(packageName string) (*Package, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("package name cannot be empty")
@@ -67,7 +67,7 @@ func ParsePackageNameWithoutValidation(packageName string) (*Package, error) {
 }
 
 // DoesPackageExistInDevenv checks if a package already exists in devenv.nix
-// Returns: exists, isKanukaManaged, error
+// Returns: exists, isKanukaManaged, error.
 func DoesPackageExistInDevenv(nixName string) (bool, bool, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -81,11 +81,11 @@ func DoesPackageExistInDevenv(nixName string) (bool, bool, error) {
 	}
 
 	contentStr := string(content)
-	
-	// Check if package exists anywhere in the file
+
+	// Check if package exists anywhere in the file.
 	packageExists := strings.Contains(contentStr, nixName)
-	
-	// Check if it's in the Kanuka-managed section
+
+	// Check if it's in the Kanuka-managed section.
 	kanukaManaged := false
 	if packageExists {
 		kanukaManaged = isInKanukaManagedSection(contentStr, nixName)
@@ -94,33 +94,33 @@ func DoesPackageExistInDevenv(nixName string) (bool, bool, error) {
 	return packageExists, kanukaManaged, nil
 }
 
-// isInKanukaManagedSection checks if a package is in the Kanuka-managed section
+// isInKanukaManagedSection checks if a package is in the Kanuka-managed section.
 func isInKanukaManagedSection(content, nixName string) bool {
 	lines := strings.Split(content, "\n")
 	inKanukaSection := false
-	
+
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		if strings.Contains(trimmed, "# Kanuka-managed packages - DO NOT EDIT MANUALLY") {
 			inKanukaSection = true
 			continue
 		}
-		
+
 		if strings.Contains(trimmed, "# End Kanuka-managed packages") {
 			inKanukaSection = false
 			continue
 		}
-		
+
 		if inKanukaSection && strings.Contains(line, nixName) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
-// AddPackageToDevenv adds a package to the Kanuka-managed section of devenv.nix
+// AddPackageToDevenv adds a package to the Kanuka-managed section of devenv.nix.
 func AddPackageToDevenv(pkg *Package) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -134,15 +134,15 @@ func AddPackageToDevenv(pkg *Package) error {
 	}
 
 	contentStr := string(content)
-	
-	// Find the Kanuka-managed section and add the package
+
+	// Find the Kanuka-managed section and add the package.
 	lines := strings.Split(contentStr, "\n")
 	var newLines []string
-	
+
 	for _, line := range lines {
-		// Look for the end of Kanuka-managed packages section
+		// Look for the end of Kanuka-managed packages section.
 		if strings.Contains(strings.TrimSpace(line), "# End Kanuka-managed packages") {
-			// Insert the package before this line
+			// Insert the package before this line.
 			newLines = append(newLines, "    "+pkg.NixName)
 			newLines = append(newLines, line)
 		} else {
@@ -150,9 +150,9 @@ func AddPackageToDevenv(pkg *Package) error {
 		}
 	}
 
-	// Write the updated content back
+	// Write the updated content back.
 	newContent := strings.Join(newLines, "\n")
-	err = os.WriteFile(devenvPath, []byte(newContent), 0644)
+	err = os.WriteFile(devenvPath, []byte(newContent), 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write devenv.nix: %w", err)
 	}
@@ -160,7 +160,7 @@ func AddPackageToDevenv(pkg *Package) error {
 	return nil
 }
 
-// RemovePackageFromDevenv removes a package from the Kanuka-managed section
+// RemovePackageFromDevenv removes a package from the Kanuka-managed section.
 func RemovePackageFromDevenv(nixName string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -176,33 +176,33 @@ func RemovePackageFromDevenv(nixName string) error {
 	lines := strings.Split(string(content), "\n")
 	var newLines []string
 	inKanukaSection := false
-	
+
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		if strings.Contains(trimmed, "# Kanuka-managed packages - DO NOT EDIT MANUALLY") {
 			inKanukaSection = true
 			newLines = append(newLines, line)
 			continue
 		}
-		
+
 		if strings.Contains(trimmed, "# End Kanuka-managed packages") {
 			inKanukaSection = false
 			newLines = append(newLines, line)
 			continue
 		}
-		
-		// Skip the line if it's in Kanuka section and contains our package
+
+		// Skip the line if it's in Kanuka section and contains our package.
 		if inKanukaSection && strings.Contains(line, nixName) {
 			continue
 		}
-		
+
 		newLines = append(newLines, line)
 	}
 
-	// Write the updated content back
+	// Write the updated content back.
 	newContent := strings.Join(newLines, "\n")
-	err = os.WriteFile(devenvPath, []byte(newContent), 0644)
+	err = os.WriteFile(devenvPath, []byte(newContent), 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write devenv.nix: %w", err)
 	}
@@ -210,7 +210,7 @@ func RemovePackageFromDevenv(nixName string) error {
 	return nil
 }
 
-// GetKanukaManagedPackages returns a list of packages managed by Kanuka
+// GetKanukaManagedPackages returns a list of packages managed by Kanuka.
 func GetKanukaManagedPackages() ([]string, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -227,24 +227,24 @@ func GetKanukaManagedPackages() ([]string, error) {
 	var packages []string
 	scanner := bufio.NewScanner(file)
 	inKanukaSection := false
-	
+
 	// Regex to match package lines like "    pkgs.nodejs_18"
 	packageRegex := regexp.MustCompile(`^\s+pkgs\.(\w+)`)
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
-		
+
 		if strings.Contains(trimmed, "# Kanuka-managed packages - DO NOT EDIT MANUALLY") {
 			inKanukaSection = true
 			continue
 		}
-		
+
 		if strings.Contains(trimmed, "# End Kanuka-managed packages") {
 			inKanukaSection = false
 			continue
 		}
-		
+
 		if inKanukaSection {
 			matches := packageRegex.FindStringSubmatch(line)
 			if len(matches) > 1 {

@@ -74,20 +74,20 @@ func testRSAKeyGeneration(t *testing.T, originalWd string, originalUserSettings 
 		t.Fatalf("Failed to load private key: %v", err)
 	}
 
-	// Verify it's an RSA key
-	if privateKey == nil {
+	// Verify it's an RSA key and not nil
+	if privateKey == nil { //nolint:staticcheck // This check is intentional to ensure privateKey is not nil
 		t.Fatalf("Private key is nil")
 	}
 
-	// Verify key size is 2048 bits
-	keySize := privateKey.N.BitLen()
+	// Verify key size is 2048 bits (privateKey is guaranteed non-nil here)
+	keySize := privateKey.N.BitLen() //nolint:staticcheck // privateKey is guaranteed non-nil after check above
 	if keySize != 2048 {
 		t.Errorf("Expected 2048-bit RSA key, got %d bits", keySize)
 	}
 
-	// Verify key can be used for encryption/decryption
+	// Verify key can be used for encryption/decryption (privateKey is guaranteed non-nil here)
 	testMessage := []byte("test message for encryption")
-	encrypted, err := secrets.EncryptWithPublicKey(testMessage, &privateKey.PublicKey)
+	encrypted, err := secrets.EncryptWithPublicKey(testMessage, &privateKey.PublicKey) //nolint:staticcheck // privateKey is guaranteed non-nil after check above
 	if err != nil {
 		t.Errorf("Failed to encrypt with generated public key: %v", err)
 	}

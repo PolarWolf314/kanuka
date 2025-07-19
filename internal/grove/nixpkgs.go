@@ -8,7 +8,7 @@ import (
 	"github.com/peterldowns/nix-search-cli/pkg/nixsearch"
 )
 
-// NixSearchPackage represents a package from nix-search-cli for external use
+// NixSearchPackage represents a package from nix-search-cli for external use.
 type NixSearchPackage struct {
 	AttrName    string
 	Name        string
@@ -18,15 +18,15 @@ type NixSearchPackage struct {
 	Homepage    []string
 }
 
-// NixSearchResult represents a single package from nix search output
-// This maintains compatibility with existing code while using nix-search-cli internally
+// NixSearchResult represents a single package from nix search output.
+// This maintains compatibility with existing code while using nix-search-cli internally.
 type NixSearchResult struct {
 	PackageName string `json:"pname"`
 	Version     string `json:"version"`
 	Description string `json:"description"`
 }
 
-// convertPackageToResult converts nix-search-cli Package to our NixSearchResult
+// convertPackageToResult converts nix-search-cli Package to our NixSearchResult.
 func convertPackageToResult(pkg nixsearch.Package) *NixSearchResult {
 	return &NixSearchResult{
 		PackageName: pkg.Name,
@@ -35,14 +35,14 @@ func convertPackageToResult(pkg nixsearch.Package) *NixSearchResult {
 	}
 }
 
-// ValidatePackageExists checks if a package exists in nixpkgs using nix-search-cli
+// ValidatePackageExists checks if a package exists in nixpkgs using nix-search-cli.
 func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to create search client: %w", err)
 	}
 
-	// Try exact name match first
+	// Try exact name match first.
 	query := nixsearch.Query{
 		MaxResults: 1,
 		Channel:    "unstable",
@@ -58,7 +58,7 @@ func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
 		return true, convertPackageToResult(results[0]), nil
 	}
 
-	// If no exact match, try a general search to see if package exists with similar name
+	// If no exact match, try a general search to see if package exists with similar name.
 	generalQuery := nixsearch.Query{
 		MaxResults: 5,
 		Channel:    "unstable",
@@ -70,7 +70,7 @@ func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
 		return false, nil, fmt.Errorf("general search failed: %w", err)
 	}
 
-	// Look for close matches in attribute names
+	// Look for close matches in attribute names.
 	for _, result := range generalResults {
 		if result.AttrName == packageName || strings.Contains(result.AttrName, packageName) {
 			return true, convertPackageToResult(result), nil
@@ -80,7 +80,7 @@ func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
 	return false, nil, nil
 }
 
-// SearchPackages searches for packages in nixpkgs and returns multiple results
+// SearchPackages searches for packages in nixpkgs and returns multiple results.
 func SearchPackages(searchTerm string) (map[string]NixSearchResult, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
@@ -88,7 +88,7 @@ func SearchPackages(searchTerm string) (map[string]NixSearchResult, error) {
 	}
 
 	query := nixsearch.Query{
-		MaxResults: 50, // Reasonable default for search results
+		MaxResults: 50, // Reasonable default for search results.
 		Channel:    "unstable",
 		Search:     &nixsearch.MatchSearch{Search: searchTerm},
 	}
@@ -98,7 +98,7 @@ func SearchPackages(searchTerm string) (map[string]NixSearchResult, error) {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
 
-	// Convert to map format for compatibility with existing code
+	// Convert to map format for compatibility with existing code.
 	searchResults := make(map[string]NixSearchResult)
 	for _, result := range results {
 		key := "nixpkgs#" + result.AttrName
@@ -112,7 +112,7 @@ func SearchPackages(searchTerm string) (map[string]NixSearchResult, error) {
 	return searchResults, nil
 }
 
-// convertNixSearchPackage converts nixsearch.Package to our NixSearchPackage type
+// convertNixSearchPackage converts nixsearch.Package to our NixSearchPackage type.
 func convertNixSearchPackage(pkg nixsearch.Package) NixSearchPackage {
 	return NixSearchPackage{
 		AttrName:    pkg.AttrName,
@@ -124,7 +124,7 @@ func convertNixSearchPackage(pkg nixsearch.Package) NixSearchPackage {
 	}
 }
 
-// SearchPackagesByName searches for packages by exact name match
+// SearchPackagesByName searches for packages by exact name match.
 func SearchPackagesByName(packageName string) ([]NixSearchPackage, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
@@ -150,7 +150,7 @@ func SearchPackagesByName(packageName string) ([]NixSearchPackage, error) {
 	return packages, nil
 }
 
-// SearchPackagesByProgram searches for packages that provide a specific program/binary
+// SearchPackagesByProgram searches for packages that provide a specific program/binary.
 func SearchPackagesByProgram(programName string) ([]NixSearchPackage, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
@@ -176,7 +176,7 @@ func SearchPackagesByProgram(programName string) ([]NixSearchPackage, error) {
 	return packages, nil
 }
 
-// SearchPackagesGeneral performs a general search across all package fields
+// SearchPackagesGeneral performs a general search across all package fields.
 func SearchPackagesGeneral(searchTerm string, maxResults int) ([]NixSearchPackage, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
@@ -184,7 +184,7 @@ func SearchPackagesGeneral(searchTerm string, maxResults int) ([]NixSearchPackag
 	}
 
 	if maxResults <= 0 {
-		maxResults = 25 // Default
+		maxResults = 25 // Default.
 	}
 
 	query := nixsearch.Query{
@@ -206,18 +206,18 @@ func SearchPackagesGeneral(searchTerm string, maxResults int) ([]NixSearchPackag
 	return packages, nil
 }
 
-// GetPackageNixName extracts the proper nix package name from search results
+// GetPackageNixName extracts the proper nix package name from search results.
 func GetPackageNixName(packageName string) (string, error) {
 	exists, _, err := ValidatePackageExists(packageName)
 	if err != nil {
 		return "", err
 	}
-	
+
 	if !exists {
 		return "", fmt.Errorf("package '%s' not found in nixpkgs", packageName)
 	}
 
 	// For most packages, the nix name is just pkgs.packageName
-	// But we could enhance this to handle special cases
+	// But we could enhance this to handle special cases.
 	return "pkgs." + packageName, nil
 }

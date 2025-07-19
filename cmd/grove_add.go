@@ -3,14 +3,13 @@ package cmd
 import (
 	"fmt"
 	"strings"
+
 	"github.com/PolarWolf314/kanuka/internal/grove"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-var (
-	skipValidation bool
-)
+var skipValidation bool
 
 var groveAddCmd = &cobra.Command{
 	Use:   "add <package>[@version]",
@@ -26,7 +25,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packageName := args[0]
-		
+
 		GroveLogger.Infof("Starting grove add command for package: %s", packageName)
 		spinner, cleanup := startGroveSpinner("Searching and validating package...", groveVerbose)
 		defer cleanup()
@@ -76,15 +75,15 @@ Examples:
 				// Try to provide helpful suggestions using the new search capabilities
 				suggestions := getPackageSuggestions(packageName)
 				finalMessage = color.RedString("✗") + " Package '" + packageName + "' not found in nixpkgs\n" +
-					color.CyanString("→") + " Try " + color.YellowString("kanuka grove search " + packageName) + " to find similar packages"
-				
+					color.CyanString("→") + " Try " + color.YellowString("kanuka grove search "+packageName) + " to find similar packages"
+
 				if len(suggestions) > 0 {
 					finalMessage += "\n" + color.CyanString("→") + " Similar packages: " + color.YellowString(strings.Join(suggestions, ", "))
 				}
-				
+
 				// Suggest program-based search if the package name looks like a binary
 				if isLikelyProgramName(packageName) {
-					finalMessage += "\n" + color.CyanString("→") + " Or search by program: " + color.YellowString("kanuka grove search --program " + packageName)
+					finalMessage += "\n" + color.CyanString("→") + " Or search by program: " + color.YellowString("kanuka grove search --program "+packageName)
 				}
 			} else {
 				finalMessage = color.RedString("✗") + " Failed to validate package: " + err.Error()
@@ -104,7 +103,7 @@ Examples:
 		if exists {
 			if isKanukaManaged {
 				finalMessage := color.YellowString("!") + " Package '" + parsedPackage.NixName + "' already managed by Kanuka\n" +
-					color.CyanString("→") + " Use " + color.YellowString("kanuka grove remove " + parsedPackage.NixName) + " first to replace it"
+					color.CyanString("→") + " Use " + color.YellowString("kanuka grove remove "+parsedPackage.NixName) + " first to replace it"
 				spinner.FinalMSG = finalMessage
 				return nil
 			} else {
@@ -112,10 +111,13 @@ Examples:
 				spinner.Stop()
 				GroveLogger.WarnfUser("Package '%s' already exists in devenv.nix (not managed by Kanuka)", parsedPackage.NixName)
 				GroveLogger.WarnfUser("Replace existing package? (y/N)")
-				
+
 				var response string
-				fmt.Scanln(&response)
-				
+				_, err := fmt.Scanln(&response)
+				if err != nil {
+					return err
+				}
+
 				if response != "y" && response != "Y" {
 					finalMessage := color.YellowString("!") + " Package addition cancelled"
 					spinner.FinalMSG = finalMessage
@@ -128,7 +130,7 @@ Examples:
 
 		// Update spinner message for the actual addition step
 		spinner.Suffix = " Adding package to devenv.nix..."
-		
+
 		// Add package to devenv.nix
 		GroveLogger.Debugf("Adding package to devenv.nix")
 		if err := grove.AddPackageToDevenv(parsedPackage); err != nil {
@@ -144,31 +146,31 @@ Examples:
 	},
 }
 
-// getPackageSuggestions tries to find similar package names for better error messages
+// getPackageSuggestions tries to find similar package names for better error messages.
 func getPackageSuggestions(packageName string) []string {
 	// Try a general search to find similar packages
 	results, err := grove.SearchPackagesGeneral(packageName, 3)
 	if err != nil {
 		return nil
 	}
-	
+
 	var suggestions []string
 	for _, result := range results {
 		if result.AttrName != packageName && len(suggestions) < 3 {
 			suggestions = append(suggestions, result.AttrName)
 		}
 	}
-	
+
 	return suggestions
 }
 
-// isLikelyProgramName checks if a package name looks like it could be a program/binary name
+// isLikelyProgramName checks if a package name looks like it could be a program/binary name.
 func isLikelyProgramName(name string) bool {
 	// Simple heuristics: short names, common program patterns
 	if len(name) <= 10 && !strings.Contains(name, "_") && !strings.Contains(name, "-") {
 		return true
 	}
-	
+
 	// Common program name patterns
 	commonPrograms := []string{"go", "node", "python", "java", "rust", "gcc", "git", "vim", "curl", "wget"}
 	for _, prog := range commonPrograms {
@@ -176,7 +178,7 @@ func isLikelyProgramName(name string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
