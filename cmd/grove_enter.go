@@ -137,7 +137,7 @@ Examples:
 	},
 }
 
-// enterDevenvShell executes the devenv shell command with --clean flag.
+// enterDevenvShell executes the devenv shell command, optionally with --clean flag.
 func enterDevenvShell() error {
 	// Find devenv executable
 	devenvPath, err := exec.LookPath("devenv")
@@ -145,11 +145,40 @@ func enterDevenvShell() error {
 		return fmt.Errorf("devenv command not found: %w", err)
 	}
 
-	// Prepare the command with --clean flag for isolated environment
+	// Always use --clean for consistent isolated environment
 	args := []string{"devenv", "shell", "--clean"}
+	GroveLogger.Debugf("Using devenv shell --clean for isolated environment")
 
-	// Get current environment (includes any AWS credentials we set)
+	// Get current environment and ensure AWS variables are preserved
 	env := os.Environ()
+	
+	// Extract AWS environment variables to ensure they're passed
+	awsVars := make(map[string]string)
+	for _, envVar := range env {
+		if strings.HasPrefix(envVar, "AWS_") {
+			parts := strings.SplitN(envVar, "=", 2)
+			if len(parts) == 2 {
+				awsVars[parts[0]] = parts[1]
+			}
+		}
+	}
+	
+	// Create a new environment slice with AWS variables explicitly added
+	newEnv := make([]string, 0, len(env)+len(awsVars))
+	
+	// Add all non-AWS environment variables first
+	for _, envVar := range env {
+		if !strings.HasPrefix(envVar, "AWS_") {
+			newEnv = append(newEnv, envVar)
+		}
+	}
+	
+	// Explicitly add AWS variables at the end (to override any conflicts)
+	for key, value := range awsVars {
+		newEnv = append(newEnv, fmt.Sprintf("%s=%s", key, value))
+	}
+	
+	env = newEnv
 
 	// Execute devenv shell --clean, replacing the current process
 	// This ensures all environment variables (including AWS credentials) are passed to the shell
@@ -157,8 +186,10 @@ func enterDevenvShell() error {
 	GroveLogger.Debugf("Environment variables count: %d", len(env))
 	
 	// Log AWS-related environment variables for debugging (without exposing secrets)
+	awsEnvCount := 0
 	for _, envVar := range env {
 		if strings.HasPrefix(envVar, "AWS_") {
+			awsEnvCount++
 			if strings.HasPrefix(envVar, "AWS_ACCESS_KEY_ID=") || 
 			   strings.HasPrefix(envVar, "AWS_SECRET_ACCESS_KEY=") || 
 			   strings.HasPrefix(envVar, "AWS_SESSION_TOKEN=") {
@@ -167,6 +198,26 @@ func enterDevenvShell() error {
 				GroveLogger.Debugf("AWS env var: %s", envVar)
 			}
 		}
+	}
+	GroveLogger.Debugf("Total AWS environment variables: %d (no AWS_PROFILE set - using direct credentials)", awsEnvCount)
+	
+	// Also verify the specific variables we need are set
+	if accessKey := os.Getenv("AWS_ACCESS_KEY_ID"); accessKey != "" {
+		GroveLogger.Debugf("AWS_ACCESS_KEY_ID is set (length: %d)", len(accessKey))
+	} else {
+		GroveLogger.Debugf("WARNING: AWS_ACCESS_KEY_ID is not set!")
+	}
+	
+	if secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY"); secretKey != "" {
+		GroveLogger.Debugf("AWS_SECRET_ACCESS_KEY is set (length: %d)", len(secretKey))
+	} else {
+		GroveLogger.Debugf("WARNING: AWS_SECRET_ACCESS_KEY is not set!")
+	}
+	
+	if sessionToken := os.Getenv("AWS_SESSION_TOKEN"); sessionToken != "" {
+		GroveLogger.Debugf("AWS_SESSION_TOKEN is set (length: %d)", len(sessionToken))
+	} else {
+		GroveLogger.Debugf("WARNING: AWS_SESSION_TOKEN is not set!")
 	}
 	
 	err = syscall.Exec(devenvPath, args, env)
@@ -229,6 +280,20 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 			Message: "Failed to set AWS environment variables",
 			Details: err.Error(),
 		}
+	}
+
+	// Verify environment variables are set and test credentials
+	GroveLogger.Infof("AWS credentials configured for shell session")
+	GroveLogger.Debugf("AWS_ACCESS_KEY_ID: %s", os.Getenv("AWS_ACCESS_KEY_ID")[:10]+"...")
+	GroveLogger.Debugf("AWS_REGION: %s", os.Getenv("AWS_REGION"))
+
+	// Test the credentials by calling AWS STS GetCallerIdentity
+	err = testAWSCredentials()
+	if err != nil {
+		GroveLogger.Debugf("Warning: AWS credentials test failed: %v", err)
+		fmt.Printf("%s Warning: AWS credentials may not be working properly\n", color.YellowString("⚠"))
+	} else {
+		fmt.Printf("%s AWS credentials verified and working\n", color.GreenString("✓"))
 	}
 
 	return nil
@@ -724,11 +789,32 @@ func setAWSEnvironmentVariablesForSession(config *AWSSSoConfig, credentials *AWS
 		GroveLogger.Infof("Set AWS credentials for this session")
 	}
 
-	// Set AWS_PROFILE for compatibility (optional)
-	if config.ProfileName != "" {
-		os.Setenv("AWS_PROFILE", config.ProfileName)
+	// Don't set AWS_PROFILE - let AWS CLI use environment variables directly
+	// This avoids issues with missing profile files in clean environments
+
+	return nil
+}
+
+// testAWSCredentials tests if the AWS credentials are working by calling GetCallerIdentity
+func testAWSCredentials() error {
+	ctx := context.Background()
+	
+	// Load AWS config using environment variables
+	cfg, err := awsconfig.LoadDefaultConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
+	// Create STS client and test credentials
+	stsClient := sts.NewFromConfig(cfg)
+	resp, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		return fmt.Errorf("failed to get caller identity: %w", err)
+	}
+
+	GroveLogger.Debugf("AWS credentials verified - Account: %s, User: %s", 
+		*resp.Account, *resp.Arn)
+	
 	return nil
 }
 
