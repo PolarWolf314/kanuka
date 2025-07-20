@@ -3,6 +3,8 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -29,6 +31,10 @@ import (
 var (
 	enterAuth bool
 	enterEnv  string
+	
+	// Global variables for AWS profile injection
+	tempCredentialsFile string // Note: This now stores the profile name, not a file path
+	devenvNixBackup     string // Backup file path for devenv.nix restoration
 )
 
 var groveEnterCmd = &cobra.Command{
@@ -149,80 +155,99 @@ func enterDevenvShell() error {
 	args := []string{"devenv", "shell", "--clean"}
 	GroveLogger.Debugf("Using devenv shell --clean for isolated environment")
 
-	// Get current environment and ensure AWS variables are preserved
+	// Get current environment
 	env := os.Environ()
-	
-	// Extract AWS environment variables to ensure they're passed
-	awsVars := make(map[string]string)
-	for _, envVar := range env {
-		if strings.HasPrefix(envVar, "AWS_") {
-			parts := strings.SplitN(envVar, "=", 2)
-			if len(parts) == 2 {
-				awsVars[parts[0]] = parts[1]
-			}
-		}
-	}
-	
-	// Create a new environment slice with AWS variables explicitly added
-	newEnv := make([]string, 0, len(env)+len(awsVars))
-	
-	// Add all non-AWS environment variables first
-	for _, envVar := range env {
-		if !strings.HasPrefix(envVar, "AWS_") {
-			newEnv = append(newEnv, envVar)
-		}
-	}
-	
-	// Explicitly add AWS variables at the end (to override any conflicts)
-	for key, value := range awsVars {
-		newEnv = append(newEnv, fmt.Sprintf("%s=%s", key, value))
-	}
-	
-	env = newEnv
 
-	// Execute devenv shell --clean, replacing the current process
-	// This ensures all environment variables (including AWS credentials) are passed to the shell
+	// If we have AWS credentials to inject, create a wrapper script for cleanup
+	if tempCredentialsFile != "" {
+		return executeWithAWSCleanupWrapper(devenvPath, args, env)
+	}
+
+	// No auth needed, execute directly
 	GroveLogger.Debugf("Executing: %s %v", devenvPath, args[1:])
-	GroveLogger.Debugf("Environment variables count: %d", len(env))
-	
-	// Log AWS-related environment variables for debugging (without exposing secrets)
-	awsEnvCount := 0
-	for _, envVar := range env {
-		if strings.HasPrefix(envVar, "AWS_") {
-			awsEnvCount++
-			if strings.HasPrefix(envVar, "AWS_ACCESS_KEY_ID=") || 
-			   strings.HasPrefix(envVar, "AWS_SECRET_ACCESS_KEY=") || 
-			   strings.HasPrefix(envVar, "AWS_SESSION_TOKEN=") {
-				GroveLogger.Debugf("AWS credential env var set: %s=***", strings.Split(envVar, "=")[0])
-			} else {
-				GroveLogger.Debugf("AWS env var: %s", envVar)
-			}
-		}
-	}
-	GroveLogger.Debugf("Total AWS environment variables: %d (no AWS_PROFILE set - using direct credentials)", awsEnvCount)
-	
-	// Also verify the specific variables we need are set
-	if accessKey := os.Getenv("AWS_ACCESS_KEY_ID"); accessKey != "" {
-		GroveLogger.Debugf("AWS_ACCESS_KEY_ID is set (length: %d)", len(accessKey))
-	} else {
-		GroveLogger.Debugf("WARNING: AWS_ACCESS_KEY_ID is not set!")
-	}
-	
-	if secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY"); secretKey != "" {
-		GroveLogger.Debugf("AWS_SECRET_ACCESS_KEY is set (length: %d)", len(secretKey))
-	} else {
-		GroveLogger.Debugf("WARNING: AWS_SECRET_ACCESS_KEY is not set!")
-	}
-	
-	if sessionToken := os.Getenv("AWS_SESSION_TOKEN"); sessionToken != "" {
-		GroveLogger.Debugf("AWS_SESSION_TOKEN is set (length: %d)", len(sessionToken))
-	} else {
-		GroveLogger.Debugf("WARNING: AWS_SESSION_TOKEN is not set!")
-	}
-	
 	err = syscall.Exec(devenvPath, args, env)
 	if err != nil {
 		return fmt.Errorf("failed to execute devenv shell --clean: %w", err)
+	}
+
+	// This line should never be reached if syscall.Exec succeeds
+	return nil
+}
+
+// executeWithAWSCleanupWrapper creates a wrapper script that handles AWS profile cleanup and executes devenv
+func executeWithAWSCleanupWrapper(devenvPath string, args []string, env []string) error {
+	// Generate random filename for wrapper script
+	randomSuffix, err := generateRandomString(8)
+	if err != nil {
+		return fmt.Errorf("failed to generate random string for wrapper: %w", err)
+	}
+	
+	wrapperScript := filepath.Join(os.TempDir(), fmt.Sprintf("kanuka-wrapper-%s.sh", randomSuffix))
+	
+	// Create wrapper script content
+	wrapperContent := fmt.Sprintf(`#!/bin/bash
+# Kanuka Grove wrapper script for AWS profile cleanup
+set -e
+
+# Cleanup function
+cleanup_aws_profile() {
+    echo "🧹 Cleaning up Kanuka AWS session..."
+    
+    # Remove temporary AWS profile from ~/.aws/credentials
+    if [ -f "$HOME/.aws/credentials" ]; then
+        # Create a temporary file without the kanuka profile
+        grep -v "^\[%s\]" "$HOME/.aws/credentials" | \
+        awk '/^\[%s\]/{skip=1; next} /^\[.*\]/{skip=0} !skip' > "$HOME/.aws/credentials.tmp" 2>/dev/null || true
+        
+        # Replace the original file if temp file was created successfully
+        if [ -f "$HOME/.aws/credentials.tmp" ]; then
+            mv "$HOME/.aws/credentials.tmp" "$HOME/.aws/credentials"
+            echo "✓ Removed temporary AWS profile '%s'"
+        fi
+    fi
+    
+    # Restore original devenv.nix if backup exists
+    if [ -f "%s" ]; then
+        mv "%s" devenv.nix
+        echo "✓ Restored devenv.nix"
+    fi
+    
+    # Remove wrapper script itself
+    rm -f "%s"
+    echo "✓ Cleanup complete"
+}
+
+# Set up cleanup trap - this will run when the shell exits
+trap cleanup_aws_profile EXIT
+
+# AWS_PROFILE is injected into devenv.nix, so it will be available in the clean environment
+echo "✓ Using AWS profile: %s"
+
+# Replace this shell process with devenv (no floating wrapper during session)
+exec %s %s
+`, 
+		tempCredentialsFile, tempCredentialsFile, tempCredentialsFile,
+		devenvNixBackup, devenvNixBackup,
+		wrapperScript,
+		tempCredentialsFile,
+		devenvPath, strings.Join(args[1:], " "))
+
+	// Create wrapper script with executable permissions
+	err = os.WriteFile(wrapperScript, []byte(wrapperContent), 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create wrapper script: %w", err)
+	}
+
+	GroveLogger.Debugf("Created wrapper script: %s", wrapperScript)
+	GroveLogger.Debugf("Executing wrapper script with cleanup trap")
+
+	// Execute the wrapper script, replacing the current process
+	wrapperArgs := []string{wrapperScript}
+	err = syscall.Exec(wrapperScript, wrapperArgs, env)
+	if err != nil {
+		// Clean up wrapper script if exec fails
+		os.Remove(wrapperScript)
+		return fmt.Errorf("failed to execute wrapper script: %w", err)
 	}
 
 	// This line should never be reached if syscall.Exec succeeds
@@ -272,23 +297,18 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 
 	GroveLogger.Infof("AWS SSO authentication successful for this session")
 
-	// Set AWS environment variables for the shell session
-	err := setAWSEnvironmentVariablesForSession(ssoConfig, credentials)
+	// Prepare AWS credentials for secure injection into devenv shell
+	err := prepareAWSCredentialsForDevenv(ssoConfig, credentials)
 	if err != nil {
 		return &AuthenticationError{
 			Type:    "env_setup_failed",
-			Message: "Failed to set AWS environment variables",
+			Message: "Failed to prepare AWS credentials for devenv",
 			Details: err.Error(),
 		}
 	}
 
-	// Verify environment variables are set and test credentials
-	GroveLogger.Infof("AWS credentials configured for shell session")
-	GroveLogger.Debugf("AWS_ACCESS_KEY_ID: %s", os.Getenv("AWS_ACCESS_KEY_ID")[:10]+"...")
-	GroveLogger.Debugf("AWS_REGION: %s", os.Getenv("AWS_REGION"))
-
 	// Test the credentials by calling AWS STS GetCallerIdentity
-	err = testAWSCredentials()
+	err = testAWSCredentialsWithConfig(ssoConfig, credentials)
 	if err != nil {
 		GroveLogger.Debugf("Warning: AWS credentials test failed: %v", err)
 		fmt.Printf("%s Warning: AWS credentials may not be working properly\n", color.YellowString("⚠"))
@@ -762,37 +782,224 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	}, nil
 }
 
-// setAWSEnvironmentVariablesForSession sets AWS environment variables for the shell session.
-func setAWSEnvironmentVariablesForSession(config *AWSSSoConfig, credentials *AWSCredentials) error {
-	// Set AWS credentials environment variables
-	err := os.Setenv("AWS_ACCESS_KEY_ID", credentials.AccessKeyID)
+
+// generateRandomString generates a cryptographically secure random string
+func generateRandomString(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// prepareAWSCredentialsForDevenv sets up secure credential injection using ~/.aws/credentials
+func prepareAWSCredentialsForDevenv(config *AWSSSoConfig, credentials *AWSCredentials) error {
+	GroveLogger.Infof("Preparing AWS credentials using ~/.aws/credentials profile")
+
+	// Generate unique profile name for this session
+	randomSuffix, err := generateRandomString(8)
 	if err != nil {
-		return fmt.Errorf("failed to set AWS_ACCESS_KEY_ID: %w", err)
+		return fmt.Errorf("failed to generate random string: %w", err)
 	}
-
-	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.SecretAccessKey)
+	
+	tempCredentialsFile = fmt.Sprintf("kanuka-session-%s", randomSuffix) // Store profile name instead of file path
+	
+	// Get user's home directory
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to set AWS_SECRET_ACCESS_KEY: %w", err)
+		return fmt.Errorf("failed to get home directory: %w", err)
 	}
+	
+	awsDir := filepath.Join(homeDir, ".aws")
+	credentialsFile := filepath.Join(awsDir, "credentials")
+	
+	// Ensure ~/.aws directory exists
+	if err := os.MkdirAll(awsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create ~/.aws directory: %w", err)
+	}
+	
+	// Read existing credentials file if it exists
+	var existingContent string
+	if content, err := os.ReadFile(credentialsFile); err == nil {
+		existingContent = string(content)
+	}
+	
+	// Create temporary profile content
+	profileContent := fmt.Sprintf(`
+[%s]
+aws_access_key_id = %s
+aws_secret_access_key = %s
+aws_session_token = %s
+region = %s
+`, tempCredentialsFile, credentials.AccessKeyID, credentials.SecretAccessKey, credentials.SessionToken, config.Region)
+	
+	// Append to existing credentials file
+	newContent := existingContent + profileContent
+	
+	// Write updated credentials file with restrictive permissions
+	if err := os.WriteFile(credentialsFile, []byte(newContent), 0600); err != nil {
+		return fmt.Errorf("failed to write to ~/.aws/credentials: %w", err)
+	}
+	
+	GroveLogger.Debugf("Added temporary profile '%s' to ~/.aws/credentials", tempCredentialsFile)
+	
+	// Set AWS_PROFILE environment variable for devenv
+	os.Setenv("AWS_PROFILE", tempCredentialsFile)
+	GroveLogger.Debugf("Set AWS_PROFILE=%s for devenv session", tempCredentialsFile)
 
-	err = os.Setenv("AWS_SESSION_TOKEN", credentials.SessionToken)
+	// Since --clean flag isolates environment variables, we need to inject AWS_PROFILE via devenv.nix
+	err = injectAWSProfileIntoDevenv(tempCredentialsFile)
 	if err != nil {
-		return fmt.Errorf("failed to set AWS_SESSION_TOKEN: %w", err)
+		return fmt.Errorf("failed to inject AWS_PROFILE into devenv.nix: %w", err)
 	}
-
-	// Set region environment variables
-	if config.Region != "" {
-		os.Setenv("AWS_DEFAULT_REGION", config.Region)
-		os.Setenv("AWS_REGION", config.Region)
-		GroveLogger.Infof("Set AWS credentials and region=%s for this session", config.Region)
-	} else {
-		GroveLogger.Infof("Set AWS credentials for this session")
-	}
-
-	// Don't set AWS_PROFILE - let AWS CLI use environment variables directly
-	// This avoids issues with missing profile files in clean environments
 
 	return nil
+}
+
+// injectAWSProfileIntoDevenv modifies devenv.nix to set AWS_PROFILE environment variable
+func injectAWSProfileIntoDevenv(profileName string) error {
+	devenvNixPath := "devenv.nix"
+	
+	// Check if devenv.nix exists
+	if _, err := os.Stat(devenvNixPath); os.IsNotExist(err) {
+		return fmt.Errorf("devenv.nix not found")
+	}
+
+	// Create backup
+	backupSuffix, err := generateRandomString(6)
+	if err != nil {
+		return fmt.Errorf("failed to generate backup suffix: %w", err)
+	}
+	devenvNixBackup = fmt.Sprintf("devenv.nix.kanuka-backup-%s", backupSuffix)
+	
+	// Read original devenv.nix
+	originalContent, err := os.ReadFile(devenvNixPath)
+	if err != nil {
+		return fmt.Errorf("failed to read devenv.nix: %w", err)
+	}
+
+	// Create backup
+	if err := os.WriteFile(devenvNixBackup, originalContent, 0644); err != nil {
+		return fmt.Errorf("failed to create backup: %w", err)
+	}
+
+	GroveLogger.Debugf("Created devenv.nix backup: %s", devenvNixBackup)
+
+	// Inject AWS_PROFILE into devenv.nix
+	modifiedContent, err := injectAWSProfileSafely(string(originalContent), profileName)
+	if err != nil {
+		return fmt.Errorf("failed to modify devenv.nix content: %w", err)
+	}
+
+	// Write modified devenv.nix
+	if err := os.WriteFile(devenvNixPath, []byte(modifiedContent), 0644); err != nil {
+		// Restore backup on error
+		os.WriteFile(devenvNixPath, originalContent, 0644)
+		os.Remove(devenvNixBackup)
+		return fmt.Errorf("failed to write modified devenv.nix: %w", err)
+	}
+
+	GroveLogger.Debugf("Injected AWS_PROFILE=%s into devenv.nix", profileName)
+	return nil
+}
+
+// injectAWSProfileSafely safely injects AWS_PROFILE environment variable into devenv.nix
+func injectAWSProfileSafely(content, profileName string) (string, error) {
+	lines := strings.Split(content, "\n")
+	var result []string
+	var inEnv bool
+	var envIndent string
+	profileInjected := false
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		
+		// Check if we're starting an env block
+		if strings.Contains(trimmedLine, "env") && strings.Contains(trimmedLine, "=") && strings.Contains(trimmedLine, "{") {
+			inEnv = true
+			envIndent = line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+			result = append(result, line)
+			
+			// Inject AWS_PROFILE right after opening the env block
+			awsProfileLine := fmt.Sprintf(`%s  AWS_PROFILE = "%s";`, envIndent, profileName)
+			result = append(result, awsProfileLine)
+			profileInjected = true
+			continue
+		}
+		
+		// Check if we're ending an env block
+		if inEnv && strings.Contains(trimmedLine, "}") {
+			inEnv = false
+		}
+		
+		result = append(result, line)
+	}
+	
+	// If no env block was found, add one before the closing brace
+	if !profileInjected {
+		// Find the last closing brace and add env block before it
+		for i := len(result) - 1; i >= 0; i-- {
+			if strings.TrimSpace(result[i]) == "}" {
+				envBlock := fmt.Sprintf(`
+  # AWS profile injection by kanuka grove
+  env = {
+    AWS_PROFILE = "%s";
+  };`, profileName)
+				
+				// Insert before the closing brace
+				newResult := make([]string, 0, len(result)+1)
+				newResult = append(newResult, result[:i]...)
+				newResult = append(newResult, envBlock)
+				newResult = append(newResult, result[i:]...)
+				result = newResult
+				break
+			}
+		}
+	}
+	
+	return strings.Join(result, "\n"), nil
+}
+
+// testAWSCredentialsWithConfig tests credentials using the provided config and credentials
+func testAWSCredentialsWithConfig(config *AWSSSoConfig, credentials *AWSCredentials) error {
+	// Temporarily set environment variables for testing
+	oldAccessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	oldSecretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	oldSessionToken := os.Getenv("AWS_SESSION_TOKEN")
+	oldRegion := os.Getenv("AWS_REGION")
+
+	// Set test credentials
+	os.Setenv("AWS_ACCESS_KEY_ID", credentials.AccessKeyID)
+	os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.SecretAccessKey)
+	os.Setenv("AWS_SESSION_TOKEN", credentials.SessionToken)
+	os.Setenv("AWS_REGION", config.Region)
+
+	// Test credentials
+	err := testAWSCredentials()
+
+	// Restore original environment
+	if oldAccessKey != "" {
+		os.Setenv("AWS_ACCESS_KEY_ID", oldAccessKey)
+	} else {
+		os.Unsetenv("AWS_ACCESS_KEY_ID")
+	}
+	if oldSecretKey != "" {
+		os.Setenv("AWS_SECRET_ACCESS_KEY", oldSecretKey)
+	} else {
+		os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+	}
+	if oldSessionToken != "" {
+		os.Setenv("AWS_SESSION_TOKEN", oldSessionToken)
+	} else {
+		os.Unsetenv("AWS_SESSION_TOKEN")
+	}
+	if oldRegion != "" {
+		os.Setenv("AWS_REGION", oldRegion)
+	} else {
+		os.Unsetenv("AWS_REGION")
+	}
+
+	return err
 }
 
 // testAWSCredentials tests if the AWS credentials are working by calling GetCallerIdentity
