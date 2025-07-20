@@ -12,7 +12,7 @@
 4. **Declarative nixpkgs pinning** through devenv.yaml input management
 5. **Multi-channel support** for mixing stable and unstable packages
 6. **Automatic stable channel detection** - always uses latest stable release
-7. **Integrated AWS SSO authentication** - uses aws-sso-cli library directly, no external dependencies
+7. **Integrated AWS SSO authentication** - uses official AWS Go SDK directly, no external dependencies
 
 ## Command Structure
 
@@ -26,7 +26,7 @@ kanuka grove search <term>           # Search nixpkgs (enhanced with nix-search-
 kanuka grove search --name <pkg>      # Search by exact package name
 kanuka grove search --program <bin>   # Search by binary/program name
 kanuka grove enter                   # Enter clean shell (no auth)
-kanuka grove enter --auth            # Enter clean shell with AWS SSO (prefers aws-sso-cli)
+kanuka grove enter --auth            # Enter clean shell with AWS SSO (uses official AWS SDK)
 kanuka grove enter --env <name>      # Enter shell with named environment
 kanuka grove status                  # Show environment status
 kanuka dev                          # Alias for 'kanuka grove enter'

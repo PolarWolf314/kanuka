@@ -154,12 +154,12 @@ func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 		status.NixInstalled = true
 	}
 
-	// Check AWS SSO status (using synfinatic/aws-sso-cli, no AWS CLI dependency)
+	// Check AWS SSO status (using official AWS Go SDK, no external dependencies)
 	if ssoConfig, err := findAWSSSoConfigForStatus(); err == nil {
 		status.AWSSSoConfigured = true
 		status.AWSSSoProfile = ssoConfig.ProfileName
 
-		// Check if authenticated using synfinatic/aws-sso-cli
+		// Check if authenticated using official AWS Go SDK
 		status.AWSAuthenticated = isAWSSSoAuthenticatedForStatus(ssoConfig)
 	}
 
@@ -418,7 +418,7 @@ type AWSSSoConfigForStatus struct {
 	Region      string
 }
 
-// isAWSSSoAuthenticatedForStatus checks authentication status using synfinatic/aws-sso-cli.
+// isAWSSSoAuthenticatedForStatus checks authentication status using official AWS Go SDK.
 func isAWSSSoAuthenticatedForStatus(config *AWSSSoConfigForStatus) bool {
 	// Use the same authentication check as the main enter command
 	mainConfig := &AWSSSoConfig{

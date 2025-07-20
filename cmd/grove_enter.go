@@ -2,19 +2,28 @@ package cmd
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/grove"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sso"
+	"github.com/aws/aws-sdk-go-v2/service/sso/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
+	ssooidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/briandowns/spinner"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 var (
@@ -29,7 +38,7 @@ var groveEnterCmd = &cobra.Command{
 This starts a clean, isolated shell with all your configured packages and languages available,
 ensuring the environment doesn't depend on any system-specific configuration.
 
-Authentication is handled entirely by synfinatic/aws-sso-cli - no AWS CLI dependency required.
+Authentication is handled using the official AWS Go SDK - no external dependencies required.
 When --auth is used, you will always be prompted to authenticate for this session only.
 
 Examples:
@@ -139,9 +148,28 @@ func enterDevenvShell() error {
 	// Prepare the command with --clean flag for isolated environment
 	args := []string{"devenv", "shell", "--clean"}
 
+	// Get current environment (includes any AWS credentials we set)
+	env := os.Environ()
+
 	// Execute devenv shell --clean, replacing the current process
+	// This ensures all environment variables (including AWS credentials) are passed to the shell
 	GroveLogger.Debugf("Executing: %s %v", devenvPath, args[1:])
-	err = syscall.Exec(devenvPath, args, os.Environ())
+	GroveLogger.Debugf("Environment variables count: %d", len(env))
+	
+	// Log AWS-related environment variables for debugging (without exposing secrets)
+	for _, envVar := range env {
+		if strings.HasPrefix(envVar, "AWS_") {
+			if strings.HasPrefix(envVar, "AWS_ACCESS_KEY_ID=") || 
+			   strings.HasPrefix(envVar, "AWS_SECRET_ACCESS_KEY=") || 
+			   strings.HasPrefix(envVar, "AWS_SESSION_TOKEN=") {
+				GroveLogger.Debugf("AWS credential env var set: %s=***", strings.Split(envVar, "=")[0])
+			} else {
+				GroveLogger.Debugf("AWS env var: %s", envVar)
+			}
+		}
+	}
+	
+	err = syscall.Exec(devenvPath, args, env)
 	if err != nil {
 		return fmt.Errorf("failed to execute devenv shell --clean: %w", err)
 	}
@@ -150,9 +178,9 @@ func enterDevenvShell() error {
 	return nil
 }
 
-// handleAuthentication sets up AWS SSO authentication using synfinatic/aws-sso-cli.
+// handleAuthentication sets up AWS SSO authentication using the official AWS Go SDK.
 func handleAuthentication(spinner *spinner.Spinner) error {
-	GroveLogger.Debugf("Setting up AWS SSO authentication using synfinatic/aws-sso-cli")
+	GroveLogger.Debugf("Setting up AWS SSO authentication using official AWS Go SDK")
 
 	// Always prompt for authentication when --auth is used
 	// First, try to get SSO config from ~/.aws/config if it exists
@@ -181,7 +209,7 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 	GroveLogger.Infof("Initiating AWS SSO login for this session...")
 	spinner.Stop() // Stop spinner for interactive login
 
-	loginErr := performIntegratedAwsSsoLogin(ssoConfig)
+	credentials, loginErr := performAwsSsoLogin(ssoConfig)
 	if loginErr != nil {
 		return &AuthenticationError{
 			Type:       "sso_login_failed",
@@ -194,7 +222,7 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 	GroveLogger.Infof("AWS SSO authentication successful for this session")
 
 	// Set AWS environment variables for the shell session
-	err := setAWSEnvironmentVariablesForSession(ssoConfig)
+	err := setAWSEnvironmentVariablesForSession(ssoConfig, credentials)
 	if err != nil {
 		return &AuthenticationError{
 			Type:    "env_setup_failed",
@@ -416,67 +444,289 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 
 // isAWSSSoAuthenticated checks if the user is currently authenticated with AWS SSO.
 func isAWSSSoAuthenticated(config *AWSSSoConfig) bool {
-	// Create SSO config for synfinatic/aws-sso-cli
-	ssoConfig := &sso.SSOConfig{
-		SSORegion:     config.SSORegion,
-		StartUrl:      config.SSOStartURL,
-		DefaultRegion: config.Region,
-		MaxBackoff:    30,
-		MaxRetry:      3,
+	ctx := context.Background()
+	
+	// Try to load AWS config with SSO
+	cfg, err := awsconfig.LoadDefaultConfig(ctx,
+		awsconfig.WithRegion(config.SSORegion),
+	)
+	if err != nil {
+		return false
 	}
 
-	// Create AWSSSO instance with nil storage (we don't need persistent storage for auth check)
-	awsSSO := sso.NewAWSSSO(ssoConfig, nil)
-
-	// Try to check if we're already authenticated (non-interactive)
-	// This will return nil if already authenticated, error if not
-	err := awsSSO.Authenticate("", "")
+	// Try to get credentials to test if authenticated
+	stsClient := sts.NewFromConfig(cfg)
+	_, err = stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	return err == nil
 }
 
-// performIntegratedAwsSsoLogin uses the synfinatic/aws-sso-cli library directly for authentication.
-func performIntegratedAwsSsoLogin(config *AWSSSoConfig) error {
-	GroveLogger.Infof("Starting AWS SSO authentication using synfinatic/aws-sso-cli library...")
+// AWSCredentials holds temporary AWS credentials from SSO login
+type AWSCredentials struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+	Expiration      time.Time
+}
 
-	// Create SSO config with actual values from AWS config
-	ssoConfig := &sso.SSOConfig{
-		SSORegion:     config.SSORegion,
-		StartUrl:      config.SSOStartURL,
-		DefaultRegion: config.Region,
-		MaxBackoff:    30,
-		MaxRetry:      3,
-	}
+// performAwsSsoLogin uses the official AWS Go SDK for SSO authentication.
+func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
+	GroveLogger.Infof("Starting AWS SSO authentication using official AWS Go SDK...")
+	
+	// Create a context with timeout to prevent hanging
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
 
-	// Create AWSSSO instance with nil storage (we don't need persistent storage)
-	awsSSO := sso.NewAWSSSO(ssoConfig, nil)
-
-	// Attempt interactive authentication
-	// The empty strings are for browser and browser-exec-path parameters
-	// The library will handle opening the browser and the authentication flow
-	err := awsSSO.Authenticate("", "")
+	// Create AWS config for the SSO region
+	cfg, err := awsconfig.LoadDefaultConfig(ctx,
+		awsconfig.WithRegion(config.SSORegion),
+	)
 	if err != nil {
-		return fmt.Errorf("AWS SSO authentication failed using synfinatic/aws-sso-cli library: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	GroveLogger.Infof("AWS SSO authentication successful using synfinatic/aws-sso-cli library")
-	return nil
+	// Create SSOOIDC client for device authorization
+	ssooidcClient := ssooidc.NewFromConfig(cfg)
+
+	// Register the client
+	registerResp, err := ssooidcClient.RegisterClient(ctx, &ssooidc.RegisterClientInput{
+		ClientName: aws.String("kanuka-grove"),
+		ClientType: aws.String("public"),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to register SSO client: %w", err)
+	}
+
+	// Start device authorization
+	deviceAuthResp, err := ssooidcClient.StartDeviceAuthorization(ctx, &ssooidc.StartDeviceAuthorizationInput{
+		ClientId:     registerResp.ClientId,
+		ClientSecret: registerResp.ClientSecret,
+		StartUrl:     aws.String(config.SSOStartURL),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to start device authorization: %w", err)
+	}
+
+	// Poll for token with proper waiting and user feedback
+	var accessToken string
+	interval := time.Duration(deviceAuthResp.Interval) * time.Second
+	expiresAt := time.Now().Add(time.Duration(deviceAuthResp.ExpiresIn) * time.Second)
+
+	// Display instructions to user
+	fmt.Printf("\n%s AWS SSO Login Required\n", color.YellowString("→"))
+	fmt.Printf("%s Open this URL in your browser: %s\n", color.CyanString("→"), color.BlueString(*deviceAuthResp.VerificationUriComplete))
+	fmt.Printf("%s Enter this code when prompted: %s\n", color.CyanString("→"), color.YellowString(*deviceAuthResp.UserCode))
+	fmt.Printf("%s Waiting for authentication...\n", color.CyanString("→"))
+	fmt.Printf("%s Poll interval: %v seconds\n", color.CyanString("→"), interval.Seconds())
+	fmt.Printf("%s Expires at: %v\n\n", color.CyanString("→"), expiresAt.Format("15:04:05"))
+
+	fmt.Printf("%s Polling for authentication completion...\n", color.CyanString("→"))
+	
+	for time.Now().Before(expiresAt) {
+		// Check if context was cancelled
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("authentication cancelled or timed out: %w", ctx.Err())
+		default:
+		}
+		
+		GroveLogger.Debugf("Attempting to create token...")
+		tokenResp, err := ssooidcClient.CreateToken(ctx, &ssooidc.CreateTokenInput{
+			ClientId:     registerResp.ClientId,
+			ClientSecret: registerResp.ClientSecret,
+			DeviceCode:   deviceAuthResp.DeviceCode,
+			GrantType:    aws.String("urn:ietf:params:oauth:grant-type:device_code"),
+		})
+
+		if err == nil {
+			accessToken = *tokenResp.AccessToken
+			fmt.Printf("%s Authentication successful!\n", color.GreenString("✓"))
+			break
+		}
+
+		// Log the actual error for debugging
+		GroveLogger.Debugf("Token creation error: %v", err)
+		
+		// Check for specific AWS SDK error types (proper way to handle AWS errors)
+		var authPendingErr *ssooidctypes.AuthorizationPendingException
+		var slowDownErr *ssooidctypes.SlowDownException
+		var expiredTokenErr *ssooidctypes.ExpiredTokenException
+		
+		if errors.As(err, &authPendingErr) || errors.As(err, &slowDownErr) {
+			GroveLogger.Debugf("Authorization still pending, continuing to poll...")
+			fmt.Printf("%s Still waiting for authentication... (expires in %v)\n", 
+				color.YellowString("⏳"), 
+				expiresAt.Sub(time.Now()).Round(time.Second))
+			time.Sleep(interval)
+			continue
+		}
+		
+		if errors.As(err, &expiredTokenErr) {
+			fmt.Printf("%s Device code expired. Please try again.\n", color.RedString("✗"))
+			return nil, fmt.Errorf("device code expired - please run the command again")
+		}
+
+		// Fallback to string matching for any other pending/slow down errors
+		errStr := err.Error()
+		if strings.Contains(errStr, "AuthorizationPendingException") || 
+		   strings.Contains(errStr, "authorization_pending") || 
+		   strings.Contains(errStr, "SlowDownException") ||
+		   strings.Contains(errStr, "slow_down") {
+			GroveLogger.Debugf("Authorization still pending (string match), continuing to poll...")
+			fmt.Printf("%s Still waiting for authentication... (expires in %v)\n", 
+				color.YellowString("⏳"), 
+				expiresAt.Sub(time.Now()).Round(time.Second))
+			time.Sleep(interval)
+			continue
+		}
+
+		// Any other error is a failure - but let's be more specific
+		fmt.Printf("%s Authentication error: %v\n", color.RedString("✗"), err)
+		return nil, fmt.Errorf("failed to get access token: %w", err)
+	}
+
+	if accessToken == "" {
+		return nil, fmt.Errorf("authentication timed out - please try again")
+	}
+
+	// Get account info and role credentials
+	ssoClient := sso.NewFromConfig(cfg)
+
+	// List accounts
+	accountsResp, err := ssoClient.ListAccounts(ctx, &sso.ListAccountsInput{
+		AccessToken: aws.String(accessToken),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list accounts: %w", err)
+	}
+
+	if len(accountsResp.AccountList) == 0 {
+		return nil, fmt.Errorf("no AWS accounts found")
+	}
+
+	// Select account (use first if only one, otherwise prompt)
+	var account types.AccountInfo
+	if len(accountsResp.AccountList) == 1 {
+		account = accountsResp.AccountList[0]
+		fmt.Printf("%s Using AWS account: %s (%s)\n", 
+			color.CyanString("→"), 
+			*account.AccountName, 
+			*account.AccountId)
+	} else {
+		// Multiple accounts - prompt user to select
+		fmt.Printf("%s Multiple AWS accounts found:\n", color.YellowString("→"))
+		for i, acc := range accountsResp.AccountList {
+			fmt.Printf("  %d. %s (%s)\n", i+1, *acc.AccountName, *acc.AccountId)
+		}
+		
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Printf("%s Select account (1-%d): ", color.CyanString("→"), len(accountsResp.AccountList))
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read account selection: %w", err)
+		}
+		
+		var selection int
+		if _, err := fmt.Sscanf(strings.TrimSpace(input), "%d", &selection); err != nil || selection < 1 || selection > len(accountsResp.AccountList) {
+			return nil, fmt.Errorf("invalid account selection")
+		}
+		
+		account = accountsResp.AccountList[selection-1]
+		fmt.Printf("%s Selected account: %s\n", color.GreenString("✓"), *account.AccountName)
+	}
+
+	// List account roles
+	rolesResp, err := ssoClient.ListAccountRoles(ctx, &sso.ListAccountRolesInput{
+		AccessToken: aws.String(accessToken),
+		AccountId:   account.AccountId,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list account roles: %w", err)
+	}
+
+	if len(rolesResp.RoleList) == 0 {
+		return nil, fmt.Errorf("no roles found for account")
+	}
+
+	// Select role (use first if only one, otherwise prompt)
+	var role types.RoleInfo
+	if len(rolesResp.RoleList) == 1 {
+		role = rolesResp.RoleList[0]
+		fmt.Printf("%s Using role: %s\n", 
+			color.CyanString("→"), 
+			*role.RoleName)
+	} else {
+		// Multiple roles - prompt user to select
+		fmt.Printf("%s Multiple roles found:\n", color.YellowString("→"))
+		for i, r := range rolesResp.RoleList {
+			fmt.Printf("  %d. %s\n", i+1, *r.RoleName)
+		}
+		
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Printf("%s Select role (1-%d): ", color.CyanString("→"), len(rolesResp.RoleList))
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read role selection: %w", err)
+		}
+		
+		var selection int
+		if _, err := fmt.Sscanf(strings.TrimSpace(input), "%d", &selection); err != nil || selection < 1 || selection > len(rolesResp.RoleList) {
+			return nil, fmt.Errorf("invalid role selection")
+		}
+		
+		role = rolesResp.RoleList[selection-1]
+		fmt.Printf("%s Selected role: %s\n", color.GreenString("✓"), *role.RoleName)
+	}
+
+	// Get role credentials
+	credsResp, err := ssoClient.GetRoleCredentials(ctx, &sso.GetRoleCredentialsInput{
+		AccessToken: aws.String(accessToken),
+		AccountId:   account.AccountId,
+		RoleName:    role.RoleName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get role credentials: %w", err)
+	}
+
+	GroveLogger.Infof("AWS SSO authentication successful using official AWS Go SDK")
+
+	return &AWSCredentials{
+		AccessKeyID:     *credsResp.RoleCredentials.AccessKeyId,
+		SecretAccessKey: *credsResp.RoleCredentials.SecretAccessKey,
+		SessionToken:    *credsResp.RoleCredentials.SessionToken,
+		Expiration:      time.Unix(credsResp.RoleCredentials.Expiration/1000, 0),
+	}, nil
 }
 
 // setAWSEnvironmentVariablesForSession sets AWS environment variables for the shell session.
-func setAWSEnvironmentVariablesForSession(config *AWSSSoConfig) error {
-	// Set AWS_PROFILE environment variable
-	err := os.Setenv("AWS_PROFILE", config.ProfileName)
+func setAWSEnvironmentVariablesForSession(config *AWSSSoConfig, credentials *AWSCredentials) error {
+	// Set AWS credentials environment variables
+	err := os.Setenv("AWS_ACCESS_KEY_ID", credentials.AccessKeyID)
 	if err != nil {
-		return fmt.Errorf("failed to set AWS_PROFILE: %w", err)
+		return fmt.Errorf("failed to set AWS_ACCESS_KEY_ID: %w", err)
+	}
+
+	err = os.Setenv("AWS_SECRET_ACCESS_KEY", credentials.SecretAccessKey)
+	if err != nil {
+		return fmt.Errorf("failed to set AWS_SECRET_ACCESS_KEY: %w", err)
+	}
+
+	err = os.Setenv("AWS_SESSION_TOKEN", credentials.SessionToken)
+	if err != nil {
+		return fmt.Errorf("failed to set AWS_SESSION_TOKEN: %w", err)
 	}
 
 	// Set region environment variables
 	if config.Region != "" {
 		os.Setenv("AWS_DEFAULT_REGION", config.Region)
 		os.Setenv("AWS_REGION", config.Region)
-		GroveLogger.Infof("Set AWS_PROFILE=%s, AWS_REGION=%s for this session", config.ProfileName, config.Region)
+		GroveLogger.Infof("Set AWS credentials and region=%s for this session", config.Region)
 	} else {
-		GroveLogger.Infof("Set AWS_PROFILE=%s for this session", config.ProfileName)
+		GroveLogger.Infof("Set AWS credentials for this session")
+	}
+
+	// Set AWS_PROFILE for compatibility (optional)
+	if config.ProfileName != "" {
+		os.Setenv("AWS_PROFILE", config.ProfileName)
 	}
 
 	return nil
