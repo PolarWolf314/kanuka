@@ -539,7 +539,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 
 		if err == nil {
 			accessToken = *tokenResp.AccessToken
-			fmt.Printf("%s Authentication successful!\n", color.GreenString("✓"))
+			fmt.Printf("\r%s Authentication successful!                                        \n", color.GreenString("✓"))
 			break
 		}
 
@@ -553,7 +553,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 		
 		if errors.As(err, &authPendingErr) || errors.As(err, &slowDownErr) {
 			GroveLogger.Debugf("Authorization still pending, continuing to poll...")
-			fmt.Printf("%s Still waiting for authentication... (expires in %v)\n", 
+			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ", 
 				color.YellowString("⏳"), 
 				expiresAt.Sub(time.Now()).Round(time.Second))
 			time.Sleep(interval)
@@ -572,7 +572,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 		   strings.Contains(errStr, "SlowDownException") ||
 		   strings.Contains(errStr, "slow_down") {
 			GroveLogger.Debugf("Authorization still pending (string match), continuing to poll...")
-			fmt.Printf("%s Still waiting for authentication... (expires in %v)\n", 
+			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ", 
 				color.YellowString("⏳"), 
 				expiresAt.Sub(time.Now()).Round(time.Second))
 			time.Sleep(interval)
