@@ -24,8 +24,8 @@ kanuka grove list                    # Show managed packages
 kanuka grove search <term>           # Search nixpkgs (enhanced with nix-search-cli)
 kanuka grove search --name <pkg>      # Search by exact package name
 kanuka grove search --program <bin>   # Search by binary/program name
-kanuka grove enter                   # Enter shell (no auth)
-kanuka grove enter --auth            # Enter shell with AWS SSO
+kanuka grove enter                   # Enter clean shell (no auth)
+kanuka grove enter --auth            # Enter clean shell with AWS SSO
 kanuka grove enter --env <name>      # Enter shell with named environment
 kanuka grove status                  # Show environment status
 kanuka dev                          # Alias for 'kanuka grove enter'
