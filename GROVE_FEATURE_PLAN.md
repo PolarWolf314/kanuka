@@ -11,6 +11,7 @@
 3. **Enhanced experience** for package discovery, channel management, and authentication
 4. **Declarative nixpkgs pinning** through devenv.yaml input management
 5. **Multi-channel support** for mixing stable and unstable packages
+6. **Automatic stable channel detection** - always uses latest stable release
 
 ## Command Structure
 
@@ -105,7 +106,7 @@ inputs:
   nixpkgs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   nixpkgs-stable:
-    url: github:NixOS/nixpkgs/nixos-23.11
+    url: github:NixOS/nixpkgs/nixos-24.05  # Auto-detected latest stable
   nixpkgs-custom:
     url: github:NixOS/nixpkgs/abc123def456  # Pinned commit
 
@@ -134,6 +135,22 @@ allowUnfree: true
   '';
 }
 ```
+
+### Automatic Stable Channel Detection
+
+Kanuka Grove automatically detects the latest stable NixOS channel using intelligent date-based logic:
+
+- **Smart Detection**: Uses NixOS release schedule (May .05 and November .11 releases)
+- **Current Date Logic**: Automatically determines the latest available stable release
+- **Verification**: Confirms channel exists before using it
+- **Future-Proof**: Will automatically use newer stable releases (e.g., nixos-25.05, nixos-25.11)
+- **Fallback Protection**: Uses known good version (nixos-24.05) if detection fails
+- **No Manual Updates**: Stays current without code changes for years
+
+**Detection Logic:**
+- **January-April**: Uses previous year's November release (e.g., nixos-23.11)
+- **May-October**: Uses current year's May release (e.g., nixos-24.05)  
+- **November-December**: Uses current year's November release (e.g., nixos-24.11)
 
 ### kanuka.toml Structure (Minimal MVP)
 ```toml

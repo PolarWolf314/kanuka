@@ -83,14 +83,17 @@ func CreateDevenvYaml() error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	devenvYamlContent := `inputs:
+	// Get the latest stable channel programmatically
+	latestStable := GetLatestStableChannel()
+
+	devenvYamlContent := fmt.Sprintf(`inputs:
   nixpkgs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
   nixpkgs-stable:
-    url: github:NixOS/nixpkgs/nixos-23.11
+    url: github:NixOS/nixpkgs/%s
 
 allowUnfree: true
-`
+`, latestStable)
 
 	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
 	err = os.WriteFile(devenvYamlPath, []byte(devenvYamlContent), 0600)
