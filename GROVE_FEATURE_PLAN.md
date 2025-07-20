@@ -7,8 +7,10 @@
 ## Core Requirements
 
 1. **NEW command called `kanuka grove`** with alias `kanuka dev`
-2. **Uses devenv.nix and devenv ecosystem** for development shell management
-3. **Enhanced experience** for package discovery, management, and authentication
+2. **Uses hybrid devenv.yaml + devenv.nix** for optimal development shell management
+3. **Enhanced experience** for package discovery, channel management, and authentication
+4. **Declarative nixpkgs pinning** through devenv.yaml input management
+5. **Multi-channel support** for mixing stable and unstable packages
 
 ## Command Structure
 
@@ -26,6 +28,16 @@ kanuka grove enter --auth            # Enter shell with AWS SSO
 kanuka grove enter --env <name>      # Enter shell with named environment
 kanuka grove status                  # Show environment status
 kanuka dev                          # Alias for 'kanuka grove enter'
+```
+
+### Channel Management Commands
+```bash
+kanuka grove channel list            # List all configured channels
+kanuka grove channel add <name> <url> # Add new nixpkgs channel
+kanuka grove channel remove <name>   # Remove channel
+kanuka grove channel pin <name> <commit> # Pin channel to specific commit
+kanuka grove channel update <name>   # Update channel to latest
+kanuka grove channel show <name>     # Show channel details
 ```
 
 ### Example Workflow
@@ -73,7 +85,8 @@ kanuka grove enter --env production  # Use specific environment credentials
 ```
 project/
 ├── kanuka.toml                     # Project config (new, minimal)
-├── devenv.nix                      # Enhanced with Kanuka markers
+├── devenv.yaml                     # Input management & nixpkgs pinning
+├── devenv.nix                      # Package management with Kanuka markers
 └── .kanuka/                        # Existing secrets structure
 
 ~/.local/share/kanuka/
@@ -84,19 +97,41 @@ project/
         └── staging.env
 ```
 
-### devenv.nix Integration
+### Hybrid devenv.yaml + devenv.nix Integration
+
+**devenv.yaml** (Input & Channel Management):
+```yaml
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-unstable
+  nixpkgs-stable:
+    url: github:NixOS/nixpkgs/nixos-23.11
+  nixpkgs-custom:
+    url: github:NixOS/nixpkgs/abc123def456  # Pinned commit
+
+allowUnfree: true
+```
+
+**devenv.nix** (Package Management):
 ```nix
-{ pkgs, ... }: {
+{ pkgs, inputs, ... }: {
   packages = [
     # Existing user packages
     pkgs.git
     
     # Kanuka-managed packages - DO NOT EDIT MANUALLY
-    pkgs.nodejs_18
-    pkgs.awscli2
-    pkgs.typescript_5_3_2
+    pkgs.nodejs_18                                           # from unstable
+    inputs.nixpkgs-stable.legacyPackages.${system}.python39  # from stable
+    inputs.nixpkgs-custom.legacyPackages.${system}.terraform # from custom
     # End Kanuka-managed packages
   ];
+
+  dotenv.enable = true;
+  
+  enterShell = ''
+    echo "Welcome to your development environment!"
+    echo "Managed by Kanuka Grove"
+  '';
 }
 ```
 
@@ -207,20 +242,22 @@ kanuka grove enter --auth
 ## Development Priority
 
 ### Must Have (MVP)
-1. Basic add/remove/enter commands with nix-search-cli integration
-2. Enhanced search command with multiple search modes
-3. devenv.nix integration with markers
-4. AWS SSO authentication
-5. Version pinning support
-6. Conflict detection and resolution
-7. Clear error messages and guidance with intelligent search suggestions
+1. Hybrid devenv.yaml + devenv.nix initialization
+2. Channel-aware package add/remove with --channel flag
+3. Basic channel management (list, add, remove, pin)
+4. Enhanced search command with multiple search modes
+5. AWS SSO authentication
+6. Declarative nixpkgs pinning through devenv.yaml
+7. Conflict detection and resolution
+8. Clear error messages and guidance with intelligent search suggestions
 
 ### Should Have (Post-MVP)
-1. Advanced search features (version patterns, complex queries)
-2. Bulk operations
+1. Advanced channel management (update, automatic detection)
+2. Bulk package operations
 3. Environment management commands
-4. Performance optimizations
-5. Search result caching
+4. Advanced search features (version patterns, complex queries)
+5. Performance optimizations and search result caching
+6. Channel-specific package validation
 
 ### Could Have (Future)
 1. Multiple cloud provider support
