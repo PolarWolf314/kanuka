@@ -76,6 +76,49 @@ name = "%s"
 	return nil
 }
 
+// CreateDevenvYaml creates a new devenv.yaml file in the current directory.
+func CreateDevenvYaml() error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvYamlContent := `inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-unstable
+  nixpkgs-stable:
+    url: github:NixOS/nixpkgs/nixos-23.11
+
+allowUnfree: true
+`
+
+	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
+	err = os.WriteFile(devenvYamlPath, []byte(devenvYamlContent), 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write devenv.yaml: %w", err)
+	}
+
+	return nil
+}
+
+// DoesDevenvYamlExist checks if devenv.yaml exists in the current directory.
+func DoesDevenvYamlExist() (bool, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return false, fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
+	_, err = os.Stat(devenvYamlPath)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("error checking devenv.yaml: %w", err)
+}
+
 // CreateDevenvNix creates a new devenv.nix file in the current directory.
 func CreateDevenvNix() error {
 	currentDir, err := os.Getwd()
@@ -83,7 +126,7 @@ func CreateDevenvNix() error {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	devenvNixContent := `{ pkgs, ... }: {
+	devenvNixContent := `{ pkgs, inputs, ... }: {
   packages = [
     # Add your packages here
     pkgs.git

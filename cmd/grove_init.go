@@ -29,9 +29,15 @@ This sets up the foundation for managing packages and development shell environm
 		}
 
 		GroveLogger.Debugf("Checking if devenv.nix already exists")
-		devenvExists, err := grove.DoesDevenvNixExist()
+		devenvNixExists, err := grove.DoesDevenvNixExist()
 		if err != nil {
 			return GroveLogger.ErrorfAndReturn("Failed to check if devenv.nix exists: %v", err)
+		}
+
+		GroveLogger.Debugf("Checking if devenv.yaml already exists")
+		devenvYamlExists, err := grove.DoesDevenvYamlExist()
+		if err != nil {
+			return GroveLogger.ErrorfAndReturn("Failed to check if devenv.yaml exists: %v", err)
 		}
 
 		GroveLogger.Debugf("Creating kanuka.toml")
@@ -40,7 +46,17 @@ This sets up the foundation for managing packages and development shell environm
 		}
 		GroveLogger.Infof("kanuka.toml created successfully")
 
-		if !devenvExists {
+		if !devenvYamlExists {
+			GroveLogger.Debugf("Creating devenv.yaml")
+			if err := grove.CreateDevenvYaml(); err != nil {
+				return GroveLogger.ErrorfAndReturn("Failed to create devenv.yaml: %v", err)
+			}
+			GroveLogger.Infof("devenv.yaml created successfully")
+		} else {
+			GroveLogger.Infof("devenv.yaml already exists, skipping creation")
+		}
+
+		if !devenvNixExists {
 			GroveLogger.Debugf("Creating devenv.nix")
 			if err := grove.CreateDevenvNix(); err != nil {
 				return GroveLogger.ErrorfAndReturn("Failed to create devenv.nix: %v", err)
@@ -53,13 +69,30 @@ This sets up the foundation for managing packages and development shell environm
 		GroveLogger.Infof("Grove init command completed successfully")
 
 		var finalMessage string
-		if devenvExists {
+		filesCreated := []string{}
+		if !devenvYamlExists {
+			filesCreated = append(filesCreated, "devenv.yaml")
+		}
+		if !devenvNixExists {
+			filesCreated = append(filesCreated, "devenv.nix")
+		}
+		filesCreated = append(filesCreated, "kanuka.toml")
+
+		if len(filesCreated) == 3 {
 			finalMessage = color.GreenString("✓") + " Development environment initialized!\n" +
-				color.CyanString("→") + " kanuka.toml created, existing devenv.nix preserved\n" +
+				color.CyanString("→") + " Created kanuka.toml, devenv.yaml, and devenv.nix\n" +
 				color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages"
 		} else {
+			preservedFiles := []string{}
+			if devenvYamlExists {
+				preservedFiles = append(preservedFiles, "devenv.yaml")
+			}
+			if devenvNixExists {
+				preservedFiles = append(preservedFiles, "devenv.nix")
+			}
+			
 			finalMessage = color.GreenString("✓") + " Development environment initialized!\n" +
-				color.CyanString("→") + " Created kanuka.toml and devenv.nix\n" +
+				color.CyanString("→") + " kanuka.toml created, existing files preserved\n" +
 				color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages"
 		}
 

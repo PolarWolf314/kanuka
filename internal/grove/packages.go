@@ -12,16 +12,27 @@ import (
 // Package represents a parsed package with version information.
 type Package struct {
 	Name        string // Original name as provided by user.
-	NixName     string // Nix package name (e.g., pkgs.nodejs_18)
+	NixName     string // Nix package name (e.g., pkgs.nodejs_18 or inputs.nixpkgs-stable.legacyPackages.${system}.nodejs_18)
 	DisplayName string // Display name for user feedback.
 	Version     string // Version if specified.
+	Channel     string // Channel used (unstable, stable)
 }
 
 // ParsePackageName parses a package name with optional version and validates it exists in nixpkgs.
 // Examples: "nodejs", "nodejs_18", "typescript".
 func ParsePackageName(packageName string) (*Package, error) {
+	return ParsePackageNameWithChannel(packageName, "unstable")
+}
+
+// ParsePackageNameWithChannel parses a package name with optional version and channel.
+func ParsePackageNameWithChannel(packageName, channel string) (*Package, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("package name cannot be empty")
+	}
+
+	// Validate channel
+	if channel != "unstable" && channel != "stable" {
+		return nil, fmt.Errorf("invalid channel '%s', must be 'unstable' or 'stable'", channel)
 	}
 
 	// Validate package exists in nixpkgs.
@@ -34,12 +45,21 @@ func ParsePackageName(packageName string) (*Package, error) {
 		return nil, fmt.Errorf("package '%s' not found in nixpkgs", packageName)
 	}
 
+	// Generate appropriate nix name based on channel
+	var nixName string
+	if channel == "stable" {
+		nixName = "inputs.nixpkgs-stable.legacyPackages.${system}." + packageName
+	} else {
+		nixName = "pkgs." + packageName // unstable uses default pkgs
+	}
+
 	// Create package with validated information.
 	pkg := &Package{
 		Name:        packageName,
-		NixName:     "pkgs." + packageName,
+		NixName:     nixName,
 		DisplayName: packageName,
 		Version:     "",
+		Channel:     channel,
 	}
 
 	// If we have result information, we could use it for better display.

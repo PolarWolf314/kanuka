@@ -11,6 +11,7 @@ import (
 )
 
 var skipValidation bool
+var channel string
 
 var groveAddCmd = &cobra.Command{
 	Use:   "add <package>[@version]",
@@ -19,10 +20,11 @@ var groveAddCmd = &cobra.Command{
 Packages are added to the Kanuka-managed section and can optionally include version specifications.
 
 Examples:
-  kanuka grove add nodejs          # Add latest nodejs
-  kanuka grove add nodejs_18       # Add nodejs version 18
-  kanuka grove add typescript      # Add typescript package
-  kanuka grove add awscli2         # Add AWS CLI v2`,
+  kanuka grove add nodejs          # Add latest nodejs from unstable
+  kanuka grove add nodejs_18       # Add nodejs version 18 from unstable
+  kanuka grove add typescript      # Add typescript package from unstable
+  kanuka grove add awscli2         # Add AWS CLI v2 from unstable
+  kanuka grove add nodejs --channel stable    # Add nodejs from stable channel`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packageName := args[0]
@@ -118,7 +120,7 @@ func handlePackageAddition(packageName string, spinner *spinner.Spinner, skipVal
 	if skipValidation {
 		parsedPackage, err = grove.ParsePackageNameWithoutValidation(packageName)
 	} else {
-		parsedPackage, err = grove.ParsePackageName(packageName)
+		parsedPackage, err = grove.ParsePackageNameWithChannel(packageName, channel)
 	}
 	if err != nil {
 		// Handle validation errors with proper spinner cleanup and enhanced suggestions
@@ -194,7 +196,12 @@ func handlePackageAddition(packageName string, spinner *spinner.Spinner, skipVal
 	}
 	GroveLogger.Infof("Package added successfully")
 
-	finalMessage := color.GreenString("✓") + " Added " + parsedPackage.NixName + " to devenv.nix\n" +
+	channelInfo := ""
+	if parsedPackage.Channel == "stable" {
+		channelInfo = " (from stable channel)"
+	}
+	
+	finalMessage := color.GreenString("✓") + " Added " + parsedPackage.NixName + " to devenv.nix" + channelInfo + "\n" +
 		color.CyanString("→") + " Run " + color.YellowString("kanuka grove enter") + " to start using " + parsedPackage.DisplayName
 
 	spinner.FinalMSG = finalMessage
@@ -257,4 +264,5 @@ func handleLanguageAddition(languageName string, spinner *spinner.Spinner) error
 
 func init() {
 	groveAddCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "skip nixpkgs validation (for testing)")
+	groveAddCmd.Flags().StringVar(&channel, "channel", "unstable", "nixpkgs channel to use (unstable, stable)")
 }
