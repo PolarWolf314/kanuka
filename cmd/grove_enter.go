@@ -31,10 +31,9 @@ import (
 var (
 	enterAuth bool
 	enterEnv  string
-	
+
 	// Global variables for AWS profile injection
 	tempCredentialsFile string // Note: This now stores the profile name, not a file path
-	devenvNixBackup     string // Backup file path for devenv.nix restoration
 )
 
 var groveEnterCmd = &cobra.Command{
@@ -158,15 +157,25 @@ func enterDevenvShell() error {
 	// Get current environment
 	env := os.Environ()
 
-	// If we have AWS credentials to inject, create a wrapper script for cleanup
+	// If we have AWS credentials to inject, clean up old profiles first
 	if tempCredentialsFile != "" {
-		return executeWithAWSCleanupWrapper(devenvPath, args, env)
+		// Clean up old kanuka profiles (12+ hours old)
+		err := cleanupOldKanukaProfiles()
+		if err != nil {
+			GroveLogger.Warnf("Failed to clean up old profiles: %v", err)
+		}
+
+		GroveLogger.Debugf("Executing devenv with AWS credentials")
 	}
 
-	// No auth needed, execute directly
+	// Execute directly without wrapper script
 	GroveLogger.Debugf("Executing: %s %v", devenvPath, args[1:])
 	err = syscall.Exec(devenvPath, args, env)
 	if err != nil {
+		// If exec fails, clean up immediately
+		if tempCredentialsFile != "" {
+			cleanupAWSCredentials()
+		}
 		return fmt.Errorf("failed to execute devenv shell --clean: %w", err)
 	}
 
@@ -174,84 +183,145 @@ func enterDevenvShell() error {
 	return nil
 }
 
-// executeWithAWSCleanupWrapper creates a wrapper script that handles AWS profile cleanup and executes devenv
-func executeWithAWSCleanupWrapper(devenvPath string, args []string, env []string) error {
-	// Generate random filename for wrapper script
-	randomSuffix, err := generateRandomString(8)
+// cleanupOldKanukaProfiles removes kanuka profiles older than 12 hours from ~/.aws/credentials
+func cleanupOldKanukaProfiles() error {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to generate random string for wrapper: %w", err)
+		return fmt.Errorf("failed to get home directory: %w", err)
 	}
-	
-	wrapperScript := filepath.Join(os.TempDir(), fmt.Sprintf("kanuka-wrapper-%s.sh", randomSuffix))
-	
-	// Create wrapper script content
-	wrapperContent := fmt.Sprintf(`#!/bin/bash
-# Kanuka Grove wrapper script for AWS profile cleanup
-set -e
 
-# Cleanup function
-cleanup_aws_profile() {
-    echo "🧹 Cleaning up Kanuka AWS session..."
-    
-    # Remove temporary AWS profile from ~/.aws/credentials
-    if [ -f "$HOME/.aws/credentials" ]; then
-        # Create a temporary file without the kanuka profile
-        grep -v "^\[%s\]" "$HOME/.aws/credentials" | \
-        awk '/^\[%s\]/{skip=1; next} /^\[.*\]/{skip=0} !skip' > "$HOME/.aws/credentials.tmp" 2>/dev/null || true
-        
-        # Replace the original file if temp file was created successfully
-        if [ -f "$HOME/.aws/credentials.tmp" ]; then
-            mv "$HOME/.aws/credentials.tmp" "$HOME/.aws/credentials"
-            echo "✓ Removed temporary AWS profile '%s'"
-        fi
-    fi
-    
-    # Restore original devenv.nix if backup exists
-    if [ -f "%s" ]; then
-        mv "%s" devenv.nix
-        echo "✓ Restored devenv.nix"
-    fi
-    
-    # Remove wrapper script itself
-    rm -f "%s"
-    echo "✓ Cleanup complete"
+	credentialsFile := filepath.Join(homeDir, ".aws", "credentials")
+
+	// Read the current credentials file
+	content, err := os.ReadFile(credentialsFile)
+	if err != nil {
+		// If file doesn't exist, nothing to clean up
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read credentials file: %w", err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var result []string
+	skipSection := false
+	currentTime := time.Now()
+	cutoffTime := currentTime.Add(-12 * time.Hour)
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Check if this is a kanuka profile section
+		if strings.HasPrefix(trimmedLine, "[kanuka-") && strings.HasSuffix(trimmedLine, "]") {
+			profileName := trimmedLine[1 : len(trimmedLine)-1] // Remove brackets
+
+			// Extract timestamp from profile name (format: kanuka-20240101-120000)
+			if len(profileName) >= 21 && strings.HasPrefix(profileName, "kanuka-") {
+				timestampStr := profileName[7:] // Remove "kanuka-" prefix
+				if profileTime, parseErr := time.Parse("20060102-150405", timestampStr); parseErr == nil {
+					if profileTime.Before(cutoffTime) {
+						GroveLogger.Debugf("Removing old kanuka profile: %s (created %v ago)", profileName, currentTime.Sub(profileTime))
+						skipSection = true
+						continue
+					}
+				}
+			}
+			skipSection = false
+		}
+
+		// Check if this is the start of a different profile section
+		if strings.HasPrefix(trimmedLine, "[") && strings.HasSuffix(trimmedLine, "]") && !strings.HasPrefix(trimmedLine, "[kanuka-") {
+			skipSection = false
+		}
+
+		// Add line if we're not skipping this section
+		if !skipSection {
+			result = append(result, line)
+		}
+	}
+
+	// Write the updated content back to the file
+	newContent := strings.Join(result, "\n")
+
+	// Remove trailing newlines to avoid growing the file
+	newContent = strings.TrimRight(newContent, "\n")
+	if newContent != "" {
+		newContent += "\n"
+	}
+
+	return os.WriteFile(credentialsFile, []byte(newContent), 0600)
 }
 
-# Set up cleanup trap - this will run when the shell exits
-trap cleanup_aws_profile EXIT
+// cleanupAWSCredentials removes the temporary AWS profile
+func cleanupAWSCredentials() {
+	GroveLogger.Infof("🧹 Cleaning up Kanuka AWS session...")
 
-# AWS_PROFILE is injected into devenv.nix, so it will be available in the clean environment
-echo "✓ Using AWS profile: %s"
-
-# Replace this shell process with devenv (no floating wrapper during session)
-exec %s %s
-`, 
-		tempCredentialsFile, tempCredentialsFile, tempCredentialsFile,
-		devenvNixBackup, devenvNixBackup,
-		wrapperScript,
-		tempCredentialsFile,
-		devenvPath, strings.Join(args[1:], " "))
-
-	// Create wrapper script with executable permissions
-	err = os.WriteFile(wrapperScript, []byte(wrapperContent), 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create wrapper script: %w", err)
+	if tempCredentialsFile != "" {
+		// Remove temporary AWS profile from ~/.aws/credentials
+		err := removeAWSProfileFromCredentials(tempCredentialsFile)
+		if err != nil {
+			GroveLogger.Warnf("Failed to remove AWS profile '%s': %v", tempCredentialsFile, err)
+		} else {
+			GroveLogger.Infof("✓ Removed temporary AWS profile '%s'", tempCredentialsFile)
+		}
 	}
 
-	GroveLogger.Debugf("Created wrapper script: %s", wrapperScript)
-	GroveLogger.Debugf("Executing wrapper script with cleanup trap")
+	GroveLogger.Infof("✓ Cleanup complete")
+}
 
-	// Execute the wrapper script, replacing the current process
-	wrapperArgs := []string{wrapperScript}
-	err = syscall.Exec(wrapperScript, wrapperArgs, env)
+// removeAWSProfileFromCredentials removes a specific profile from ~/.aws/credentials
+func removeAWSProfileFromCredentials(profileName string) error {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		// Clean up wrapper script if exec fails
-		os.Remove(wrapperScript)
-		return fmt.Errorf("failed to execute wrapper script: %w", err)
+		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	// This line should never be reached if syscall.Exec succeeds
-	return nil
+	credentialsFile := filepath.Join(homeDir, ".aws", "credentials")
+
+	// Read the current credentials file
+	content, err := os.ReadFile(credentialsFile)
+	if err != nil {
+		// If file doesn't exist, nothing to clean up
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read credentials file: %w", err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var result []string
+	skipSection := false
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Check if this is the start of our profile section
+		if trimmedLine == fmt.Sprintf("[%s]", profileName) {
+			skipSection = true
+			continue
+		}
+
+		// Check if this is the start of a different profile section
+		if strings.HasPrefix(trimmedLine, "[") && strings.HasSuffix(trimmedLine, "]") && trimmedLine != fmt.Sprintf("[%s]", profileName) {
+			skipSection = false
+		}
+
+		// Add line if we're not skipping this section
+		if !skipSection {
+			result = append(result, line)
+		}
+	}
+
+	// Write the updated content back to the file
+	newContent := strings.Join(result, "\n")
+
+	// Remove trailing newlines to avoid growing the file
+	newContent = strings.TrimRight(newContent, "\n")
+	if newContent != "" {
+		newContent += "\n"
+	}
+
+	return os.WriteFile(credentialsFile, []byte(newContent), 0600)
 }
 
 // handleAuthentication sets up AWS SSO authentication using the official AWS Go SDK.
@@ -530,7 +600,7 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 // isAWSSSoAuthenticated checks if the user is currently authenticated with AWS SSO.
 func isAWSSSoAuthenticated(config *AWSSSoConfig) bool {
 	ctx := context.Background()
-	
+
 	// Try to load AWS config with SSO
 	cfg, err := awsconfig.LoadDefaultConfig(ctx,
 		awsconfig.WithRegion(config.SSORegion),
@@ -556,7 +626,7 @@ type AWSCredentials struct {
 // performAwsSsoLogin uses the official AWS Go SDK for SSO authentication.
 func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	GroveLogger.Infof("Starting AWS SSO authentication using official AWS Go SDK...")
-	
+
 	// Create a context with timeout to prevent hanging
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -605,7 +675,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	fmt.Printf("%s Expires at: %v\n\n", color.CyanString("→"), expiresAt.Format("15:04:05"))
 
 	fmt.Printf("%s Polling for authentication completion...\n", color.CyanString("→"))
-	
+
 	for time.Now().Before(expiresAt) {
 		// Check if context was cancelled
 		select {
@@ -613,7 +683,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 			return nil, fmt.Errorf("authentication cancelled or timed out: %w", ctx.Err())
 		default:
 		}
-		
+
 		GroveLogger.Debugf("Attempting to create token...")
 		tokenResp, err := ssooidcClient.CreateToken(ctx, &ssooidc.CreateTokenInput{
 			ClientId:     registerResp.ClientId,
@@ -630,21 +700,21 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 
 		// Log the actual error for debugging
 		GroveLogger.Debugf("Token creation error: %v", err)
-		
+
 		// Check for specific AWS SDK error types (proper way to handle AWS errors)
 		var authPendingErr *ssooidctypes.AuthorizationPendingException
 		var slowDownErr *ssooidctypes.SlowDownException
 		var expiredTokenErr *ssooidctypes.ExpiredTokenException
-		
+
 		if errors.As(err, &authPendingErr) || errors.As(err, &slowDownErr) {
 			GroveLogger.Debugf("Authorization still pending, continuing to poll...")
-			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ", 
-				color.YellowString("⏳"), 
+			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ",
+				color.YellowString("⏳"),
 				expiresAt.Sub(time.Now()).Round(time.Second))
 			time.Sleep(interval)
 			continue
 		}
-		
+
 		if errors.As(err, &expiredTokenErr) {
 			fmt.Printf("%s Device code expired. Please try again.\n", color.RedString("✗"))
 			return nil, fmt.Errorf("device code expired - please run the command again")
@@ -652,13 +722,13 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 
 		// Fallback to string matching for any other pending/slow down errors
 		errStr := err.Error()
-		if strings.Contains(errStr, "AuthorizationPendingException") || 
-		   strings.Contains(errStr, "authorization_pending") || 
-		   strings.Contains(errStr, "SlowDownException") ||
-		   strings.Contains(errStr, "slow_down") {
+		if strings.Contains(errStr, "AuthorizationPendingException") ||
+			strings.Contains(errStr, "authorization_pending") ||
+			strings.Contains(errStr, "SlowDownException") ||
+			strings.Contains(errStr, "slow_down") {
 			GroveLogger.Debugf("Authorization still pending (string match), continuing to poll...")
-			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ", 
-				color.YellowString("⏳"), 
+			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ",
+				color.YellowString("⏳"),
 				expiresAt.Sub(time.Now()).Round(time.Second))
 			time.Sleep(interval)
 			continue
@@ -692,9 +762,9 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	var account types.AccountInfo
 	if len(accountsResp.AccountList) == 1 {
 		account = accountsResp.AccountList[0]
-		fmt.Printf("%s Using AWS account: %s (%s)\n", 
-			color.CyanString("→"), 
-			*account.AccountName, 
+		fmt.Printf("%s Using AWS account: %s (%s)\n",
+			color.CyanString("→"),
+			*account.AccountName,
 			*account.AccountId)
 	} else {
 		// Multiple accounts - prompt user to select
@@ -702,19 +772,19 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 		for i, acc := range accountsResp.AccountList {
 			fmt.Printf("  %d. %s (%s)\n", i+1, *acc.AccountName, *acc.AccountId)
 		}
-		
+
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Printf("%s Select account (1-%d): ", color.CyanString("→"), len(accountsResp.AccountList))
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return nil, fmt.Errorf("failed to read account selection: %w", err)
 		}
-		
+
 		var selection int
 		if _, err := fmt.Sscanf(strings.TrimSpace(input), "%d", &selection); err != nil || selection < 1 || selection > len(accountsResp.AccountList) {
 			return nil, fmt.Errorf("invalid account selection")
 		}
-		
+
 		account = accountsResp.AccountList[selection-1]
 		fmt.Printf("%s Selected account: %s\n", color.GreenString("✓"), *account.AccountName)
 	}
@@ -736,8 +806,8 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	var role types.RoleInfo
 	if len(rolesResp.RoleList) == 1 {
 		role = rolesResp.RoleList[0]
-		fmt.Printf("%s Using role: %s\n", 
-			color.CyanString("→"), 
+		fmt.Printf("%s Using role: %s\n",
+			color.CyanString("→"),
 			*role.RoleName)
 	} else {
 		// Multiple roles - prompt user to select
@@ -745,19 +815,19 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 		for i, r := range rolesResp.RoleList {
 			fmt.Printf("  %d. %s\n", i+1, *r.RoleName)
 		}
-		
+
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Printf("%s Select role (1-%d): ", color.CyanString("→"), len(rolesResp.RoleList))
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return nil, fmt.Errorf("failed to read role selection: %w", err)
 		}
-		
+
 		var selection int
 		if _, err := fmt.Sscanf(strings.TrimSpace(input), "%d", &selection); err != nil || selection < 1 || selection > len(rolesResp.RoleList) {
 			return nil, fmt.Errorf("invalid role selection")
 		}
-		
+
 		role = rolesResp.RoleList[selection-1]
 		fmt.Printf("%s Selected role: %s\n", color.GreenString("✓"), *role.RoleName)
 	}
@@ -782,7 +852,6 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	}, nil
 }
 
-
 // generateRandomString generates a cryptographically secure random string
 func generateRandomString(length int) (string, error) {
 	bytes := make([]byte, length)
@@ -796,34 +865,30 @@ func generateRandomString(length int) (string, error) {
 func prepareAWSCredentialsForDevenv(config *AWSSSoConfig, credentials *AWSCredentials) error {
 	GroveLogger.Infof("Preparing AWS credentials using ~/.aws/credentials profile")
 
-	// Generate unique profile name for this session
-	randomSuffix, err := generateRandomString(8)
-	if err != nil {
-		return fmt.Errorf("failed to generate random string: %w", err)
-	}
-	
-	tempCredentialsFile = fmt.Sprintf("kanuka-session-%s", randomSuffix) // Store profile name instead of file path
-	
+	// Generate timestamp-based profile name for this session
+	timestamp := time.Now().Format("20060102-150405")
+	tempCredentialsFile = fmt.Sprintf("kanuka-%s", timestamp) // Store profile name instead of file path
+
 	// Get user's home directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
-	
+
 	awsDir := filepath.Join(homeDir, ".aws")
 	credentialsFile := filepath.Join(awsDir, "credentials")
-	
+
 	// Ensure ~/.aws directory exists
 	if err := os.MkdirAll(awsDir, 0755); err != nil {
 		return fmt.Errorf("failed to create ~/.aws directory: %w", err)
 	}
-	
+
 	// Read existing credentials file if it exists
 	var existingContent string
 	if content, err := os.ReadFile(credentialsFile); err == nil {
 		existingContent = string(content)
 	}
-	
+
 	// Create temporary profile content
 	profileContent := fmt.Sprintf(`
 [%s]
@@ -832,17 +897,17 @@ aws_secret_access_key = %s
 aws_session_token = %s
 region = %s
 `, tempCredentialsFile, credentials.AccessKeyID, credentials.SecretAccessKey, credentials.SessionToken, config.Region)
-	
+
 	// Append to existing credentials file
 	newContent := existingContent + profileContent
-	
+
 	// Write updated credentials file with restrictive permissions
 	if err := os.WriteFile(credentialsFile, []byte(newContent), 0600); err != nil {
 		return fmt.Errorf("failed to write to ~/.aws/credentials: %w", err)
 	}
-	
+
 	GroveLogger.Debugf("Added temporary profile '%s' to ~/.aws/credentials", tempCredentialsFile)
-	
+
 	// Set AWS_PROFILE environment variable for devenv
 	os.Setenv("AWS_PROFILE", tempCredentialsFile)
 	GroveLogger.Debugf("Set AWS_PROFILE=%s for devenv session", tempCredentialsFile)
@@ -859,31 +924,17 @@ region = %s
 // injectAWSProfileIntoDevenv modifies devenv.nix to set AWS_PROFILE environment variable
 func injectAWSProfileIntoDevenv(profileName string) error {
 	devenvNixPath := "devenv.nix"
-	
+
 	// Check if devenv.nix exists
 	if _, err := os.Stat(devenvNixPath); os.IsNotExist(err) {
 		return fmt.Errorf("devenv.nix not found")
 	}
 
-	// Create backup
-	backupSuffix, err := generateRandomString(6)
-	if err != nil {
-		return fmt.Errorf("failed to generate backup suffix: %w", err)
-	}
-	devenvNixBackup = fmt.Sprintf("devenv.nix.kanuka-backup-%s", backupSuffix)
-	
 	// Read original devenv.nix
 	originalContent, err := os.ReadFile(devenvNixPath)
 	if err != nil {
 		return fmt.Errorf("failed to read devenv.nix: %w", err)
 	}
-
-	// Create backup
-	if err := os.WriteFile(devenvNixBackup, originalContent, 0644); err != nil {
-		return fmt.Errorf("failed to create backup: %w", err)
-	}
-
-	GroveLogger.Debugf("Created devenv.nix backup: %s", devenvNixBackup)
 
 	// Inject AWS_PROFILE into devenv.nix
 	modifiedContent, err := injectAWSProfileSafely(string(originalContent), profileName)
@@ -893,9 +944,6 @@ func injectAWSProfileIntoDevenv(profileName string) error {
 
 	// Write modified devenv.nix
 	if err := os.WriteFile(devenvNixPath, []byte(modifiedContent), 0644); err != nil {
-		// Restore backup on error
-		os.WriteFile(devenvNixPath, originalContent, 0644)
-		os.Remove(devenvNixBackup)
 		return fmt.Errorf("failed to write modified devenv.nix: %w", err)
 	}
 
@@ -910,42 +958,75 @@ func injectAWSProfileSafely(content, profileName string) (string, error) {
 	var inEnv bool
 	var envIndent string
 	profileInjected := false
+	awsProfileExists := false
 
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
-		
+
 		// Check if we're starting an env block
 		if strings.Contains(trimmedLine, "env") && strings.Contains(trimmedLine, "=") && strings.Contains(trimmedLine, "{") {
 			inEnv = true
 			envIndent = line[:len(line)-len(strings.TrimLeft(line, " \t"))]
 			result = append(result, line)
-			
-			// Inject AWS_PROFILE right after opening the env block
+			continue
+		}
+
+		// Check if we're in an env block and this line contains AWS_PROFILE
+		if inEnv && strings.Contains(trimmedLine, "AWS_PROFILE") && strings.Contains(trimmedLine, "=") {
+			// Replace existing AWS_PROFILE line with protective comments
+			result = append(result, fmt.Sprintf(`%s  # ============== EDIT ABOVE THIS LINE ==============`, envIndent))
+			result = append(result, fmt.Sprintf(`%s  # Kanuka-managed environment variables - DO NOT MODIFY`, envIndent))
 			awsProfileLine := fmt.Sprintf(`%s  AWS_PROFILE = "%s";`, envIndent, profileName)
 			result = append(result, awsProfileLine)
+			result = append(result, fmt.Sprintf(`%s  # ============== EDIT BELOW THIS LINE ==============`, envIndent))
+			awsProfileExists = true
 			profileInjected = true
 			continue
 		}
-		
+
+		// Skip existing Kanuka-managed comment lines to avoid duplication
+		if inEnv && (strings.Contains(trimmedLine, "EDIT ABOVE THIS LINE") ||
+			strings.Contains(trimmedLine, "EDIT BELOW THIS LINE") ||
+			strings.Contains(trimmedLine, "Kanuka-managed environment variables")) {
+			continue
+		}
+
 		// Check if we're ending an env block
 		if inEnv && strings.Contains(trimmedLine, "}") {
+			// Add AWS_PROFILE if it doesn't exist
+			if !awsProfileExists {
+				result = append(result, fmt.Sprintf(`%s  # ============== EDIT ABOVE THIS LINE ==============`, envIndent))
+				result = append(result, fmt.Sprintf(`%s  # Kanuka-managed environment variables - DO NOT MODIFY`, envIndent))
+				awsProfileLine := fmt.Sprintf(`%s  AWS_PROFILE = "%s";`, envIndent, profileName)
+				result = append(result, awsProfileLine)
+				result = append(result, fmt.Sprintf(`%s  # ============== EDIT BELOW THIS LINE ==============`, envIndent))
+				profileInjected = true
+			}
 			inEnv = false
 		}
-		
+
 		result = append(result, line)
 	}
-	
+
 	// If no env block was found, add one before the closing brace
 	if !profileInjected {
 		// Find the last closing brace and add env block before it
 		for i := len(result) - 1; i >= 0; i-- {
 			if strings.TrimSpace(result[i]) == "}" {
 				envBlock := fmt.Sprintf(`
-  # AWS profile injection by kanuka grove
+  # Kanuka Grove environment configuration
+  # ============== EDIT ABOVE THIS LINE ==============
+  # Kanuka-managed environment variables - DO NOT MODIFY
+  # 
+  # AWS_PROFILE: Points to a temporary AWS credentials profile in ~/.aws/credentials
+  # This profile is automatically created during 'kanuka grove enter --auth' and cleaned up
+  # after 12 hours. It's safe to commit this file - the profile name is session-specific
+  # and the actual credentials are stored locally in ~/.aws/credentials, not in this file.
   env = {
     AWS_PROFILE = "%s";
+    # ============== EDIT BELOW THIS LINE ==============
   };`, profileName)
-				
+
 				// Insert before the closing brace
 				newResult := make([]string, 0, len(result)+1)
 				newResult = append(newResult, result[:i]...)
@@ -956,7 +1037,7 @@ func injectAWSProfileSafely(content, profileName string) (string, error) {
 			}
 		}
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }
 
@@ -1005,7 +1086,7 @@ func testAWSCredentialsWithConfig(config *AWSSSoConfig, credentials *AWSCredenti
 // testAWSCredentials tests if the AWS credentials are working by calling GetCallerIdentity
 func testAWSCredentials() error {
 	ctx := context.Background()
-	
+
 	// Load AWS config using environment variables
 	cfg, err := awsconfig.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -1019,9 +1100,9 @@ func testAWSCredentials() error {
 		return fmt.Errorf("failed to get caller identity: %w", err)
 	}
 
-	GroveLogger.Debugf("AWS credentials verified - Account: %s, User: %s", 
+	GroveLogger.Debugf("AWS credentials verified - Account: %s, User: %s",
 		*resp.Account, *resp.Arn)
-	
+
 	return nil
 }
 

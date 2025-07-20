@@ -138,12 +138,26 @@ func CreateDevenvNix() error {
     # End Kanuka-managed packages
   ];
 
+  # Kanuka Grove environment configuration
+  env = {
+    # Add your custom environment variables here
+  };
+
   # Enable dotenv integration
   dotenv.enable = true;
 
   enterShell = ''
+    # ============== EDIT ABOVE THIS LINE ==============
+    # Kanuka-managed shell configuration - DO NOT MODIFY
+    export TERM="xterm-256color"
+    
+    # Set custom Kanuka prompt
+    # (Kanuka) in green at start, path in blue, $ in blue
+    export PS1='\[\033[32m\](Kanuka)\[\033[00m\] \[\033[01;34m\]\w\[\033[00m\] $ '
+    
     echo "Welcome to your development environment!"
     echo "Managed by Kanuka Grove"
+    # ============== EDIT BELOW THIS LINE ==============
   '';
 }
 `
