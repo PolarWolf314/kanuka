@@ -19,7 +19,8 @@ Only packages managed by Kanuka can be removed using this command.
 Examples:
   kanuka grove remove nodejs_18       # Remove nodejs version 18
   kanuka grove remove typescript      # Remove typescript package
-  kanuka grove remove awscli2         # Remove AWS CLI v2`,
+  kanuka grove remove awscli2         # Remove AWS CLI v2
+  # Note: AWS SSO authentication uses integrated AWS SDK - no external dependencies!`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packageName := args[0]

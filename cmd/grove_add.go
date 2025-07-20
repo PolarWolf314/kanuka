@@ -24,6 +24,7 @@ Examples:
   kanuka grove add nodejs_18       # Add nodejs version 18 from unstable
   kanuka grove add typescript      # Add typescript package from unstable
   kanuka grove add awscli2         # Add AWS CLI v2 from unstable
+  # Note: AWS SSO authentication now uses integrated AWS SDK - no external tools needed!
   kanuka grove add nodejs --channel stable    # Add nodejs from stable channel`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
