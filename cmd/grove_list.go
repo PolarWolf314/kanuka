@@ -79,7 +79,7 @@ Examples:
 			// Show packages if not filtered out
 			if !languagesOnly && len(packages) > 0 {
 				finalMessage.WriteString(color.GreenString("✓") + " Kanuka-managed packages:\n")
-				
+
 				// Sort packages for consistent output
 				sort.Strings(packages)
 				for _, pkg := range packages {
@@ -87,7 +87,7 @@ Examples:
 					displayName := strings.TrimPrefix(pkg, "pkgs.")
 					finalMessage.WriteString(color.CyanString("  • ") + displayName + "\n")
 				}
-				
+
 				if !packagesOnly && len(languages) > 0 {
 					finalMessage.WriteString("\n")
 				}
@@ -96,7 +96,7 @@ Examples:
 			// Show languages if not filtered out
 			if !packagesOnly && len(languages) > 0 {
 				finalMessage.WriteString(color.GreenString("✓") + " Kanuka-managed languages:\n")
-				
+
 				// Sort languages for consistent output
 				sort.Strings(languages)
 				for _, lang := range languages {

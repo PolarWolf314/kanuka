@@ -37,7 +37,7 @@ Examples:
 
 		// Format and display status
 		var finalMessage strings.Builder
-		
+
 		if compact {
 			finalMessage.WriteString(formatCompactStatus(status))
 		} else {
@@ -49,38 +49,38 @@ Examples:
 	},
 }
 
-// EnvironmentStatus holds all status information
+// EnvironmentStatus holds all status information.
 type EnvironmentStatus struct {
 	// Project information
-	IsGroveProject   bool
-	ProjectName      string
-	ProjectID        string
-	ProjectPath      string
-	
+	IsGroveProject bool
+	ProjectName    string
+	ProjectID      string
+	ProjectPath    string
+
 	// File status
-	HasKanukaToml    bool
-	HasDevenvNix     bool
-	HasDotenv        bool
-	
+	HasKanukaToml bool
+	HasDevenvNix  bool
+	HasDotenv     bool
+
 	// Managed items
 	ManagedPackages  []string
 	ManagedLanguages []string
-	
+
 	// Environment health
-	DevenvInstalled  bool
-	DevenvVersion    string
-	NixInstalled     bool
-	
+	DevenvInstalled bool
+	DevenvVersion   string
+	NixInstalled    bool
+
 	// AWS SSO status
 	AWSSSoConfigured bool
 	AWSSSoProfile    string
 	AWSAuthenticated bool
-	
+
 	// Errors
-	Errors           []string
+	Errors []string
 }
 
-// gatherEnvironmentStatus collects all environment status information
+// gatherEnvironmentStatus collects all environment status information.
 func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 	status := &EnvironmentStatus{
 		Errors: make([]string, 0),
@@ -158,7 +158,7 @@ func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 	if ssoConfig, err := findAWSSSoConfigForStatus(); err == nil {
 		status.AWSSSoConfigured = true
 		status.AWSSSoProfile = ssoConfig.ProfileName
-		
+
 		// Check if authenticated using synfinatic/aws-sso-cli
 		status.AWSAuthenticated = isAWSSSoAuthenticatedForStatus(ssoConfig)
 	}
@@ -166,7 +166,7 @@ func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 	return status, nil
 }
 
-// getProjectIDFromToml extracts project ID from kanuka.toml
+// getProjectIDFromToml extracts project ID from kanuka.toml.
 func getProjectIDFromToml() (string, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -194,7 +194,7 @@ func getProjectIDFromToml() (string, error) {
 	return "", fmt.Errorf("project ID not found")
 }
 
-// formatDetailedStatus formats comprehensive status information
+// formatDetailedStatus formats comprehensive status information.
 func formatDetailedStatus(status *EnvironmentStatus) string {
 	var output strings.Builder
 
@@ -221,13 +221,13 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 	} else {
 		output.WriteString(fmt.Sprintf("   %s kanuka.toml (missing)\n", color.RedString("✗")))
 	}
-	
+
 	if status.HasDevenvNix {
 		output.WriteString(fmt.Sprintf("   %s devenv.nix\n", color.GreenString("✓")))
 	} else {
 		output.WriteString(fmt.Sprintf("   %s devenv.nix (missing)\n", color.RedString("✗")))
 	}
-	
+
 	if status.HasDotenv {
 		output.WriteString(fmt.Sprintf("   %s .env (dotenv integration enabled)\n", color.GreenString("✓")))
 	} else {
@@ -237,7 +237,7 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 	// Managed Items
 	if status.IsGroveProject {
 		output.WriteString(fmt.Sprintf("\n%s Managed Items\n", color.YellowString("Managed Items")))
-		
+
 		if len(status.ManagedPackages) > 0 {
 			output.WriteString(fmt.Sprintf("   %s Packages (%d):\n", color.GreenString("✓"), len(status.ManagedPackages)))
 			sort.Strings(status.ManagedPackages)
@@ -262,13 +262,13 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 
 	// Environment Health
 	output.WriteString(fmt.Sprintf("\n%s Environment Health\n", color.YellowString("Environment Health")))
-	
+
 	if status.NixInstalled {
 		output.WriteString(fmt.Sprintf("   %s Nix package manager\n", color.GreenString("✓")))
 	} else {
 		output.WriteString(fmt.Sprintf("   %s Nix package manager (not installed)\n", color.RedString("✗")))
 	}
-	
+
 	if status.DevenvInstalled {
 		output.WriteString(fmt.Sprintf("   %s devenv", color.GreenString("✓")))
 		if status.DevenvVersion != "" {
@@ -317,18 +317,18 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 	return output.String()
 }
 
-// formatCompactStatus formats a brief status summary
+// formatCompactStatus formats a brief status summary.
 func formatCompactStatus(status *EnvironmentStatus) string {
 	var output strings.Builder
 
 	if status.IsGroveProject {
 		output.WriteString(fmt.Sprintf("%s %s", color.GreenString("✓"), color.WhiteString(status.ProjectName)))
-		
+
 		itemCount := len(status.ManagedPackages) + len(status.ManagedLanguages)
 		if itemCount > 0 {
 			output.WriteString(fmt.Sprintf(" (%d items)", itemCount))
 		}
-		
+
 		if !status.DevenvInstalled {
 			output.WriteString(fmt.Sprintf(" %s", color.RedString("[devenv missing]")))
 		}
@@ -344,36 +344,36 @@ func formatCompactStatus(status *EnvironmentStatus) string {
 	return output.String()
 }
 
-// findAWSSSoConfigForStatus is a simplified version for status checking
+// findAWSSSoConfigForStatus is a simplified version for status checking.
 func findAWSSSoConfigForStatus() (*AWSSSoConfigForStatus, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	configPath := filepath.Join(homeDir, ".aws", "config")
 	content, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	lines := strings.Split(string(content), "\n")
 	var currentProfile string
 	var ssoConfig *AWSSSoConfigForStatus
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if strings.HasPrefix(line, "[profile ") && strings.HasSuffix(line, "]") {
 			currentProfile = strings.TrimSuffix(strings.TrimPrefix(line, "[profile "), "]")
 			continue
 		}
-		
+
 		if line == "[default]" {
 			currentProfile = "default"
 			continue
 		}
-		
+
 		if currentProfile != "" && strings.Contains(line, "sso_start_url") {
 			if ssoConfig == nil {
 				ssoConfig = &AWSSSoConfigForStatus{ProfileName: currentProfile}
@@ -383,7 +383,7 @@ func findAWSSSoConfigForStatus() (*AWSSSoConfigForStatus, error) {
 				ssoConfig.SSOStartURL = strings.TrimSpace(parts[1])
 			}
 		}
-		
+
 		if currentProfile != "" && strings.Contains(line, "sso_region") {
 			if ssoConfig != nil {
 				parts := strings.SplitN(line, "=", 2)
@@ -392,7 +392,7 @@ func findAWSSSoConfigForStatus() (*AWSSSoConfigForStatus, error) {
 				}
 			}
 		}
-		
+
 		if currentProfile != "" && strings.Contains(line, "region") && !strings.Contains(line, "sso_region") {
 			if ssoConfig != nil {
 				parts := strings.SplitN(line, "=", 2)
@@ -402,32 +402,32 @@ func findAWSSSoConfigForStatus() (*AWSSSoConfigForStatus, error) {
 			}
 		}
 	}
-	
+
 	if ssoConfig == nil {
 		return nil, fmt.Errorf("no AWS SSO configuration found")
 	}
-	
+
 	return ssoConfig, nil
 }
 
-// AWSSSoConfigForStatus holds minimal AWS SSO config for status checking
+// AWSSSoConfigForStatus holds minimal AWS SSO config for status checking.
 type AWSSSoConfigForStatus struct {
-	ProfileName  string
-	SSOStartURL  string
-	SSORegion    string
-	Region       string
+	ProfileName string
+	SSOStartURL string
+	SSORegion   string
+	Region      string
 }
 
-// isAWSSSoAuthenticatedForStatus checks authentication status using synfinatic/aws-sso-cli
+// isAWSSSoAuthenticatedForStatus checks authentication status using synfinatic/aws-sso-cli.
 func isAWSSSoAuthenticatedForStatus(config *AWSSSoConfigForStatus) bool {
 	// Use the same authentication check as the main enter command
 	mainConfig := &AWSSSoConfig{
-		ProfileName:  config.ProfileName,
-		SSOStartURL:  config.SSOStartURL,
-		SSORegion:    config.SSORegion,
-		Region:       config.Region,
+		ProfileName: config.ProfileName,
+		SSOStartURL: config.SSOStartURL,
+		SSORegion:   config.SSORegion,
+		Region:      config.Region,
 	}
-	
+
 	return isAWSSSoAuthenticated(mainConfig)
 }
 

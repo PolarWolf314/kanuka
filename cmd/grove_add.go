@@ -201,7 +201,7 @@ func handlePackageAddition(packageName string, spinner *spinner.Spinner, skipVal
 	if parsedPackage.Channel == "stable" {
 		channelInfo = " (from stable channel)"
 	}
-	
+
 	finalMessage := color.GreenString("✓") + " Added " + parsedPackage.NixName + " to devenv.nix" + channelInfo + "\n" +
 		color.CyanString("→") + " Run " + color.YellowString("kanuka grove enter") + " to start using " + parsedPackage.DisplayName
 

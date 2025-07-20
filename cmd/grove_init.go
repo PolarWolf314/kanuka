@@ -83,14 +83,6 @@ This sets up the foundation for managing packages and development shell environm
 				color.CyanString("→") + " Created kanuka.toml, devenv.yaml, and devenv.nix\n" +
 				color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages"
 		} else {
-			preservedFiles := []string{}
-			if devenvYamlExists {
-				preservedFiles = append(preservedFiles, "devenv.yaml")
-			}
-			if devenvNixExists {
-				preservedFiles = append(preservedFiles, "devenv.nix")
-			}
-			
 			finalMessage = color.GreenString("✓") + " Development environment initialized!\n" +
 				color.CyanString("→") + " kanuka.toml created, existing files preserved\n" +
 				color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages"

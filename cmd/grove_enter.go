@@ -128,7 +128,7 @@ Examples:
 	},
 }
 
-// enterDevenvShell executes the devenv shell command with --clean flag
+// enterDevenvShell executes the devenv shell command with --clean flag.
 func enterDevenvShell() error {
 	// Find devenv executable
 	devenvPath, err := exec.LookPath("devenv")
@@ -150,19 +150,19 @@ func enterDevenvShell() error {
 	return nil
 }
 
-// handleAuthentication sets up AWS SSO authentication using synfinatic/aws-sso-cli
+// handleAuthentication sets up AWS SSO authentication using synfinatic/aws-sso-cli.
 func handleAuthentication(spinner *spinner.Spinner) error {
 	GroveLogger.Debugf("Setting up AWS SSO authentication using synfinatic/aws-sso-cli")
 
 	// Always prompt for authentication when --auth is used
 	// First, try to get SSO config from ~/.aws/config if it exists
 	ssoConfig, configErr := findAWSSSoConfig()
-	
+
 	// If no config found, prompt for SSO details interactively
 	if configErr != nil {
 		GroveLogger.Infof("No AWS SSO configuration found, prompting for details...")
 		spinner.Stop() // Stop spinner for interactive input
-		
+
 		var err error
 		ssoConfig, err = promptForSSOConfig()
 		if err != nil {
@@ -180,7 +180,7 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 	// Always perform authentication (no existing auth checks)
 	GroveLogger.Infof("Initiating AWS SSO login for this session...")
 	spinner.Stop() // Stop spinner for interactive login
-	
+
 	loginErr := performIntegratedAwsSsoLogin(ssoConfig)
 	if loginErr != nil {
 		return &AuthenticationError{
@@ -206,7 +206,7 @@ func handleAuthentication(spinner *spinner.Spinner) error {
 	return nil
 }
 
-// AuthenticationError represents a structured authentication error
+// AuthenticationError represents a structured authentication error.
 type AuthenticationError struct {
 	Type       string
 	Message    string
@@ -218,7 +218,7 @@ func (e *AuthenticationError) Error() string {
 	return e.Message
 }
 
-// formatAuthenticationError creates a user-friendly error message for authentication failures
+// formatAuthenticationError creates a user-friendly error message for authentication failures.
 func formatAuthenticationError(err error) string {
 	authErr, ok := err.(*AuthenticationError)
 	if !ok {
@@ -276,7 +276,7 @@ func formatAuthenticationError(err error) string {
 	return message.String()
 }
 
-// AWSSSoConfig holds AWS SSO configuration details
+// AWSSSoConfig holds AWS SSO configuration details.
 type AWSSSoConfig struct {
 	ProfileName string
 	SSOStartURL string
@@ -284,7 +284,7 @@ type AWSSSoConfig struct {
 	Region      string
 }
 
-// findAWSSSoConfig looks for AWS SSO configuration in ~/.aws/config
+// findAWSSSoConfig looks for AWS SSO configuration in ~/.aws/config.
 func findAWSSSoConfig() (*AWSSSoConfig, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -353,13 +353,13 @@ func findAWSSSoConfig() (*AWSSSoConfig, error) {
 	return ssoConfig, nil
 }
 
-// promptForSSOConfig interactively prompts the user for AWS SSO configuration
+// promptForSSOConfig interactively prompts the user for AWS SSO configuration.
 func promptForSSOConfig() (*AWSSSoConfig, error) {
 	reader := bufio.NewReader(os.Stdin)
-	
+
 	fmt.Printf("%s AWS SSO Configuration Required\n", color.YellowString("→"))
 	fmt.Printf("%s Please provide your AWS SSO details:\n\n", color.CyanString("→"))
-	
+
 	// Prompt for SSO Start URL
 	fmt.Printf("%s SSO Start URL: ", color.CyanString("→"))
 	startURL, err := reader.ReadString('\n')
@@ -370,7 +370,7 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 	if startURL == "" {
 		return nil, fmt.Errorf("SSO start URL cannot be empty")
 	}
-	
+
 	// Prompt for SSO Region
 	fmt.Printf("%s SSO Region (e.g., us-east-1): ", color.CyanString("→"))
 	ssoRegion, err := reader.ReadString('\n')
@@ -381,7 +381,7 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 	if ssoRegion == "" {
 		ssoRegion = "us-east-1" // Default
 	}
-	
+
 	// Prompt for Default Region
 	fmt.Printf("%s Default AWS Region (e.g., us-east-1): ", color.CyanString("→"))
 	region, err := reader.ReadString('\n')
@@ -392,7 +392,7 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 	if region == "" {
 		region = ssoRegion // Use SSO region as default
 	}
-	
+
 	// Prompt for Profile Name (optional)
 	fmt.Printf("%s Profile Name (default: 'session'): ", color.CyanString("→"))
 	profileName, err := reader.ReadString('\n')
@@ -403,9 +403,9 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 	if profileName == "" {
 		profileName = "session"
 	}
-	
+
 	fmt.Printf("\n%s Configuration saved for this session\n", color.GreenString("✓"))
-	
+
 	return &AWSSSoConfig{
 		ProfileName: profileName,
 		SSOStartURL: startURL,
@@ -414,7 +414,7 @@ func promptForSSOConfig() (*AWSSSoConfig, error) {
 	}, nil
 }
 
-// isAWSSSoAuthenticated checks if the user is currently authenticated with AWS SSO
+// isAWSSSoAuthenticated checks if the user is currently authenticated with AWS SSO.
 func isAWSSSoAuthenticated(config *AWSSSoConfig) bool {
 	// Create SSO config for synfinatic/aws-sso-cli
 	ssoConfig := &sso.SSOConfig{
@@ -427,14 +427,14 @@ func isAWSSSoAuthenticated(config *AWSSSoConfig) bool {
 
 	// Create AWSSSO instance with nil storage (we don't need persistent storage for auth check)
 	awsSSO := sso.NewAWSSSO(ssoConfig, nil)
-	
+
 	// Try to check if we're already authenticated (non-interactive)
 	// This will return nil if already authenticated, error if not
 	err := awsSSO.Authenticate("", "")
 	return err == nil
 }
 
-// performIntegratedAwsSsoLogin uses the synfinatic/aws-sso-cli library directly for authentication
+// performIntegratedAwsSsoLogin uses the synfinatic/aws-sso-cli library directly for authentication.
 func performIntegratedAwsSsoLogin(config *AWSSSoConfig) error {
 	GroveLogger.Infof("Starting AWS SSO authentication using synfinatic/aws-sso-cli library...")
 
@@ -449,7 +449,7 @@ func performIntegratedAwsSsoLogin(config *AWSSSoConfig) error {
 
 	// Create AWSSSO instance with nil storage (we don't need persistent storage)
 	awsSSO := sso.NewAWSSSO(ssoConfig, nil)
-	
+
 	// Attempt interactive authentication
 	// The empty strings are for browser and browser-exec-path parameters
 	// The library will handle opening the browser and the authentication flow
@@ -462,8 +462,7 @@ func performIntegratedAwsSsoLogin(config *AWSSSoConfig) error {
 	return nil
 }
 
-
-// setAWSEnvironmentVariablesForSession sets AWS environment variables for the shell session
+// setAWSEnvironmentVariablesForSession sets AWS environment variables for the shell session.
 func setAWSEnvironmentVariablesForSession(config *AWSSSoConfig) error {
 	// Set AWS_PROFILE environment variable
 	err := os.Setenv("AWS_PROFILE", config.ProfileName)
@@ -483,7 +482,7 @@ func setAWSEnvironmentVariablesForSession(config *AWSSSoConfig) error {
 	return nil
 }
 
-// handleNamedEnvironment loads a named environment configuration
+// handleNamedEnvironment loads a named environment configuration.
 func handleNamedEnvironment(envName string) error {
 	GroveLogger.Debugf("Loading named environment: %s", envName)
 

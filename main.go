@@ -39,25 +39,29 @@ func main() {
 			// Get the flags from dev command
 			authFlag, _ := devCmd.Flags().GetBool("auth")
 			envFlag, _ := devCmd.Flags().GetString("env")
-			
+
 			// Get the grove enter command and set its flags
 			enterCmd := cmd.GetGroveEnterCmd()
-			
+
 			// Set the flags on the enter command
-			enterCmd.Flags().Set("auth", fmt.Sprintf("%t", authFlag))
-			if envFlag != "" {
-				enterCmd.Flags().Set("env", envFlag)
+			if err := enterCmd.Flags().Set("auth", fmt.Sprintf("%t", authFlag)); err != nil {
+				return err
 			}
-			
+			if envFlag != "" {
+				if err := enterCmd.Flags().Set("env", envFlag); err != nil {
+					return err
+				}
+			}
+
 			// Execute grove enter command (errors are handled gracefully within the command)
 			return enterCmd.RunE(enterCmd, args)
 		},
 	}
-	
+
 	// Copy flags from grove enter command
 	devCmd.Flags().Bool("auth", false, "enable AWS SSO authentication")
 	devCmd.Flags().String("env", "", "use named environment configuration")
-	
+
 	rootCmd.AddCommand(devCmd)
 
 	if err := rootCmd.Execute(); err != nil {
