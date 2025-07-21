@@ -18,4 +18,5 @@ Note: Container building requires Linux. On macOS, use CI/CD or remote Linux sys
 func init() {
 	groveContainerCmd.AddCommand(groveContainerInitCmd)
 	groveContainerCmd.AddCommand(groveContainerBuildCmd)
+	groveContainerCmd.AddCommand(groveContainerEnterCmd)
 }
