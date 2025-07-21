@@ -15,4 +15,5 @@ that can be deployed with any container orchestration tool.`,
 
 func init() {
 	groveContainerCmd.AddCommand(groveContainerInitCmd)
+	groveContainerCmd.AddCommand(groveContainerBuildCmd)
 }
