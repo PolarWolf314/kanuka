@@ -15,7 +15,7 @@ type ContainerProfile struct {
 	ExposePorts     []string `toml:"expose_ports,omitempty"`
 }
 
-// DoesContainerConfigExist checks if container configuration already exists in devenv.nix
+// DoesContainerConfigExist checks if container configuration already exists
 func DoesContainerConfigExist() (bool, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -28,59 +28,29 @@ func DoesContainerConfigExist() (bool, error) {
 		return false, fmt.Errorf("failed to read devenv.nix: %w", err)
 	}
 
-	// Check if container configuration already exists
-	return strings.Contains(string(content), "containers."), nil
+	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
+	yamlContent, err := os.ReadFile(devenvYamlPath)
+	if err != nil {
+		return false, fmt.Errorf("failed to read devenv.yaml: %w", err)
+	}
+
+	// Container support exists if:
+	// 1. devenv.nix has a name field
+	// 2. devenv.yaml has nix2container input
+	hasName := strings.Contains(string(content), "name = ")
+	hasNix2Container := strings.Contains(string(yamlContent), "nix2container:")
+	
+	return hasName && hasNix2Container, nil
 }
 
 // AddContainerConfigToDevenvNix adds container configuration to devenv.nix
+// With the simplified approach, container support is enabled by just having the name field
+// and the nix2container input in devenv.yaml
 func AddContainerConfigToDevenvNix() error {
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	devenvNixPath := filepath.Join(currentDir, "devenv.nix")
-	content, err := os.ReadFile(devenvNixPath)
-	if err != nil {
-		return fmt.Errorf("failed to read devenv.nix: %w", err)
-	}
-
-	// Get project name from directory
-	projectName := filepath.Base(currentDir)
-
-	// Container configuration to add
-	containerConfig := fmt.Sprintf(`
-  # Kanuka container configuration
-  containers.%s = {
-    name = "grove-%s";
-    startupCommand = "bash";
-  };`, projectName, projectName)
-
-	// Find the closing brace and insert container config before it
-	contentStr := string(content)
-	lines := strings.Split(contentStr, "\n")
-	
-	// Find the last closing brace (should be the end of the main configuration)
-	var insertIndex int
-	for i := len(lines) - 1; i >= 0; i-- {
-		if strings.TrimSpace(lines[i]) == "}" {
-			insertIndex = i
-			break
-		}
-	}
-
-	// Insert container configuration before the closing brace
-	newLines := make([]string, 0, len(lines)+len(strings.Split(containerConfig, "\n")))
-	newLines = append(newLines, lines[:insertIndex]...)
-	newLines = append(newLines, strings.Split(containerConfig, "\n")...)
-	newLines = append(newLines, lines[insertIndex:]...)
-
-	// Write the modified content back
-	newContent := strings.Join(newLines, "\n")
-	if err := os.WriteFile(devenvNixPath, []byte(newContent), 0600); err != nil {
-		return fmt.Errorf("failed to write modified devenv.nix: %w", err)
-	}
-
+	// Container support is automatically enabled when:
+	// 1. devenv.nix has a name field (already added in CreateDevenvNix)
+	// 2. devenv.yaml has nix2container input (added by AddNix2ContainerInput)
+	// No additional configuration needed in devenv.nix
 	return nil
 }
 
@@ -306,22 +276,22 @@ func GetContainerNameFromDevenvNix() (string, error) {
 		return "", fmt.Errorf("failed to read devenv.nix: %w", err)
 	}
 
-	// Look for container configuration like: containers.myproject = {
+	// Look for name field like: name = "project-name";
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "containers.") && strings.Contains(line, "= {") {
-			// Extract container name from "containers.name = {"
-			start := strings.Index(line, "containers.") + 11
-			end := strings.Index(line[start:], " =")
-			if end > 0 {
-				containerName := line[start : start+end]
+		if strings.HasPrefix(line, "name = ") && strings.Contains(line, "\"") {
+			// Extract name from 'name = "project-name";'
+			start := strings.Index(line, "\"") + 1
+			end := strings.LastIndex(line, "\"")
+			if end > start {
+				containerName := line[start:end]
 				return containerName, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("no container configuration found in devenv.nix")
+	return "", fmt.Errorf("no name field found in devenv.nix")
 }
 
 // ApplyContainerProfileAndName temporarily modifies devenv.nix to apply profile settings and custom name
@@ -365,12 +335,12 @@ func applyProfileAndNameToDevenvNix(content string, profile *ContainerProfile, c
 	
 	for _, line := range lines {
 		// Update container name if this is the container configuration line
-		if strings.Contains(line, "containers.") && strings.Contains(line, "= {") {
+		if strings.Contains(line, "containers.") && strings.Contains(line, "= inputs.nix2container-input.lib.buildImage") {
 			// Replace the container name with the custom one
-			// From: containers.oldname = {
-			// To:   containers.newname = {
+			// From: containers.oldname = inputs.nix2container-input.lib.buildImage {
+			// To:   containers.newname = inputs.nix2container-input.lib.buildImage {
 			if containerName != "" {
-				line = fmt.Sprintf("  containers.%s = {", containerName)
+				line = fmt.Sprintf("  containers.%s = inputs.nix2container-input.lib.buildImage {", containerName)
 			}
 		}
 		

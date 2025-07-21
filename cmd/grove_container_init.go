@@ -58,6 +58,13 @@ using 'kanuka grove container build'.`,
 			return nil
 		}
 
+		// Add required nix2container input first
+		GroveLogger.Debugf("Adding nix2container input (required for containers)")
+		if err := grove.AddNix2ContainerInput(); err != nil {
+			return GroveLogger.ErrorfAndReturn("Failed to add nix2container input: %v", err)
+		}
+		GroveLogger.Infof("nix2container input added")
+
 		// Initialize container support
 		GroveLogger.Debugf("Adding container configuration to devenv.nix")
 		if err := grove.AddContainerConfigToDevenvNix(); err != nil {
@@ -74,8 +81,10 @@ using 'kanuka grove container build'.`,
 		GroveLogger.Infof("Grove container init command completed successfully")
 
 		finalMessage := color.GreenString("✓") + " Container support initialized!\n" +
-			color.CyanString("→") + " Added container configuration to devenv.nix\n" +
+			color.CyanString("→") + " Updated devenv.yaml with nix2container input\n" +
+			color.CyanString("→") + " devenv.nix already has name field for containers\n" +
 			color.CyanString("→") + " Added container profiles to kanuka.toml\n" +
+			color.YellowString("⚠") + "  " + color.YellowString("Do not modify the nix2container input - required for containers\n") +
 			color.CyanString("→") + " Run " + color.YellowString("kanuka grove container build") + " to create your first container"
 
 		spinner.FinalMSG = finalMessage
