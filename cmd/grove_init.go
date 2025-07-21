@@ -6,11 +6,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	initContainers bool
+)
+
 var groveInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a development environment with devenv.nix",
 	Long: `Initialize a new development environment by creating devenv.nix and kanuka.toml files.
-This sets up the foundation for managing packages and development shell environments.`,
+This sets up the foundation for managing packages and development shell environments.
+
+Use --containers to also initialize container support for building OCI containers.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		GroveLogger.Infof("Starting grove init command")
 		spinner, cleanup := startGroveSpinner("Initializing development environment...", groveVerbose)
@@ -66,8 +72,23 @@ This sets up the foundation for managing packages and development shell environm
 			GroveLogger.Infof("devenv.nix already exists, skipping creation")
 		}
 
+		// Initialize container support if requested
+		var containerInitialized bool
+		if initContainers {
+			GroveLogger.Debugf("Initializing container support")
+			if err := grove.AddContainerConfigToDevenvNix(); err != nil {
+				return GroveLogger.ErrorfAndReturn("Failed to add container configuration to devenv.nix: %v", err)
+			}
+			if err := grove.AddContainerProfilesToKanukaToml(); err != nil {
+				return GroveLogger.ErrorfAndReturn("Failed to add container profiles to kanuka.toml: %v", err)
+			}
+			containerInitialized = true
+			GroveLogger.Infof("Container support initialized")
+		}
+
 		GroveLogger.Infof("Grove init command completed successfully")
 
+		// Build success message
 		var finalMessage string
 		filesCreated := []string{}
 		if !devenvYamlExists {
@@ -78,17 +99,37 @@ This sets up the foundation for managing packages and development shell environm
 		}
 		filesCreated = append(filesCreated, "kanuka.toml")
 
+		// Main success message
+		finalMessage = color.GreenString("✓") + " Development environment initialized!\n"
+		
+		// Files created message
 		if len(filesCreated) == 3 {
-			finalMessage = color.GreenString("✓") + " Development environment initialized!\n" +
-				color.CyanString("→") + " Created kanuka.toml, devenv.yaml, and devenv.nix\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages"
+			finalMessage += color.CyanString("→") + " Created kanuka.toml, devenv.yaml, and devenv.nix\n"
 		} else {
-			finalMessage = color.GreenString("✓") + " Development environment initialized!\n" +
-				color.CyanString("→") + " kanuka.toml created, existing files preserved\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages"
+			finalMessage += color.CyanString("→") + " kanuka.toml created, existing files preserved\n"
+		}
+
+		// Container message
+		if containerInitialized {
+			finalMessage += color.CyanString("→") + " Container support enabled\n"
+		}
+
+		// Next steps
+		finalMessage += color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages\n"
+		finalMessage += color.CyanString("→") + " Run " + color.YellowString("kanuka grove enter") + " to enter your environment"
+		
+		// Additional container steps
+		if containerInitialized {
+			finalMessage += "\n" + color.CyanString("→") + " Run " + color.YellowString("kanuka grove container build") + " to create containers"
+		} else {
+			finalMessage += "\n" + color.CyanString("→") + " Use " + color.YellowString("kanuka grove container init") + " to add container support later"
 		}
 
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+func init() {
+	groveInitCmd.Flags().BoolVar(&initContainers, "containers", false, "initialize container support")
 }
