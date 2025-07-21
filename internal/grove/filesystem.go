@@ -156,7 +156,7 @@ func CreateDevenvNix() error {
     export PS1='\[\033[32m\](Kanuka)\[\033[00m\] \[\033[01;34m\]\w\[\033[00m\] $ '
     
     echo "Welcome to your development environment!"
-    echo "Managed by Kanuka Grove"
+    echo "Managed by Kānuka Grove"
     # ============== EDIT BELOW THIS LINE ==============
   '';
 }

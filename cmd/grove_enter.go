@@ -3,8 +3,6 @@ package cmd
 import (
 	"bufio"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -32,7 +30,7 @@ var (
 	enterAuth bool
 	enterEnv  string
 
-	// Global variables for AWS profile injection
+	// Global variables for AWS profile injection.
 	tempCredentialsFile string // Note: This now stores the profile name, not a file path
 )
 
@@ -183,7 +181,7 @@ func enterDevenvShell() error {
 	return nil
 }
 
-// cleanupOldKanukaProfiles removes kanuka profiles older than 12 hours from ~/.aws/credentials
+// cleanupOldKanukaProfiles removes kanuka profiles older than 12 hours from ~/.aws/credentials.
 func cleanupOldKanukaProfiles() error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -252,7 +250,7 @@ func cleanupOldKanukaProfiles() error {
 	return os.WriteFile(credentialsFile, []byte(newContent), 0600)
 }
 
-// cleanupAWSCredentials removes the temporary AWS profile
+// cleanupAWSCredentials removes the temporary AWS profile.
 func cleanupAWSCredentials() {
 	GroveLogger.Infof("🧹 Cleaning up Kanuka AWS session...")
 
@@ -269,7 +267,7 @@ func cleanupAWSCredentials() {
 	GroveLogger.Infof("✓ Cleanup complete")
 }
 
-// removeAWSProfileFromCredentials removes a specific profile from ~/.aws/credentials
+// removeAWSProfileFromCredentials removes a specific profile from ~/.aws/credentials.
 func removeAWSProfileFromCredentials(profileName string) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -615,7 +613,7 @@ func isAWSSSoAuthenticated(config *AWSSSoConfig) bool {
 	return err == nil
 }
 
-// AWSCredentials holds temporary AWS credentials from SSO login
+// AWSCredentials holds temporary AWS credentials from SSO login.
 type AWSCredentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
@@ -710,7 +708,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 			GroveLogger.Debugf("Authorization still pending, continuing to poll...")
 			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ",
 				color.YellowString("⏳"),
-				expiresAt.Sub(time.Now()).Round(time.Second))
+				time.Until(expiresAt).Round(time.Second))
 			time.Sleep(interval)
 			continue
 		}
@@ -729,7 +727,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 			GroveLogger.Debugf("Authorization still pending (string match), continuing to poll...")
 			fmt.Printf("\r%s Still waiting for authentication... (expires in %v)   ",
 				color.YellowString("⏳"),
-				expiresAt.Sub(time.Now()).Round(time.Second))
+				time.Until(expiresAt).Round(time.Second))
 			time.Sleep(interval)
 			continue
 		}
@@ -852,16 +850,7 @@ func performAwsSsoLogin(config *AWSSSoConfig) (*AWSCredentials, error) {
 	}, nil
 }
 
-// generateRandomString generates a cryptographically secure random string
-func generateRandomString(length int) (string, error) {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
-
-// prepareAWSCredentialsForDevenv sets up secure credential injection using ~/.aws/credentials
+// prepareAWSCredentialsForDevenv sets up secure credential injection using ~/.aws/credentials.
 func prepareAWSCredentialsForDevenv(config *AWSSSoConfig, credentials *AWSCredentials) error {
 	GroveLogger.Infof("Preparing AWS credentials using ~/.aws/credentials profile")
 
@@ -921,7 +910,7 @@ region = %s
 	return nil
 }
 
-// injectAWSProfileIntoDevenv modifies devenv.nix to set AWS_PROFILE environment variable
+// injectAWSProfileIntoDevenv modifies devenv.nix to set AWS_PROFILE environment variable.
 func injectAWSProfileIntoDevenv(profileName string) error {
 	devenvNixPath := "devenv.nix"
 
@@ -943,7 +932,7 @@ func injectAWSProfileIntoDevenv(profileName string) error {
 	}
 
 	// Write modified devenv.nix
-	if err := os.WriteFile(devenvNixPath, []byte(modifiedContent), 0644); err != nil {
+	if err := os.WriteFile(devenvNixPath, []byte(modifiedContent), 0600); err != nil {
 		return fmt.Errorf("failed to write modified devenv.nix: %w", err)
 	}
 
@@ -951,7 +940,7 @@ func injectAWSProfileIntoDevenv(profileName string) error {
 	return nil
 }
 
-// injectAWSProfileSafely safely injects AWS_PROFILE environment variable into devenv.nix
+// injectAWSProfileSafely safely injects AWS_PROFILE environment variable into devenv.nix.
 func injectAWSProfileSafely(content, profileName string) (string, error) {
 	lines := strings.Split(content, "\n")
 	var result []string
@@ -1041,7 +1030,7 @@ func injectAWSProfileSafely(content, profileName string) (string, error) {
 	return strings.Join(result, "\n"), nil
 }
 
-// testAWSCredentialsWithConfig tests credentials using the provided config and credentials
+// testAWSCredentialsWithConfig tests credentials using the provided config and credentials.
 func testAWSCredentialsWithConfig(config *AWSSSoConfig, credentials *AWSCredentials) error {
 	// Temporarily set environment variables for testing
 	oldAccessKey := os.Getenv("AWS_ACCESS_KEY_ID")
@@ -1083,7 +1072,7 @@ func testAWSCredentialsWithConfig(config *AWSSSoConfig, credentials *AWSCredenti
 	return err
 }
 
-// testAWSCredentials tests if the AWS credentials are working by calling GetCallerIdentity
+// testAWSCredentials tests if the AWS credentials are working by calling GetCallerIdentity.
 func testAWSCredentials() error {
 	ctx := context.Background()
 
