@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/grove"
@@ -23,6 +24,8 @@ var groveContainerBuildCmd = &cobra.Command{
 
 Uses devenv's container generation to create a standard container that includes
 your packages, languages, and environment configuration.
+
+Note: Container building requires Linux. On macOS, use CI/CD or remote Linux systems.
 
 Examples:
   kanuka grove container build                   # Build with default profile
@@ -77,6 +80,19 @@ Examples:
 		if _, err := exec.LookPath("devenv"); err != nil {
 			finalMessage := color.RedString("✗") + " devenv not found\n" +
 				color.CyanString("→") + " Install devenv: " + color.YellowString("nix profile install nixpkgs#devenv")
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
+		// Check if we're on macOS (devenv containers don't work on macOS)
+		GroveLogger.Debugf("Checking platform compatibility")
+		if runtime.GOOS == "darwin" {
+			finalMessage := color.RedString("✗") + " Container building not supported on macOS\n" +
+				color.CyanString("→") + " devenv containers require Linux container runtime\n" +
+				color.CyanString("→") + " Alternatives:\n" +
+				color.CyanString("  •") + " Use " + color.YellowString("devenv shell") + " for local development\n" +
+				color.CyanString("  •") + " Build containers on Linux (CI/CD, remote server)\n" +
+				color.CyanString("  •") + " Use a Linux VM or container for building"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -162,4 +178,3 @@ func init() {
 	groveContainerBuildCmd.Flags().StringVar(&buildName, "name", "", "container name (default: name from devenv.nix)")
 	groveContainerBuildCmd.Flags().StringVar(&buildProfile, "profile", "default", "container profile to use")
 }
-

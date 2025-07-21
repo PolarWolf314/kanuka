@@ -10,7 +10,9 @@ var groveContainerCmd = &cobra.Command{
 	Long: `Build and manage OCI containers from your Grove development environment.
 	
 Leverages devenv's container generation capabilities to create standard OCI containers
-that can be deployed with any container orchestration tool.`,
+that can be deployed with any container orchestration tool.
+
+Note: Container building requires Linux. On macOS, use CI/CD or remote Linux systems.`,
 }
 
 func init() {
