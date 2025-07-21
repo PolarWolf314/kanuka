@@ -76,6 +76,13 @@ type EnvironmentStatus struct {
 	AWSSSoProfile    string
 	AWSAuthenticated bool
 
+	// Container status
+	ContainerSupported   bool
+	ContainerProfiles    []string
+	DefaultProfile       string
+	DockerInstalled      bool
+	PodmanInstalled      bool
+
 	// Errors
 	Errors []string
 }
@@ -163,6 +170,32 @@ func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 		status.AWSAuthenticated = isAWSSSoAuthenticatedForStatus(ssoConfig)
 	}
 
+	// Check container status (only if in grove project)
+	if status.IsGroveProject {
+		// Check if container support is configured
+		if containerSupported, err := grove.DoesContainerConfigExist(); err == nil {
+			status.ContainerSupported = containerSupported
+		}
+
+		// Get container profiles if supported
+		if status.ContainerSupported {
+			if profiles, defaultProfile, err := getContainerProfilesFromToml(); err == nil {
+				status.ContainerProfiles = profiles
+				status.DefaultProfile = defaultProfile
+			}
+		}
+
+		// Check Docker installation
+		if _, err := exec.LookPath("docker"); err == nil {
+			status.DockerInstalled = true
+		}
+
+		// Check Podman installation
+		if _, err := exec.LookPath("podman"); err == nil {
+			status.PodmanInstalled = true
+		}
+	}
+
 	return status, nil
 }
 
@@ -192,6 +225,50 @@ func getProjectIDFromToml() (string, error) {
 	}
 
 	return "", fmt.Errorf("project ID not found")
+}
+
+// getContainerProfilesFromToml extracts container profiles from kanuka.toml.
+func getContainerProfilesFromToml() ([]string, string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return nil, "", err
+	}
+
+	tomlPath := filepath.Join(currentDir, "kanuka.toml")
+	content, err := os.ReadFile(tomlPath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	var profiles []string
+	var defaultProfile string
+	
+	lines := strings.Split(string(content), "\n")
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		
+		// Check for default profile
+		if strings.HasPrefix(line, "default_profile = ") {
+			parts := strings.Split(line, "\"")
+			if len(parts) >= 2 {
+				defaultProfile = parts[1]
+			}
+		}
+		
+		// Check for profile sections
+		if strings.HasPrefix(line, "[grove.containers.profiles.") {
+			// Extract profile name from [grove.containers.profiles.profilename]
+			start := strings.Index(line, "profiles.") + 9
+			end := strings.Index(line[start:], "]")
+			if end > 0 {
+				profileName := line[start : start+end]
+				profiles = append(profiles, profileName)
+			}
+		}
+	}
+	
+	return profiles, defaultProfile, nil
 }
 
 // formatDetailedStatus formats comprehensive status information.
@@ -291,6 +368,53 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 	} else {
 		output.WriteString(fmt.Sprintf("   %s AWS SSO (not configured)\n", color.YellowString("!")))
 		output.WriteString(fmt.Sprintf("   %s Configure: %s\n", color.CyanString("→"), color.YellowString("Configure AWS SSO in ~/.aws/config")))
+	}
+
+	// Container Status
+	if status.IsGroveProject {
+		output.WriteString(fmt.Sprintf("\n%s Container Support\n", color.YellowString("Container Support")))
+		
+		if status.ContainerSupported {
+			output.WriteString(fmt.Sprintf("   %s Container support enabled\n", color.GreenString("✓")))
+			
+			if len(status.ContainerProfiles) > 0 {
+				output.WriteString(fmt.Sprintf("   %s Profiles (%d):\n", color.GreenString("✓"), len(status.ContainerProfiles)))
+				sort.Strings(status.ContainerProfiles)
+				for _, profile := range status.ContainerProfiles {
+					if profile == status.DefaultProfile {
+						output.WriteString(fmt.Sprintf("     %s %s %s\n", color.CyanString("•"), profile, color.GreenString("(default)")))
+					} else {
+						output.WriteString(fmt.Sprintf("     %s %s\n", color.CyanString("•"), profile))
+					}
+				}
+			}
+			
+			// Container runtime status
+			if status.DockerInstalled || status.PodmanInstalled {
+				output.WriteString(fmt.Sprintf("   %s Container runtime: ", color.GreenString("✓")))
+				if status.DockerInstalled {
+					output.WriteString(fmt.Sprintf("%s", color.GreenString("Docker")))
+					if status.PodmanInstalled {
+						output.WriteString(fmt.Sprintf(", %s", color.GreenString("Podman")))
+					}
+				} else if status.PodmanInstalled {
+					output.WriteString(fmt.Sprintf("%s", color.GreenString("Podman")))
+				}
+				output.WriteString("\n")
+			} else {
+				output.WriteString(fmt.Sprintf("   %s Container runtime (Docker/Podman not installed)\n", color.YellowString("!")))
+				output.WriteString(fmt.Sprintf("   %s Install Docker or Podman to run containers\n", color.CyanString("→")))
+			}
+			
+			output.WriteString(fmt.Sprintf("   %s Build container: %s\n", color.CyanString("→"), color.YellowString("kanuka grove container build")))
+			if status.DockerInstalled || status.PodmanInstalled {
+				output.WriteString(fmt.Sprintf("   %s Enter container: %s\n", color.CyanString("→"), color.YellowString("kanuka grove container enter")))
+			}
+		} else {
+			output.WriteString(fmt.Sprintf("   %s Container support not initialized\n", color.YellowString("!")))
+			output.WriteString(fmt.Sprintf("   %s Initialize: %s\n", color.CyanString("→"), color.YellowString("kanuka grove container init")))
+			output.WriteString(fmt.Sprintf("   %s Or use: %s\n", color.CyanString("→"), color.YellowString("kanuka grove init --containers")))
+		}
 	}
 
 	// Errors
