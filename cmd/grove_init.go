@@ -101,7 +101,7 @@ Use --containers to also initialize container support for building OCI container
 
 		// Main success message
 		finalMessage = color.GreenString("✓") + " Development environment initialized!\n"
-		
+
 		// Files created message
 		if len(filesCreated) == 3 {
 			finalMessage += color.CyanString("→") + " Created kanuka.toml, devenv.yaml, and devenv.nix\n"
@@ -117,7 +117,7 @@ Use --containers to also initialize container support for building OCI container
 		// Next steps
 		finalMessage += color.CyanString("→") + " Run " + color.YellowString("kanuka grove add <package>") + " to add packages\n"
 		finalMessage += color.CyanString("→") + " Run " + color.YellowString("kanuka grove enter") + " to enter your environment"
-		
+
 		// Additional container steps
 		if containerInitialized {
 			finalMessage += "\n" + color.CyanString("→") + " Run " + color.YellowString("kanuka grove container build") + " to create containers"

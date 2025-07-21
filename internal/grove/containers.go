@@ -54,7 +54,6 @@ func AddContainerConfigToDevenvNix() error {
   containers.%s = {
     name = "grove-%s";
     startupCommand = "bash";
-    isRootContainer = false;
   };`, projectName, projectName)
 
 	// Find the closing brace and insert container config before it

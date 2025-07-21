@@ -77,11 +77,11 @@ type EnvironmentStatus struct {
 	AWSAuthenticated bool
 
 	// Container status
-	ContainerSupported   bool
-	ContainerProfiles    []string
-	DefaultProfile       string
-	DockerInstalled      bool
-	PodmanInstalled      bool
+	ContainerSupported bool
+	ContainerProfiles  []string
+	DefaultProfile     string
+	DockerInstalled    bool
+	PodmanInstalled    bool
 
 	// Errors
 	Errors []string
@@ -242,12 +242,12 @@ func getContainerProfilesFromToml() ([]string, string, error) {
 
 	var profiles []string
 	var defaultProfile string
-	
+
 	lines := strings.Split(string(content), "\n")
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Check for default profile
 		if strings.HasPrefix(line, "default_profile = ") {
 			parts := strings.Split(line, "\"")
@@ -255,7 +255,7 @@ func getContainerProfilesFromToml() ([]string, string, error) {
 				defaultProfile = parts[1]
 			}
 		}
-		
+
 		// Check for profile sections
 		if strings.HasPrefix(line, "[grove.containers.profiles.") {
 			// Extract profile name from [grove.containers.profiles.profilename]
@@ -267,7 +267,7 @@ func getContainerProfilesFromToml() ([]string, string, error) {
 			}
 		}
 	}
-	
+
 	return profiles, defaultProfile, nil
 }
 
@@ -373,10 +373,10 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 	// Container Status
 	if status.IsGroveProject {
 		output.WriteString(fmt.Sprintf("\n%s Container Support\n", color.YellowString("Container Support")))
-		
+
 		if status.ContainerSupported {
 			output.WriteString(fmt.Sprintf("   %s Container support enabled\n", color.GreenString("✓")))
-			
+
 			if len(status.ContainerProfiles) > 0 {
 				output.WriteString(fmt.Sprintf("   %s Profiles (%d):\n", color.GreenString("✓"), len(status.ContainerProfiles)))
 				sort.Strings(status.ContainerProfiles)
@@ -388,7 +388,7 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 					}
 				}
 			}
-			
+
 			// Container runtime status
 			if status.DockerInstalled || status.PodmanInstalled {
 				output.WriteString(fmt.Sprintf("   %s Container runtime: ", color.GreenString("✓")))
@@ -405,7 +405,7 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 				output.WriteString(fmt.Sprintf("   %s Container runtime (Docker/Podman not installed)\n", color.YellowString("!")))
 				output.WriteString(fmt.Sprintf("   %s Install Docker or Podman to run containers\n", color.CyanString("→")))
 			}
-			
+
 			output.WriteString(fmt.Sprintf("   %s Build container: %s\n", color.CyanString("→"), color.YellowString("kanuka grove container build")))
 			if status.DockerInstalled || status.PodmanInstalled {
 				output.WriteString(fmt.Sprintf("   %s Enter container: %s\n", color.CyanString("→"), color.YellowString("kanuka grove container enter")))
