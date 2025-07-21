@@ -285,4 +285,57 @@ kanuka grove enter --auth
 
 ---
 
+## Container Support
+
+Grove provides seamless containerization of development environments using devenv's built-in container generation capabilities. This allows developers to package their exact development environment into OCI-compliant containers for deployment or sharing.
+
+### Container Commands
+```bash
+kanuka grove container init          # Initialize container support
+kanuka grove container build         # Build OCI container from Grove environment  
+kanuka grove container enter         # Enter container interactively
+kanuka grove container info          # Show container information
+```
+
+### Container Workflow
+```bash
+# Initialize container support
+kanuka grove container init
+
+# Build container from current Grove environment
+kanuka grove container build --tag myapp:latest
+
+# Test container locally
+kanuka grove container enter
+
+# Deploy with existing tools
+docker push myregistry/myapp:latest
+pulumi config set image myapp:latest && pulumi up
+```
+
+### Container Profiles
+Container profiles allow different configurations for different use cases:
+
+```toml
+# In kanuka.toml
+[grove.containers]
+default_profile = "default"
+
+[grove.containers.profiles.default]
+name = "development"
+include_dev_tools = true
+expose_ports = ["3000", "8080"]
+
+[grove.containers.profiles.minimal]
+name = "production"
+include_dev_tools = false
+exclude_packages = ["git", "vim", "curl"]
+```
+
+### Design Philosophy
+- **Focused scope**: Only handles Grove environment → container conversion
+- **Tool integration**: Works with existing Docker/Podman/Pulumi workflows
+- **Leverages devenv**: Uses devenv's container generation, no reimplementation
+- **Standard output**: Produces OCI-compliant containers compatible with any deployment tool
+
 This plan provides a focused, powerful MVP that solves core development environment workflow issues while maintaining Kanuka's professional style and leaving room for natural feature evolution.
