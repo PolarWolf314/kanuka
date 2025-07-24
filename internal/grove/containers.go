@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// ContainerProfile represents a container configuration profile
+// ContainerProfile represents a container configuration profile.
 type ContainerProfile struct {
 	Name            string   `toml:"name"`
 	IncludeDevTools bool     `toml:"include_dev_tools"`
@@ -15,7 +15,7 @@ type ContainerProfile struct {
 	ExposePorts     []string `toml:"expose_ports,omitempty"`
 }
 
-// DoesContainerConfigExist checks if container configuration already exists
+// DoesContainerConfigExist checks if container configuration already exists.
 func DoesContainerConfigExist() (bool, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -45,7 +45,7 @@ func DoesContainerConfigExist() (bool, error) {
 
 // AddContainerConfigToDevenvNix adds container configuration to devenv.nix
 // With the simplified approach, container support is enabled by just having the name field
-// and the nix2container input in devenv.yaml
+// and the nix2container input in devenv.yaml.
 func AddContainerConfigToDevenvNix() error {
 	// Container support is automatically enabled when:
 	// 1. devenv.nix has a name field (already added in CreateDevenvNix)
@@ -54,7 +54,7 @@ func AddContainerConfigToDevenvNix() error {
 	return nil
 }
 
-// AddContainerProfilesToKanukaToml adds container profiles to kanuka.toml
+// AddContainerProfilesToKanukaToml adds container profiles to kanuka.toml.
 func AddContainerProfilesToKanukaToml() error {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -97,7 +97,7 @@ exclude_packages = ["git", "vim", "curl"]
 	return nil
 }
 
-// GetContainerProfile retrieves a specific container profile from kanuka.toml
+// GetContainerProfile retrieves a specific container profile from kanuka.toml.
 func GetContainerProfile(profileName string) (*ContainerProfile, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -179,7 +179,7 @@ func GetContainerProfile(profileName string) (*ContainerProfile, error) {
 	return profile, nil
 }
 
-// ApplyContainerProfile temporarily modifies devenv.nix to apply profile settings
+// ApplyContainerProfile temporarily modifies devenv.nix to apply profile settings.
 func ApplyContainerProfile(profile *ContainerProfile) (func(), error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -207,13 +207,13 @@ func ApplyContainerProfile(profile *ContainerProfile) (func(), error) {
 
 	// Return cleanup function to restore original content
 	cleanup := func() {
-		os.WriteFile(devenvNixPath, originalContent, 0600)
+		_ = os.WriteFile(devenvNixPath, originalContent, 0600)
 	}
 
 	return cleanup, nil
 }
 
-// applyProfileToDevenvNix applies profile settings to devenv.nix content
+// applyProfileToDevenvNix applies profile settings to devenv.nix content.
 func applyProfileToDevenvNix(content string, profile *ContainerProfile) (string, error) {
 	lines := strings.Split(content, "\n")
 	var result []string
@@ -236,7 +236,7 @@ func applyProfileToDevenvNix(content string, profile *ContainerProfile) (string,
 	return strings.Join(result, "\n"), nil
 }
 
-// isDevToolPackage checks if a line contains a development tool package
+// isDevToolPackage checks if a line contains a development tool package.
 func isDevToolPackage(line string) bool {
 	devTools := []string{"git", "vim", "curl", "wget", "htop", "tree", "jq"}
 	line = strings.TrimSpace(line)
@@ -250,7 +250,7 @@ func isDevToolPackage(line string) bool {
 	return false
 }
 
-// isExcludedPackage checks if a line contains a package that should be excluded
+// isExcludedPackage checks if a line contains a package that should be excluded.
 func isExcludedPackage(line string, excludeList []string) bool {
 	line = strings.TrimSpace(line)
 
@@ -263,7 +263,7 @@ func isExcludedPackage(line string, excludeList []string) bool {
 	return false
 }
 
-// GetContainerNameFromDevenvNix extracts the container name from devenv.nix
+// GetContainerNameFromDevenvNix extracts the container name from devenv.nix.
 func GetContainerNameFromDevenvNix() (string, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -294,7 +294,7 @@ func GetContainerNameFromDevenvNix() (string, error) {
 	return "", fmt.Errorf("no name field found in devenv.nix")
 }
 
-// ApplyContainerProfileAndName temporarily modifies devenv.nix to apply profile settings and custom name
+// ApplyContainerProfileAndName temporarily modifies devenv.nix to apply profile settings and custom name.
 func ApplyContainerProfileAndName(profile *ContainerProfile, containerName string) (func(), error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -322,13 +322,13 @@ func ApplyContainerProfileAndName(profile *ContainerProfile, containerName strin
 
 	// Return cleanup function to restore original content
 	cleanup := func() {
-		os.WriteFile(devenvNixPath, originalContent, 0600)
+		_ = os.WriteFile(devenvNixPath, originalContent, 0600)
 	}
 
 	return cleanup, nil
 }
 
-// applyProfileAndNameToDevenvNix applies profile settings and updates container name in devenv.nix content
+// applyProfileAndNameToDevenvNix applies profile settings and updates container name in devenv.nix content.
 func applyProfileAndNameToDevenvNix(content string, profile *ContainerProfile, containerName string) (string, error) {
 	lines := strings.Split(content, "\n")
 	var result []string

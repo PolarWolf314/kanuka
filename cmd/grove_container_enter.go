@@ -144,7 +144,7 @@ Examples:
 	},
 }
 
-// detectContainerRuntime detects available container runtime (Docker or Podman)
+// detectContainerRuntime detects available container runtime (Docker or Podman).
 func detectContainerRuntime() (string, error) {
 	// Check for Docker first
 	if _, err := exec.LookPath("docker"); err == nil {
@@ -163,7 +163,7 @@ func detectContainerRuntime() (string, error) {
 	return "", fmt.Errorf("no container runtime found (docker or podman)")
 }
 
-// checkContainerImageExists checks if the container image exists locally
+// checkContainerImageExists checks if the container image exists locally.
 func checkContainerImageExists(runtime, imageName string) (bool, error) {
 	GroveLogger.Debugf("Checking if image exists: %s %s", runtime, imageName)
 
@@ -177,7 +177,7 @@ func checkContainerImageExists(runtime, imageName string) (bool, error) {
 	return strings.TrimSpace(string(output)) != "", nil
 }
 
-// enterContainerInteractively starts the container and enters it interactively
+// enterContainerInteractively starts the container and enters it interactively.
 func enterContainerInteractively(runtime, imageName, shell string) error {
 	GroveLogger.Debugf("Entering container with runtime: %s, image: %s, shell: %s", runtime, imageName, shell)
 

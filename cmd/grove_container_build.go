@@ -148,7 +148,7 @@ Examples:
 	},
 }
 
-// buildContainerWithDevenv builds the container using devenv's container build command
+// buildContainerWithDevenv builds the container using devenv's container build command.
 func buildContainerWithDevenv(containerName string) error {
 	GroveLogger.Debugf("Executing devenv container build with name: %s", containerName)
 

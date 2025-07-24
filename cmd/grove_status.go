@@ -393,12 +393,12 @@ func formatDetailedStatus(status *EnvironmentStatus) string {
 			if status.DockerInstalled || status.PodmanInstalled {
 				output.WriteString(fmt.Sprintf("   %s Container runtime: ", color.GreenString("✓")))
 				if status.DockerInstalled {
-					output.WriteString(fmt.Sprintf("%s", color.GreenString("Docker")))
+					output.WriteString(color.GreenString("Docker"))
 					if status.PodmanInstalled {
 						output.WriteString(fmt.Sprintf(", %s", color.GreenString("Podman")))
 					}
 				} else if status.PodmanInstalled {
-					output.WriteString(fmt.Sprintf("%s", color.GreenString("Podman")))
+					output.WriteString(color.GreenString("Podman"))
 				}
 				output.WriteString("\n")
 			} else {
