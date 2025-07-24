@@ -31,7 +31,7 @@ a container runtime (Docker/Podman) to be available.
 Examples:
   kanuka grove container enter                    # Enter container with default shell
   kanuka grove container enter --shell bash      # Enter with specific shell
-  kanuka grove container enter --name myapp      # Enter specific container by name`,
+  kanuka grove container enter --name myapp      # Enter specific container by name (if using custom name)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		GroveLogger.Infof("Starting grove container enter command")
 		spinner, cleanup := startGroveSpinner("Entering container...", groveVerbose)
@@ -101,19 +101,21 @@ Examples:
 		}
 		GroveLogger.Infof("Using container runtime: %s", containerRuntime)
 
-		// Get container name
+		// Get the project name from devenv.nix for display purposes
+		projectName, err := grove.GetContainerNameFromDevenvNix()
+		if err != nil {
+			return GroveLogger.ErrorfAndReturn("Failed to get project name from devenv.nix: %v", err)
+		}
+		GroveLogger.Debugf("Project name from devenv.nix: %s (container will be named 'shell')", projectName)
+
+		// Use custom name if provided, otherwise use "shell" (which is what devenv uses)
 		var finalContainerName string
 		if enterName != "" {
 			finalContainerName = enterName
 			GroveLogger.Debugf("Using custom container name: %s", finalContainerName)
 		} else {
-			// Get container name from devenv.nix
-			defaultName, err := grove.GetContainerNameFromDevenvNix()
-			if err != nil {
-				return GroveLogger.ErrorfAndReturn("Failed to get container name from devenv.nix: %v", err)
-			}
-			finalContainerName = defaultName
-			GroveLogger.Debugf("Using container name from devenv.nix: %s", finalContainerName)
+			finalContainerName = "shell"
+			GroveLogger.Debugf("Using devenv default container name: shell")
 		}
 
 		// Check if container image exists

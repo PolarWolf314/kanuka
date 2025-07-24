@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	buildName    string
 	buildProfile string
 )
 
@@ -23,13 +22,13 @@ var groveContainerBuildCmd = &cobra.Command{
 	Long: `Build an OCI-compliant container from your Grove development environment.
 
 Uses devenv's container generation to create a standard container that includes
-your packages, languages, and environment configuration.
+your packages, languages, and environment configuration. The container will be
+named "shell" as required by devenv.
 
 Note: Container building requires Linux. On macOS, use CI/CD or remote Linux systems.
 
 Examples:
   kanuka grove container build                   # Build with default profile
-  kanuka grove container build --name myapp      # Build with custom container name
   kanuka grove container build --profile minimal # Build with minimal profile`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		GroveLogger.Infof("Starting grove container build command")
@@ -105,43 +104,38 @@ Examples:
 		}
 		GroveLogger.Infof("Using container profile: %s", profileConfig.Name)
 
-		// Use custom name if provided, otherwise get the name from devenv.nix
-		var finalContainerName string
-		if buildName != "" {
-			finalContainerName = buildName
-			GroveLogger.Debugf("Using custom container name: %s", finalContainerName)
-		} else {
-			// Get container name from devenv.nix
-			defaultName, err := grove.GetContainerNameFromDevenvNix()
-			if err != nil {
-				return GroveLogger.ErrorfAndReturn("Failed to get container name from devenv.nix: %v", err)
-			}
-			finalContainerName = defaultName
-			GroveLogger.Debugf("Using container name from devenv.nix: %s", finalContainerName)
+		// Get the project name from devenv.nix for display purposes
+		projectName, err := grove.GetContainerNameFromDevenvNix()
+		if err != nil {
+			return GroveLogger.ErrorfAndReturn("Failed to get project name from devenv.nix: %v", err)
 		}
+		GroveLogger.Debugf("Project name from devenv.nix: %s", projectName)
 
-		// Apply profile configuration and custom name to devenv.nix (temporarily)
-		GroveLogger.Debugf("Applying profile configuration and container name")
-		cleanup_profile, err := grove.ApplyContainerProfileAndName(profileConfig, finalContainerName)
+		// Note: devenv always uses "shell" as the container name, regardless of project name
+		GroveLogger.Debugf("devenv will build container with name: shell")
+
+		// Apply profile configuration to devenv.nix (temporarily)
+		GroveLogger.Debugf("Applying profile configuration")
+		cleanup_profile, err := grove.ApplyContainerProfile(profileConfig)
 		if err != nil {
 			return GroveLogger.ErrorfAndReturn("Failed to apply container configuration: %v", err)
 		}
 		defer cleanup_profile() // Ensure we restore original devenv.nix
 
-		// Build container using devenv
+		// Build container using devenv - devenv always uses "shell" as the container name
 		GroveLogger.Debugf("Building container with devenv")
-		if err := buildContainerWithDevenv(finalContainerName); err != nil {
+		if err := buildContainerWithDevenv("shell"); err != nil {
 			return GroveLogger.ErrorfAndReturn("Failed to build container: %v", err)
 		}
 
 		GroveLogger.Infof("Container build completed successfully")
 
 		finalMessage := color.GreenString("✓") + " Container built successfully!\n" +
-			color.CyanString("→") + " Container: " + color.YellowString(finalContainerName) + "\n" +
+			color.CyanString("→") + " Container: " + color.YellowString("shell") + " (from project: " + projectName + ")\n" +
 			color.CyanString("→") + " Profile: " + color.WhiteString(profileConfig.Name) + "\n" +
 			color.CyanString("→") + " Test locally: " + color.YellowString("kanuka grove container enter") + "\n" +
-			color.CyanString("→") + " Run with Docker: " + color.YellowString("docker run -it "+finalContainerName) + "\n" +
-			color.CyanString("→") + " Push to registry: " + color.YellowString("docker push "+finalContainerName)
+			color.CyanString("→") + " Run with Docker: " + color.YellowString("docker run -it shell") + "\n" +
+			color.CyanString("→") + " Push to registry: " + color.YellowString("docker push shell")
 
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -175,6 +169,6 @@ func buildContainerWithDevenv(containerName string) error {
 }
 
 func init() {
-	groveContainerBuildCmd.Flags().StringVar(&buildName, "name", "", "container name (default: name from devenv.nix)")
 	groveContainerBuildCmd.Flags().StringVar(&buildProfile, "profile", "default", "container profile to use")
+	// Note: --name flag removed because devenv always uses "shell" as container name
 }
