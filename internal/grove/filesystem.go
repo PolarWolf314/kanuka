@@ -137,8 +137,33 @@ func CreateDevenvNix() error {
   name = "%s";
   
   packages = [
-    # Add your packages here
-    pkgs.git
+    # Sensible defaults - DO NOT MODIFY unless you know what you're doing
+    # These packages provide essential shell functionality and development tools
+    # Remove any of these at your own risk - basic commands may stop working
+    
+    # Essential core utilities (Tier 1)
+    pkgs.coreutils     # ls, cp, mv, rm, cat, echo, mkdir, etc.
+    pkgs.util-linux    # mount, umount, lsblk, etc.
+    pkgs.findutils     # find, xargs, locate
+    pkgs.which         # locate commands in PATH
+    pkgs.ncurses       # clear, tput, terminal handling
+    
+    # File and text processing (Tier 2)
+    pkgs.file          # determine file types
+    pkgs.tree          # directory structure display
+    pkgs.less          # file pager
+    pkgs.gnugrep       # text search
+    pkgs.gnused        # stream editor
+    
+    # Network and downloads (Tier 2)
+    pkgs.curl          # HTTP client
+    pkgs.wget          # file downloader
+    
+    # Development tools
+    pkgs.git           # version control
+    
+    # Add your custom packages below this line
+    # Example: pkgs.nodejs_18, pkgs.python3, etc.
 
     # Kanuka-managed packages - DO NOT EDIT MANUALLY
     # End Kanuka-managed packages
@@ -186,7 +211,7 @@ func AddNix2ContainerInput() error {
 	}
 
 	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
-	
+
 	// Check if devenv.yaml exists
 	if _, err := os.Stat(devenvYamlPath); os.IsNotExist(err) {
 		return fmt.Errorf("devenv.yaml not found - run 'kanuka grove init' first")
@@ -199,7 +224,7 @@ func AddNix2ContainerInput() error {
 	}
 
 	contentStr := string(content)
-	
+
 	// Check if nix2container input already exists
 	if strings.Contains(contentStr, "nix2container:") {
 		return nil // Already exists, nothing to do
