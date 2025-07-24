@@ -52,6 +52,12 @@ Use --containers to also initialize container support for building OCI container
 		}
 		GroveLogger.Infof("kanuka.toml created successfully")
 
+		GroveLogger.Debugf("Creating or updating .gitignore")
+		if err := grove.CreateOrUpdateGitignore(); err != nil {
+			return GroveLogger.ErrorfAndReturn("Failed to create/update .gitignore: %v", err)
+		}
+		GroveLogger.Infof(".gitignore created/updated successfully")
+
 		if !devenvYamlExists {
 			GroveLogger.Debugf("Creating devenv.yaml")
 			if err := grove.CreateDevenvYaml(); err != nil {
@@ -98,15 +104,16 @@ Use --containers to also initialize container support for building OCI container
 			filesCreated = append(filesCreated, "devenv.nix")
 		}
 		filesCreated = append(filesCreated, "kanuka.toml")
+		filesCreated = append(filesCreated, ".gitignore")
 
 		// Main success message
 		finalMessage = color.GreenString("✓") + " Development environment initialized!\n"
 
 		// Files created message
-		if len(filesCreated) == 3 {
-			finalMessage += color.CyanString("→") + " Created kanuka.toml, devenv.yaml, and devenv.nix\n"
+		if len(filesCreated) == 4 {
+			finalMessage += color.CyanString("→") + " Created kanuka.toml, devenv.yaml, devenv.nix, and .gitignore\n"
 		} else {
-			finalMessage += color.CyanString("→") + " kanuka.toml created, existing files preserved\n"
+			finalMessage += color.CyanString("→") + " kanuka.toml created, .gitignore updated, existing files preserved\n"
 		}
 
 		// Container message
