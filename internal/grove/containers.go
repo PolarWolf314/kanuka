@@ -39,7 +39,7 @@ func DoesContainerConfigExist() (bool, error) {
 	// 2. devenv.yaml has nix2container input
 	hasName := strings.Contains(string(content), "name = ")
 	hasNix2Container := strings.Contains(string(yamlContent), "nix2container:")
-	
+
 	return hasName && hasNix2Container, nil
 }
 
@@ -118,7 +118,7 @@ func GetContainerProfile(profileName string) (*ContainerProfile, error) {
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Check for profile section
 		if strings.HasPrefix(line, "[grove.containers.profiles.") {
 			// Extract profile name
@@ -187,7 +187,7 @@ func ApplyContainerProfile(profile *ContainerProfile) (func(), error) {
 	}
 
 	devenvNixPath := filepath.Join(currentDir, "devenv.nix")
-	
+
 	// Read original devenv.nix
 	originalContent, err := os.ReadFile(devenvNixPath)
 	if err != nil {
@@ -217,22 +217,22 @@ func ApplyContainerProfile(profile *ContainerProfile) (func(), error) {
 func applyProfileToDevenvNix(content string, profile *ContainerProfile) (string, error) {
 	lines := strings.Split(content, "\n")
 	var result []string
-	
+
 	for _, line := range lines {
 		// If this profile excludes dev tools, filter out common dev packages
 		if !profile.IncludeDevTools && isDevToolPackage(line) {
 			// Skip this line (exclude dev tools)
 			continue
 		}
-		
+
 		// If this package is in the exclude list, skip it
 		if isExcludedPackage(line, profile.ExcludePackages) {
 			continue
 		}
-		
+
 		result = append(result, line)
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }
 
@@ -240,26 +240,26 @@ func applyProfileToDevenvNix(content string, profile *ContainerProfile) (string,
 func isDevToolPackage(line string) bool {
 	devTools := []string{"git", "vim", "curl", "wget", "htop", "tree", "jq"}
 	line = strings.TrimSpace(line)
-	
+
 	for _, tool := range devTools {
 		if strings.Contains(line, "pkgs."+tool) && !strings.HasPrefix(line, "#") {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
 // isExcludedPackage checks if a line contains a package that should be excluded
 func isExcludedPackage(line string, excludeList []string) bool {
 	line = strings.TrimSpace(line)
-	
+
 	for _, excluded := range excludeList {
 		if strings.Contains(line, "pkgs."+excluded) && !strings.HasPrefix(line, "#") {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -302,7 +302,7 @@ func ApplyContainerProfileAndName(profile *ContainerProfile, containerName strin
 	}
 
 	devenvNixPath := filepath.Join(currentDir, "devenv.nix")
-	
+
 	// Read original devenv.nix
 	originalContent, err := os.ReadFile(devenvNixPath)
 	if err != nil {
@@ -332,7 +332,7 @@ func ApplyContainerProfileAndName(profile *ContainerProfile, containerName strin
 func applyProfileAndNameToDevenvNix(content string, profile *ContainerProfile, containerName string) (string, error) {
 	lines := strings.Split(content, "\n")
 	var result []string
-	
+
 	for _, line := range lines {
 		// Update container name if this is the container configuration line
 		if strings.Contains(line, "containers.") && strings.Contains(line, "= inputs.nix2container-input.lib.buildImage") {
@@ -343,20 +343,20 @@ func applyProfileAndNameToDevenvNix(content string, profile *ContainerProfile, c
 				line = fmt.Sprintf("  containers.%s = inputs.nix2container-input.lib.buildImage {", containerName)
 			}
 		}
-		
+
 		// If this profile excludes dev tools, filter out common dev packages
 		if !profile.IncludeDevTools && isDevToolPackage(line) {
 			// Skip this line (exclude dev tools)
 			continue
 		}
-		
+
 		// If this package is in the exclude list, skip it
 		if isExcludedPackage(line, profile.ExcludePackages) {
 			continue
 		}
-		
+
 		result = append(result, line)
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }

@@ -166,7 +166,7 @@ func detectContainerRuntime() (string, error) {
 // checkContainerImageExists checks if the container image exists locally
 func checkContainerImageExists(runtime, imageName string) (bool, error) {
 	GroveLogger.Debugf("Checking if image exists: %s %s", runtime, imageName)
-	
+
 	cmd := exec.Command(runtime, "images", "-q", imageName)
 	output, err := cmd.Output()
 	if err != nil {
@@ -190,15 +190,15 @@ func enterContainerInteractively(runtime, imageName, shell string) error {
 	// Build the container run command
 	args := []string{
 		"run",
-		"--rm",           // Remove container when it exits
-		"-it",            // Interactive with TTY
-		imageName,        // Image name
-		containerShell,   // Shell to run
+		"--rm",         // Remove container when it exits
+		"-it",          // Interactive with TTY
+		imageName,      // Image name
+		containerShell, // Shell to run
 	}
 
 	// Create the command
 	cmd := exec.Command(runtime, args...)
-	
+
 	// Connect stdin, stdout, stderr to allow interactive use
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

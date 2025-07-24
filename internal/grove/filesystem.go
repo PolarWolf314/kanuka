@@ -268,7 +268,7 @@ func CreateOrUpdateGitignore() error {
 	}
 
 	gitignorePath := filepath.Join(currentDir, ".gitignore")
-	
+
 	// Grove-specific gitignore entries
 	groveEntries := `
 # Kanuka Grove - devenv cache and build artifacts
@@ -298,7 +298,7 @@ result-*
 	}
 
 	contentStr := string(content)
-	
+
 	// Check if Grove entries already exist
 	if strings.Contains(contentStr, "# Kanuka Grove") || strings.Contains(contentStr, ".devenv/") {
 		return nil // Grove entries already present
