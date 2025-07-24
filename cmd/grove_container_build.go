@@ -14,6 +14,7 @@ import (
 
 var (
 	buildProfile string
+	buildNoSync  bool
 )
 
 var groveContainerBuildCmd = &cobra.Command{
@@ -28,8 +29,9 @@ named "shell" as required by devenv.
 Note: Container building requires Linux. On macOS, use CI/CD or remote Linux systems.
 
 Examples:
-  kanuka grove container build                   # Build with default profile
-  kanuka grove container build --profile minimal # Build with minimal profile`,
+  kanuka grove container build                   # Build with default profile and auto-sync
+  kanuka grove container build --profile minimal # Build with minimal profile
+  kanuka grove container build --no-sync        # Build without syncing to Docker daemon`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		GroveLogger.Infof("Starting grove container build command")
 		spinner, cleanup := startGroveSpinner("Building container from Grove environment...", groveVerbose)
@@ -130,12 +132,39 @@ Examples:
 
 		GroveLogger.Infof("Container build completed successfully")
 
-		finalMessage := color.GreenString("✓") + " Container built successfully!\n" +
-			color.CyanString("→") + " Container: " + color.YellowString("shell") + " (from project: " + projectName + ")\n" +
-			color.CyanString("→") + " Profile: " + color.WhiteString(profileConfig.Name) + "\n" +
-			color.CyanString("→") + " Test locally: " + color.YellowString("kanuka grove container enter") + "\n" +
-			color.CyanString("→") + " Run with Docker: " + color.YellowString("docker run -it shell") + "\n" +
-			color.CyanString("→") + " Push to registry: " + color.YellowString("docker push shell")
+		// Sync container to Docker daemon (unless --no-sync is specified)
+		var syncCompleted bool
+		if !buildNoSync {
+			GroveLogger.Debugf("Syncing container to Docker daemon")
+			spinner.Suffix = " Syncing container to Docker daemon..."
+			if err := syncContainerToDockerDaemon("shell"); err != nil {
+				return GroveLogger.ErrorfAndReturn("Failed to sync container to Docker daemon: %v", err)
+			}
+			GroveLogger.Infof("Container sync completed successfully")
+			syncCompleted = true
+		} else {
+			GroveLogger.Infof("Skipping container sync (--no-sync specified)")
+		}
+
+		// Build success message based on whether sync was performed
+		var finalMessage string
+		if syncCompleted {
+			finalMessage = color.GreenString("✓") + " Container built and synced successfully!\n" +
+				color.CyanString("→") + " Container: " + color.YellowString("shell") + " (from project: " + projectName + ")\n" +
+				color.CyanString("→") + " Profile: " + color.WhiteString(profileConfig.Name) + "\n" +
+				color.CyanString("→") + " Synced to Docker daemon - ready to run!\n" +
+				color.CyanString("→") + " Test locally: " + color.YellowString("kanuka grove container enter") + "\n" +
+				color.CyanString("→") + " Run with Docker: " + color.YellowString("docker run -it shell") + "\n" +
+				color.CyanString("→") + " Push to registry: " + color.YellowString("docker push shell")
+		} else {
+			finalMessage = color.GreenString("✓") + " Container built successfully!\n" +
+				color.CyanString("→") + " Container: " + color.YellowString("shell") + " (from project: " + projectName + ")\n" +
+				color.CyanString("→") + " Profile: " + color.WhiteString(profileConfig.Name) + "\n" +
+				color.YellowString("⚠") + "  " + color.YellowString("Container not synced to Docker daemon (--no-sync used)\n") +
+				color.CyanString("→") + " Run " + color.YellowString("kanuka grove container sync") + " to sync to Docker daemon\n" +
+				color.CyanString("→") + " Test locally: " + color.YellowString("kanuka grove container enter") + "\n" +
+				color.CyanString("→") + " Push to registry: " + color.YellowString("docker push shell")
+		}
 
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -168,7 +197,34 @@ func buildContainerWithDevenv(containerName string) error {
 	return nil
 }
 
+// syncContainerToDockerDaemon syncs the container from Nix store to Docker daemon using devenv.
+func syncContainerToDockerDaemon(containerName string) error {
+	GroveLogger.Debugf("Executing devenv container copy with name: %s", containerName)
+
+	// Build the devenv container copy command
+	cmd := exec.Command("devenv", "container", "copy", containerName)
+
+	// Set up command environment
+	cmd.Dir, _ = os.Getwd()
+	cmd.Env = os.Environ()
+
+	// In verbose mode, show the output
+	if groveVerbose || groveDebug {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		GroveLogger.Infof("Running: %s", strings.Join(cmd.Args, " "))
+	}
+
+	// Execute the command
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("devenv container copy failed: %w", err)
+	}
+
+	return nil
+}
+
 func init() {
 	groveContainerBuildCmd.Flags().StringVar(&buildProfile, "profile", "default", "container profile to use")
+	groveContainerBuildCmd.Flags().BoolVar(&buildNoSync, "no-sync", false, "skip syncing container to Docker daemon")
 	// Note: --name flag removed because devenv always uses "shell" as container name
 }
