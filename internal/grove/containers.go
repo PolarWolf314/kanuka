@@ -42,7 +42,6 @@ func AddContainerConfigToDevenvNix() error {
 	return nil
 }
 
-
 // GetContainerNameFromDevenvNix extracts the container name from devenv.nix.
 func GetContainerNameFromDevenvNix() (string, error) {
 	currentDir, err := os.Getwd()

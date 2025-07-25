@@ -175,7 +175,6 @@ func gatherEnvironmentStatus() (*EnvironmentStatus, error) {
 			status.ContainerSupported = containerSupported
 		}
 
-
 		// Check Docker installation
 		if _, err := exec.LookPath("docker"); err == nil {
 			status.DockerInstalled = true
@@ -217,7 +216,6 @@ func getProjectIDFromToml() (string, error) {
 
 	return "", fmt.Errorf("project ID not found")
 }
-
 
 // formatDetailedStatus formats comprehensive status information.
 func formatDetailedStatus(status *EnvironmentStatus) string {

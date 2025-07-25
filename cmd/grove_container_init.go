@@ -72,7 +72,6 @@ by devenv using the name field in devenv.nix.`,
 		}
 		GroveLogger.Infof("Container configuration added to devenv.nix")
 
-
 		GroveLogger.Infof("Grove container init command completed successfully")
 
 		finalMessage := color.GreenString("✓") + " Container support initialized!\n" +
