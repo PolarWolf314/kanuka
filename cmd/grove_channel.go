@@ -29,8 +29,8 @@ Examples:
 
 func init() {
 	groveChannelCmd.AddCommand(groveChannelListCmd)
+	groveChannelCmd.AddCommand(groveChannelAddCmd)
 	// Future commands will be added here:
-	// groveChannelCmd.AddCommand(groveChannelAddCmd)
 	// groveChannelCmd.AddCommand(groveChannelRemoveCmd)
 	// groveChannelCmd.AddCommand(groveChannelShowCmd)
 	// groveChannelCmd.AddCommand(groveChannelPinCmd)

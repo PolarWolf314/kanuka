@@ -346,6 +346,55 @@ func generateChannelDescription(name, url string) string {
 	}
 }
 
+// AddChannel adds a new channel to devenv.yaml
+func AddChannel(name, url string) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
+	
+	// Check if devenv.yaml exists
+	if _, err := os.Stat(devenvYamlPath); os.IsNotExist(err) {
+		return fmt.Errorf("devenv.yaml not found")
+	}
+
+	// Read and parse devenv.yaml
+	content, err := os.ReadFile(devenvYamlPath)
+	if err != nil {
+		return fmt.Errorf("failed to read devenv.yaml: %w", err)
+	}
+
+	var devenvConfig DevenvYaml
+	if err := yaml.Unmarshal(content, &devenvConfig); err != nil {
+		return fmt.Errorf("failed to parse devenv.yaml: %w", err)
+	}
+
+	// Initialize inputs map if it doesn't exist
+	if devenvConfig.Inputs == nil {
+		devenvConfig.Inputs = make(map[string]DevenvYamlInputs)
+	}
+
+	// Add the new channel
+	devenvConfig.Inputs[name] = DevenvYamlInputs{
+		URL: url,
+	}
+
+	// Marshal back to YAML
+	updatedContent, err := yaml.Marshal(&devenvConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal devenv.yaml: %w", err)
+	}
+
+	// Write back to file
+	if err := os.WriteFile(devenvYamlPath, updatedContent, 0644); err != nil {
+		return fmt.Errorf("failed to write devenv.yaml: %w", err)
+	}
+
+	return nil
+}
+
 // GetChannelUsage returns which packages are using each channel
 func GetChannelUsage() (map[string][]string, error) {
 	// This is a placeholder for future implementation

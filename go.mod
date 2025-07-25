@@ -18,6 +18,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/peterldowns/nix-search-cli v0.3.0
 	github.com/spf13/pflag v1.0.6
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -37,5 +38,4 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

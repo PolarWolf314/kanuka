@@ -30,9 +30,10 @@ func ParsePackageNameWithChannel(packageName, channel string) (*Package, error) 
 		return nil, fmt.Errorf("package name cannot be empty")
 	}
 
-	// Validate channel
-	if channel != "unstable" && channel != "stable" {
-		return nil, fmt.Errorf("invalid channel '%s', must be 'unstable' or 'stable'", channel)
+	// Resolve and validate channel
+	resolvedChannel, nixName, err := resolveChannelAndNixName(packageName, channel)
+	if err != nil {
+		return nil, err
 	}
 
 	// Validate package exists in nixpkgs.
@@ -45,21 +46,13 @@ func ParsePackageNameWithChannel(packageName, channel string) (*Package, error) 
 		return nil, fmt.Errorf("package '%s' not found in nixpkgs", packageName)
 	}
 
-	// Generate appropriate nix name based on channel
-	var nixName string
-	if channel == "stable" {
-		nixName = "inputs.nixpkgs-stable.legacyPackages.${system}." + packageName
-	} else {
-		nixName = "pkgs." + packageName // unstable uses default pkgs
-	}
-
 	// Create package with validated information.
 	pkg := &Package{
 		Name:        packageName,
 		NixName:     nixName,
 		DisplayName: packageName,
 		Version:     "",
-		Channel:     channel,
+		Channel:     resolvedChannel,
 	}
 
 	// If we have result information, we could use it for better display.
@@ -155,8 +148,14 @@ func AddPackageToDevenv(pkg *Package) error {
 
 	contentStr := string(content)
 
+	// Ensure the let block has the necessary channel imports
+	updatedContent, err := ensureChannelImportsInLetBlock(contentStr, pkg.Channel)
+	if err != nil {
+		return fmt.Errorf("failed to update let block: %w", err)
+	}
+
 	// Find the Kanuka-managed section and add the package.
-	lines := strings.Split(contentStr, "\n")
+	lines := strings.Split(updatedContent, "\n")
 	var newLines []string
 
 	for _, line := range lines {
@@ -248,8 +247,8 @@ func GetKanukaManagedPackages() ([]string, error) {
 	scanner := bufio.NewScanner(file)
 	inKanukaSection := false
 
-	// Regex to match package lines like "    pkgs.nodejs_18"
-	packageRegex := regexp.MustCompile(`^\s+pkgs\.(\w+)`)
+	// Regex to match package lines like "    pkgs.nodejs_18" or "    pkgs-stable.python3"
+	packageRegex := regexp.MustCompile(`^\s+pkgs(?:-\w+)?\.(\w+)`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -561,4 +560,191 @@ func GetKanukaManagedLanguages() ([]string, error) {
 	}
 
 	return languages, nil
+}
+
+// resolveChannelAndNixName resolves a channel name to actual channel and generates the appropriate nix name
+func resolveChannelAndNixName(packageName, channel string) (string, string, error) {
+	// Get available channels from devenv.yaml
+	availableChannels, err := ListChannels()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read available channels: %w", err)
+	}
+
+	// Create a map of available channel names
+	channelMap := make(map[string]string)
+	for _, ch := range availableChannels {
+		channelMap[ch.Name] = ch.Name
+	}
+
+	// Handle user-friendly aliases
+	var resolvedChannelName string
+	switch channel {
+	case "unstable":
+		// Map "unstable" to "nixpkgs" if it exists, otherwise use first unstable-like channel
+		if _, exists := channelMap["nixpkgs"]; exists {
+			resolvedChannelName = "nixpkgs"
+		} else {
+			// Find first channel with "unstable" in URL
+			for _, ch := range availableChannels {
+				if strings.Contains(ch.URL, "nixpkgs-unstable") {
+					resolvedChannelName = ch.Name
+					break
+				}
+			}
+			if resolvedChannelName == "" {
+				return "", "", fmt.Errorf("no unstable channel found in devenv.yaml")
+			}
+		}
+	case "stable":
+		// Map "stable" to "nixpkgs-stable" if it exists, otherwise use first stable-like channel
+		if _, exists := channelMap["nixpkgs-stable"]; exists {
+			resolvedChannelName = "nixpkgs-stable"
+		} else {
+			// Find first channel with stable version in URL
+			for _, ch := range availableChannels {
+				if strings.Contains(ch.URL, "nixos-") && !strings.Contains(ch.URL, "unstable") {
+					resolvedChannelName = ch.Name
+					break
+				}
+			}
+			if resolvedChannelName == "" {
+				return "", "", fmt.Errorf("no stable channel found in devenv.yaml")
+			}
+		}
+	default:
+		// Direct channel name - validate it exists
+		if _, exists := channelMap[channel]; !exists {
+			// Build helpful error message with available channels
+			var availableNames []string
+			for _, ch := range availableChannels {
+				availableNames = append(availableNames, ch.Name)
+			}
+			return "", "", fmt.Errorf("channel '%s' not found in devenv.yaml. Available channels: %s", 
+				channel, strings.Join(availableNames, ", "))
+		}
+		resolvedChannelName = channel
+	}
+
+	// Generate appropriate nix name based on resolved channel using the correct devenv pattern
+	var nixName string
+	if resolvedChannelName == "nixpkgs" {
+		// Default nixpkgs uses pkgs.
+		nixName = "pkgs." + packageName
+	} else if resolvedChannelName == "nixpkgs-stable" {
+		// nixpkgs-stable uses the imported pkgs-stable from the let block
+		nixName = "pkgs-stable." + packageName
+	} else {
+		// Custom channels use pkgs-<channel-name> pattern
+		// We need to ensure the let block imports them properly
+		channelVarName := "pkgs-" + strings.ReplaceAll(resolvedChannelName, "-", "_")
+		nixName = channelVarName + "." + packageName
+	}
+
+	return resolvedChannelName, nixName, nil
+}
+
+// ensureChannelImportsInLetBlock ensures that the let block contains the necessary channel imports
+func ensureChannelImportsInLetBlock(content, channelName string) (string, error) {
+	// If it's the default nixpkgs channel, no import needed
+	if channelName == "nixpkgs" {
+		return content, nil
+	}
+
+	// Generate the import variable name
+	var importVarName string
+	if channelName == "nixpkgs-stable" {
+		importVarName = "pkgs-stable"
+	} else {
+		importVarName = "pkgs-" + strings.ReplaceAll(channelName, "-", "_")
+	}
+
+	// Check if the import already exists in the let block
+	importLine := fmt.Sprintf("%s = import inputs.%s { system = pkgs.stdenv.system; };", importVarName, channelName)
+	if strings.Contains(content, importVarName+" = import inputs."+channelName) {
+		return content, nil // Already exists
+	}
+
+	// Find the let block and add the import
+	lines := strings.Split(content, "\n")
+	var newLines []string
+	inLetBlock := false
+	letBlockFound := false
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		
+		// Detect start of let block
+		if strings.HasPrefix(trimmed, "let") {
+			inLetBlock = true
+			letBlockFound = true
+			newLines = append(newLines, line)
+			continue
+		}
+		
+		// Detect end of let block (line starting with "in")
+		if inLetBlock && strings.HasPrefix(trimmed, "in") {
+			// Insert the new import before the "in" line
+			newLines = append(newLines, "  "+importLine)
+			newLines = append(newLines, line)
+			inLetBlock = false
+			continue
+		}
+		
+		// If we're in the let block and this is the last import line, add after it
+		if inLetBlock && strings.Contains(line, "= import inputs.") {
+			newLines = append(newLines, line)
+			// Check if the next line is "in" or another import
+			if i+1 < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i+1]), "in") {
+				// Add our import before "in"
+				newLines = append(newLines, "  "+importLine)
+			}
+			continue
+		}
+		
+		newLines = append(newLines, line)
+	}
+
+	// If no let block was found, we need to create one
+	if !letBlockFound {
+		return addLetBlockToDevenvNix(content, channelName)
+	}
+
+	return strings.Join(newLines, "\n"), nil
+}
+
+// addLetBlockToDevenvNix adds a let block to devenv.nix if it doesn't exist
+func addLetBlockToDevenvNix(content, channelName string) (string, error) {
+	// Generate the import variable name and line
+	var importVarName string
+	if channelName == "nixpkgs-stable" {
+		importVarName = "pkgs-stable"
+	} else {
+		importVarName = "pkgs-" + strings.ReplaceAll(channelName, "-", "_")
+	}
+	
+	importLine := fmt.Sprintf("  %s = import inputs.%s { system = pkgs.stdenv.system; };", importVarName, channelName)
+	
+	lines := strings.Split(content, "\n")
+	var newLines []string
+	
+	for _, line := range lines {
+		// Look for the function signature line
+		if strings.Contains(line, "{ pkgs, inputs, ... }:") {
+			newLines = append(newLines, line)
+			// Add the let block after the function signature
+			newLines = append(newLines, "let")
+			newLines = append(newLines, "  # Import additional nixpkgs channels for multi-channel support")
+			if channelName != "nixpkgs-stable" {
+				// Also add pkgs-stable if it's not already there and we're adding a custom channel
+				newLines = append(newLines, "  pkgs-stable = import inputs.nixpkgs-stable { system = pkgs.stdenv.system; };")
+			}
+			newLines = append(newLines, importLine)
+			newLines = append(newLines, "in")
+			continue
+		}
+		
+		newLines = append(newLines, line)
+	}
+	
+	return strings.Join(newLines, "\n"), nil
 }

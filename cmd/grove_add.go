@@ -25,7 +25,9 @@ Examples:
   kanuka grove add typescript      # Add typescript package from unstable
   kanuka grove add awscli2         # Add AWS CLI v2 from unstable
   # Note: AWS SSO authentication now uses integrated AWS SDK - no external tools needed!
-  kanuka grove add nodejs --channel stable    # Add nodejs from stable channel`,
+  kanuka grove add nodejs --channel stable         # Add nodejs from stable channel
+  kanuka grove add nodejs --channel nixpkgs-stable # Add nodejs from nixpkgs-stable channel
+  kanuka grove add nodejs --channel custom-channel # Add nodejs from custom channel`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packageName := args[0]
@@ -265,5 +267,5 @@ func handleLanguageAddition(languageName string, spinner *spinner.Spinner) error
 
 func init() {
 	groveAddCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "skip nixpkgs validation (for testing)")
-	groveAddCmd.Flags().StringVar(&channel, "channel", "unstable", "nixpkgs channel to use (unstable, stable)")
+	groveAddCmd.Flags().StringVar(&channel, "channel", "unstable", "nixpkgs channel to use (unstable, stable, or any channel name from devenv.yaml)")
 }

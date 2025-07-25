@@ -133,7 +133,12 @@ func CreateDevenvNix() error {
 	// Get project name from directory
 	projectName := filepath.Base(currentDir)
 
-	devenvNixContent := fmt.Sprintf(`{ pkgs, inputs, ... }: {
+	devenvNixContent := fmt.Sprintf(`{ pkgs, inputs, ... }:
+let
+  # Import additional nixpkgs channels for multi-channel support
+  pkgs-stable = import inputs.nixpkgs-stable { system = pkgs.stdenv.system; };
+in
+{
   name = "%s";
   
   packages = [
@@ -163,7 +168,7 @@ func CreateDevenvNix() error {
     pkgs.git           # version control
     
     # Add your custom packages below this line
-    # Example: pkgs.nodejs_18, pkgs.python3, etc.
+    # Example: pkgs.nodejs_18, pkgs-stable.python3, etc.
 
     # Kanuka-managed packages - DO NOT EDIT MANUALLY
     # End Kanuka-managed packages
