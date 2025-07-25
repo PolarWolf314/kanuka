@@ -13,8 +13,7 @@ import (
 )
 
 var (
-	buildProfile string
-	buildNoSync  bool
+	buildNoSync bool
 )
 
 var groveContainerBuildCmd = &cobra.Command{
@@ -29,8 +28,7 @@ named "shell" as required by devenv.
 Note: Container building requires Linux. On macOS, use CI/CD or remote Linux systems.
 
 Examples:
-  kanuka grove container build                   # Build with default profile and auto-sync
-  kanuka grove container build --profile minimal # Build with minimal profile
+  kanuka grove container build                   # Build and auto-sync to Docker daemon
   kanuka grove container build --no-sync        # Build without syncing to Docker daemon`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		GroveLogger.Infof("Starting grove container build command")
@@ -98,14 +96,6 @@ Examples:
 			return nil
 		}
 
-		// Validate and get profile configuration
-		GroveLogger.Debugf("Validating container profile: %s", buildProfile)
-		profileConfig, err := grove.GetContainerProfile(buildProfile)
-		if err != nil {
-			return GroveLogger.ErrorfAndReturn("Failed to get container profile '%s': %v", buildProfile, err)
-		}
-		GroveLogger.Infof("Using container profile: %s", profileConfig.Name)
-
 		// Get the project name from devenv.nix for display purposes
 		projectName, err := grove.GetContainerNameFromDevenvNix()
 		if err != nil {
@@ -115,14 +105,6 @@ Examples:
 
 		// Note: devenv always uses "shell" as the container name, regardless of project name
 		GroveLogger.Debugf("devenv will build container with name: shell")
-
-		// Apply profile configuration to devenv.nix (temporarily)
-		GroveLogger.Debugf("Applying profile configuration")
-		cleanup_profile, err := grove.ApplyContainerProfile(profileConfig)
-		if err != nil {
-			return GroveLogger.ErrorfAndReturn("Failed to apply container configuration: %v", err)
-		}
-		defer cleanup_profile() // Ensure we restore original devenv.nix
 
 		// Build container using devenv - devenv always uses "shell" as the container name
 		GroveLogger.Debugf("Building container with devenv")
@@ -151,7 +133,6 @@ Examples:
 		if syncCompleted {
 			finalMessage = color.GreenString("✓") + " Container built and synced successfully!\n" +
 				color.CyanString("→") + " Container: " + color.YellowString("shell") + " (from project: " + projectName + ")\n" +
-				color.CyanString("→") + " Profile: " + color.WhiteString(profileConfig.Name) + "\n" +
 				color.CyanString("→") + " Synced to Docker daemon - ready to run!\n" +
 				color.CyanString("→") + " Test locally: " + color.YellowString("kanuka grove container enter") + "\n" +
 				color.CyanString("→") + " Run with Docker: " + color.YellowString("docker run -it shell") + "\n" +
@@ -159,7 +140,6 @@ Examples:
 		} else {
 			finalMessage = color.GreenString("✓") + " Container built successfully!\n" +
 				color.CyanString("→") + " Container: " + color.YellowString("shell") + " (from project: " + projectName + ")\n" +
-				color.CyanString("→") + " Profile: " + color.WhiteString(profileConfig.Name) + "\n" +
 				color.YellowString("⚠") + "  " + color.YellowString("Container not synced to Docker daemon (--no-sync used)\n") +
 				color.CyanString("→") + " Run " + color.YellowString("kanuka grove container sync") + " to sync to Docker daemon\n" +
 				color.CyanString("→") + " Test locally: " + color.YellowString("kanuka grove container enter") + "\n" +
@@ -224,7 +204,5 @@ func syncContainerToDockerDaemon(containerName string) error {
 }
 
 func init() {
-	groveContainerBuildCmd.Flags().StringVar(&buildProfile, "profile", "default", "container profile to use")
 	groveContainerBuildCmd.Flags().BoolVar(&buildNoSync, "no-sync", false, "skip syncing container to Docker daemon")
-	// Note: --name flag removed because devenv always uses "shell" as container name
 }

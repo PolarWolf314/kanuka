@@ -82,11 +82,14 @@ Use --containers to also initialize container support for building OCI container
 		var containerInitialized bool
 		if initContainers {
 			GroveLogger.Debugf("Initializing container support")
+			
+			// Add required nix2container input first
+			if err := grove.AddNix2ContainerInput(); err != nil {
+				return GroveLogger.ErrorfAndReturn("Failed to add nix2container input: %v", err)
+			}
+			
 			if err := grove.AddContainerConfigToDevenvNix(); err != nil {
 				return GroveLogger.ErrorfAndReturn("Failed to add container configuration to devenv.nix: %v", err)
-			}
-			if err := grove.AddContainerProfilesToKanukaToml(); err != nil {
-				return GroveLogger.ErrorfAndReturn("Failed to add container profiles to kanuka.toml: %v", err)
 			}
 			containerInitialized = true
 			GroveLogger.Infof("Container support initialized")

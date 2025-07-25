@@ -14,7 +14,6 @@ import (
 
 var (
 	enterShell string
-	enterName  string
 )
 
 var groveContainerEnterCmd = &cobra.Command{
@@ -30,8 +29,7 @@ a container runtime (Docker/Podman) to be available.
 
 Examples:
   kanuka grove container enter                    # Enter container with default shell
-  kanuka grove container enter --shell bash      # Enter with specific shell
-  kanuka grove container enter --name myapp      # Enter specific container by name (if using custom name)`,
+  kanuka grove container enter --shell bash      # Enter with specific shell`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		GroveLogger.Infof("Starting grove container enter command")
 		spinner, cleanup := startGroveSpinner("Entering container...", groveVerbose)
@@ -108,15 +106,9 @@ Examples:
 		}
 		GroveLogger.Debugf("Project name from devenv.nix: %s (container will be named 'shell')", projectName)
 
-		// Use custom name if provided, otherwise use "shell" (which is what devenv uses)
-		var finalContainerName string
-		if enterName != "" {
-			finalContainerName = enterName
-			GroveLogger.Debugf("Using custom container name: %s", finalContainerName)
-		} else {
-			finalContainerName = "shell"
-			GroveLogger.Debugf("Using devenv default container name: shell")
-		}
+		// devenv always uses "shell" as the container name
+		finalContainerName := "shell"
+		GroveLogger.Debugf("Using devenv default container name: shell")
 
 		// Check if container image exists
 		GroveLogger.Debugf("Checking if container image exists: %s", finalContainerName)
@@ -224,5 +216,4 @@ func enterContainerInteractively(runtime, imageName, shell string) error {
 
 func init() {
 	groveContainerEnterCmd.Flags().StringVar(&enterShell, "shell", "", "shell to use inside container (default: /bin/bash)")
-	groveContainerEnterCmd.Flags().StringVar(&enterName, "name", "", "container name (default: name from devenv.nix)")
 }
