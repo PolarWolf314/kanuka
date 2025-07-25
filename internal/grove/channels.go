@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // NixOSRelease represents a NixOS release from the GitHub API.
@@ -23,6 +27,25 @@ type ChannelInfo struct {
 	Name        string
 	URL         string
 	Description string
+}
+
+// ChannelConfig represents a channel configuration from devenv.yaml
+type ChannelConfig struct {
+	Name        string `yaml:"name"`
+	URL         string `yaml:"url"`
+	Description string `yaml:"description,omitempty"`
+}
+
+// DevenvYamlInputs represents the inputs section of devenv.yaml
+type DevenvYamlInputs struct {
+	URL string `yaml:"url"`
+}
+
+// DevenvYaml represents the structure of devenv.yaml
+type DevenvYaml struct {
+	Inputs      map[string]DevenvYamlInputs `yaml:"inputs"`
+	AllowUnfree bool                        `yaml:"allowUnfree,omitempty"`
+	Backend     string                      `yaml:"backend,omitempty"`
 }
 
 const (
@@ -252,4 +275,80 @@ func GetDefaultChannels() map[string]ChannelInfo {
 			Description: fmt.Sprintf("Latest stable packages (%s)", latestStable),
 		},
 	}
+}
+
+// ListChannels returns all channels configured in devenv.yaml
+func ListChannels() ([]ChannelConfig, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
+	
+	// Check if devenv.yaml exists
+	if _, err := os.Stat(devenvYamlPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("devenv.yaml not found")
+	}
+
+	// Read and parse devenv.yaml
+	content, err := os.ReadFile(devenvYamlPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read devenv.yaml: %w", err)
+	}
+
+	var devenvConfig DevenvYaml
+	if err := yaml.Unmarshal(content, &devenvConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse devenv.yaml: %w", err)
+	}
+
+	// Convert inputs to ChannelConfig slice
+	var channels []ChannelConfig
+	for name, input := range devenvConfig.Inputs {
+		// Skip non-nixpkgs inputs
+		if !strings.Contains(input.URL, "nixpkgs") {
+			continue
+		}
+
+		description := generateChannelDescription(name, input.URL)
+		channels = append(channels, ChannelConfig{
+			Name:        name,
+			URL:         input.URL,
+			Description: description,
+		})
+	}
+
+	// Sort channels by name for consistent output
+	sort.Slice(channels, func(i, j int) bool {
+		return channels[i].Name < channels[j].Name
+	})
+
+	return channels, nil
+}
+
+// generateChannelDescription creates a user-friendly description for a channel
+func generateChannelDescription(name, url string) string {
+	switch {
+	case strings.Contains(url, "nixpkgs-unstable"):
+		return "Latest unstable packages"
+	case strings.Contains(url, "nixos-"):
+		// Extract version from URL like "github:NixOS/nixpkgs/nixos-24.05"
+		parts := strings.Split(url, "/")
+		if len(parts) >= 3 {
+			version := strings.TrimPrefix(parts[len(parts)-1], "nixos-")
+			return fmt.Sprintf("Stable packages (%s)", version)
+		}
+		return "Stable packages"
+	case name == "nixpkgs":
+		return "Default nixpkgs channel"
+	default:
+		return "Custom nixpkgs channel"
+	}
+}
+
+// GetChannelUsage returns which packages are using each channel
+func GetChannelUsage() (map[string][]string, error) {
+	// This is a placeholder for future implementation
+	// Would need to parse devenv.nix and track which packages use which channels
+	return map[string][]string{}, nil
 }

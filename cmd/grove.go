@@ -37,6 +37,7 @@ func init() {
 	GroveCmd.AddCommand(groveStatusCmd)
 	GroveCmd.AddCommand(groveSearchCmd)
 	GroveCmd.AddCommand(groveContainerCmd)
+	GroveCmd.AddCommand(groveChannelCmd)
 }
 
 // Helper functions for testing
