@@ -17,23 +17,45 @@ To see the status of your current environment:
 kanuka grove status
 ```
 
-This shows you:
-- Whether your environment is properly configured.
-- Which packages are available.
-- Any configuration issues or warnings.
-- AWS authentication status (if applicable).
+This shows you detailed information about your Grove environment including project details, managed packages, environment health, and helpful diagnostics.
 
 ## Understanding status output
 
-The status command typically shows:
+The status command shows a comprehensive overview like this:
 
 ```
-Environment: my-project
-Status: Ready
-Packages: 5 available
-Languages: 2 enabled
-AWS: Authenticated (expires in 2h 30m)
-Channels: Up to date
+═══ Kanuka Grove Status ═══
+
+Project Information
+   ✓ Grove project: my-project
+   → Project ID: b309d950...
+   → Location: /path/to/project
+
+Configuration Files
+   ✓ kanuka.toml
+   ✓ devenv.nix
+   ! .env (not found)
+
+Managed Items
+   ✓ Packages (2):
+     • nodejs_20
+     • python3
+   ! No managed languages
+
+Environment Health
+   ✓ Nix package manager
+   ✓ devenv (devenv 1.8.0 (aarch64-darwin))
+   ! AWS SSO (not configured)
+   → Configure: Configure AWS SSO in ~/.aws/config
+
+Container Support
+   ! Container support not initialized
+   → Initialize: kanuka grove container init
+   → Or use: kanuka grove init --containers
+
+Next Steps
+   → Enter environment: kanuka grove enter
+   → View managed items: kanuka grove list
 ```
 
 ## Status indicators
@@ -45,20 +67,15 @@ Grove status uses different indicators:
 - **Configuration error**: Issues with devenv.nix or kanuka.toml.
 - **Missing dependencies**: Required tools (Nix, devenv) not available.
 
-## Checking specific components
+## Compact status view
 
-You can check specific parts of your environment:
+For a shorter summary, you can use the compact flag:
 
 ```bash
-# Check only AWS authentication
-kanuka grove status --auth
-
-# Check only package availability
-kanuka grove status --packages
-
-# Check channel status
-kanuka grove status --channels
+kanuka grove status --compact
 ```
+
+This provides a condensed view of your environment status without the detailed breakdown.
 
 ## Troubleshooting with status
 

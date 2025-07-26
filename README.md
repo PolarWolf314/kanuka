@@ -208,7 +208,6 @@ project/
 ├── devenv.nix            # Development environment configuration
 ├── devenv.lock           # Lock file for reproducible builds
 ├── .devenv/              # Generated environment files
-└── .envrc                # Optional direnv integration
 ```
 
 ### Secrets Management Files

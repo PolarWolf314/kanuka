@@ -17,36 +17,33 @@ To see what's currently in your environment:
 kanuka grove list
 ```
 
-This shows you:
-- All packages you've added.
-- All language environments you've enabled.
-- Which channel each package comes from.
+This shows you all packages and languages currently managed by Kānuka in your development environment.
 
 ## Understanding the output
 
-The list output typically shows:
+The list output shows only items that were added through Kānuka commands:
 
 ```
-Packages:
-- nodejs_18 (from nixpkgs-unstable)
-- python3 (from nixpkgs-unstable)
-- git (from nixpkgs-unstable)
+✓ Kanuka-managed packages:
+  • nodejs_20
+  • python3
 
-Languages:
-- typescript (enabled)
-- rust (enabled)
+→ Run kanuka grove enter to use this environment
+→ Use kanuka grove remove <item> to remove items
 ```
+
+When you have no managed items, the command produces no output.
 
 ## Checking specific categories
 
-You can also check specific types of additions:
+You can filter the output to show specific types of items:
 
 ```bash
 # List only packages
-kanuka grove list --packages
+kanuka grove list --packages-only
 
 # List only languages
-kanuka grove list --languages
+kanuka grove list --languages-only
 ```
 
 ## Viewing detailed information
@@ -57,10 +54,7 @@ For more detailed information about your environment:
 kanuka grove list --verbose
 ```
 
-This might show additional details like:
-- Package versions.
-- Dependency information.
-- Configuration details.
+This shows additional details and logging information about the scanning process.
 
 ## Comparing with what's available
 

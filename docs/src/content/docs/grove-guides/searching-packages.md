@@ -6,7 +6,7 @@ description: A guide to discovering available packages for your Grove environmen
 With thousands of packages available in the Nix ecosystem, finding the right one can be challenging. Grove provides search functionality to help you discover what's available.
 
 :::tip
-Grove searches the entire nixpkgs repository, which contains over 100,000 packages including programming languages, development tools, databases, and more!
+Grove searches the entire nixpkgs repository, which contains over 100,000 packages including programming languages, development tools, databases, and more! You can also browse packages online at [NixOS Package Search](https://search.nixos.org/packages).
 :::
 
 ## Searching for packages
@@ -19,7 +19,7 @@ kanuka grove search python
 kanuka grove search postgres
 ```
 
-This will show you all packages that match your search term, along with their descriptions.
+This will show you all packages that match your search term, along with their descriptions and versions.
 
 ## Search examples
 
@@ -46,25 +46,48 @@ kanuka grove search vim
 
 ## Understanding search results
 
-Search results typically show:
-- **Package name**: The exact name to use with `kanuka grove add`.
-- **Description**: What the package does.
-- **Version**: The current version available.
+Search results show packages in this format:
 
-## Finding the right package
+```
+✓ Search results for 'nodejs':
 
-When searching, you might find multiple related packages:
+nodejs_24 @ 24.4.1
+  Event-driven I/O framework for the V8 JavaScript engine
 
-```bash
-kanuka grove search node
-# Results might include:
-# - nodejs (latest Node.js)
-# - nodejs_18 (Node.js version 18)
-# - nodejs_16 (Node.js version 16)
-# - node2nix (tool for Node.js packages)
+nodejs_20 @ 20.19.4
+  Event-driven I/O framework for the V8 JavaScript engine
+
+nodejs-slim @ 22.17.0
+  Event-driven I/O framework for the V8 JavaScript engine
+
+→ Found 3 packages (use --details for more details)
+→ Add a package: kanuka grove add <package>
 ```
 
-Choose the one that best fits your needs. For most cases, the main package name (like `nodejs`) gives you the latest stable version.
+Each result shows:
+- **Package name**: The exact name to use with `kanuka grove add`.
+- **Version**: The current version available (after @).
+- **Description**: What the package does.
+
+## Advanced search options
+
+You can use additional flags to refine your search:
+
+```bash
+# Limit the number of results
+kanuka grove search python --max-results 5
+
+# Search by exact package name
+kanuka grove search --name python3
+
+# Search for packages providing a specific program
+kanuka grove search --program node
+
+# Get detailed information including programs and homepage
+kanuka grove search --name python3 --details
+```
+
+The `--details` flag shows additional information like available programs and homepage URLs.
 
 ## What if you can't find a package?
 

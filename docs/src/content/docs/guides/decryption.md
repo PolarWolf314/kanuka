@@ -26,8 +26,7 @@ That's it! Kānuka will automatically decrypt the files, and return the original
 
 ## Next steps
 
-To learn more about `kanuka secrets decrypt`, see the [secrets decryption
-page]() and the [command reference]().
+To learn more about `kanuka secrets decrypt`, see the [encryption concepts](/concepts/encryption) and the [command reference](/reference/references).
 
 Or, continue reading to learn how to gain access to a project's secrets which
 are managed by Kānuka.

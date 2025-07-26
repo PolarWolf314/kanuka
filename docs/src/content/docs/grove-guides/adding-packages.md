@@ -5,6 +5,8 @@ description: A guide to adding tools and languages to your Grove environment usi
 
 Adding packages to your Grove environment is really simple. You get access to thousands of packages from the Nix ecosystem without any of the usual dependency headaches.
 
+You can search for available packages at [NixOS Package Search](https://search.nixos.org/packages).
+
 :::tip
 Grove automatically handles all dependencies for you. When you add Node.js, you automatically get npm, all required system libraries, and proper environment variables - no manual setup required!
 :::
@@ -14,14 +16,26 @@ Grove automatically handles all dependencies for you. When you add Node.js, you 
 As long as your project has been [initialized](/grove-guides/environment-init), you can add any package you need:
 
 ```bash
-kanuka grove add nodejs
+kanuka grove add nodejs_20
 kanuka grove add python3
 kanuka grove add git
 kanuka grove add docker
 kanuka grove add awscli2
 ```
 
-That's it! Kānuka will add these packages to your environment and update your configuration files automatically.
+When you add a package successfully, you'll see output like:
+
+```
+✓ Added pkgs.python3 to devenv.nix
+→ Run kanuka grove enter to start using python3 (High-level dynamically-typed programming language)
+```
+
+If you try to add a package that's already managed by Kānuka:
+
+```
+! Package 'pkgs.nodejs_20' already managed by Kanuka
+→ Use kanuka grove remove nodejs_20 first to replace it
+```
 
 ## Adding specific versions
 

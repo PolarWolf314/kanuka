@@ -7,7 +7,7 @@ Grove solves the "it works on my machine" problem by creating development enviro
 
 ## How Grove creates environments
 
-Grove uses the Nix ecosystem and devenv to create completely isolated development environments. When you run `kanuka grove init`, several things happen:
+Grove uses the [Nix ecosystem](https://nixos.org/) and [devenv](https://devenv.sh/) to create completely isolated development environments. When you run `kanuka grove init`, several things happen:
 
 import { Steps } from '@astrojs/starlight/components';
 
@@ -23,7 +23,7 @@ import { Steps } from '@astrojs/starlight/components';
 ## The files Grove creates
 
 ### devenv.nix
-This is the heart of your development environment - a file written in the Nix language that defines all the packages, languages, and services your project needs:
+This is the heart of your development environment - a file written in the [Nix language](https://nixos.org/manual/nix/stable/language/) that defines all the packages, languages, and services your project needs ([devenv.nix reference](https://devenv.sh/reference/options/)):
 
 ```nix
 { pkgs, ... }: {
@@ -52,7 +52,7 @@ languages = ["typescript"]
 ```
 
 ### devenv.yaml
-This file tells devenv where to get packages from:
+This file tells devenv where to get packages from ([devenv inputs reference](https://devenv.sh/inputs/)):
 
 ```yaml
 inputs:

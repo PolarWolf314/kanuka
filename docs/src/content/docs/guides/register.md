@@ -69,8 +69,7 @@ features will come soon. In the meantime, if you have some good ideas, please
 
 ## Next steps
 
-To learn more about `kanuka secrets register`, see the [secrets register
-page]() and the [command reference]().
+To learn more about `kanuka secrets register`, see the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
 
 Or, continue reading to learn how to remove someone's access to a project's
 secrets.

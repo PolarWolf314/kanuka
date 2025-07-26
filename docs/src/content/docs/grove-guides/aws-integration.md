@@ -6,15 +6,15 @@ description: A guide to using AWS SSO authentication with your Grove development
 Grove can handle AWS authentication for you, making it easy to work with AWS services from your development environment without manually managing credentials.
 
 :::tip
-Grove's AWS integration uses AWS SSO, which is more secure than storing long-term credentials and automatically handles token refresh for you!
+Grove's AWS integration uses the official [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/) with no external dependencies. Authentication is session-only and always prompts for fresh credentials!
 :::
 
 ## Setting up AWS SSO
 
 Before using Grove's AWS integration, you'll need AWS SSO configured:
 
-1. **Configure AWS CLI**: Make sure you have AWS CLI v2 installed and configured.
-2. **Set up SSO**: Configure your AWS SSO settings in `~/.aws/config`.
+1. **Configure AWS CLI**: Make sure you have [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed and configured.
+2. **Set up SSO**: Configure your AWS SSO settings in `~/.aws/config` ([AWS SSO configuration guide](https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile-token.html)).
 3. **Test authentication**: Verify you can authenticate with `aws sso login`.
 
 Your `~/.aws/config` should look something like:
@@ -43,20 +43,6 @@ This will:
 - Set up AWS credentials for your session.
 - Show authentication status and expiration time.
 
-## Checking AWS authentication status
-
-You can check your AWS authentication status:
-
-```bash
-kanuka grove status --auth
-```
-
-This shows:
-
-- Whether you're currently authenticated.
-- When your credentials expire.
-- Which AWS account and role you're using.
-
 ## Re-authenticating when credentials expire
 
 When your AWS credentials expire, you can re-authenticate:
@@ -80,17 +66,14 @@ aws ec2 describe-instances
 aws lambda list-functions
 ```
 
-## Multiple AWS profiles
+## Session-only authentication
 
-If you have multiple AWS profiles, you can specify which one to use:
+Grove's AWS authentication is session-only, meaning:
 
-```bash
-# Set the profile before entering
-export AWS_PROFILE=production
-kanuka grove enter --auth
-
-# Or configure it in your environment
-```
+- You'll always be prompted to authenticate when using `--auth`.
+- Authentication only lasts for the current shell session.
+- Environment variables are cleared when entering the Grove shell.
+- No persistent credentials are stored.
 
 ## Troubleshooting AWS integration
 
@@ -118,4 +101,3 @@ Grove's AWS integration:
 To learn more about Grove's AWS integration, see the [development environments concepts](/concepts/grove-environments) and the [command reference](/reference/references).
 
 Or, continue reading to learn about other Kānuka features.
-

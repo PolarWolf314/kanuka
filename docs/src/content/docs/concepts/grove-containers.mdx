@@ -7,14 +7,14 @@ Grove can build containers directly from your development environment, ensuring 
 
 ## How Grove builds containers
 
-Grove uses a tool called nix2container to build efficient, reproducible containers from your development environment. When you run `kanuka grove container build`, several things happen:
+Grove uses a tool called [nix2container](https://github.com/nlewo/nix2container) to build efficient, reproducible containers from your development environment. When you run `kanuka grove container build`, several things happen:
 
 import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
 
 1. Grove reads your `devenv.nix` configuration to understand your environment.
-2. Grove uses nix2container to create an OCI (Open Container Initiative) container.
+2. Grove uses nix2container to create an [OCI (Open Container Initiative)](https://opencontainers.org/) container.
 3. Grove includes all your packages and their dependencies in the container.
 4. Grove creates a minimal container image with only what's needed.
 

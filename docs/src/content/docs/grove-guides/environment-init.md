@@ -5,6 +5,10 @@ description: A guide to initializing a development environment using Kānuka Gro
 
 You'll need Nix and devenv installed first. If you don't have them, check out the [installation guide](/getting-started/installation).
 
+For more information about these tools, see:
+- [Nix Package Manager](https://nixos.org/manual/nix/stable/)
+- [devenv Documentation](https://devenv.sh/getting-started/)
+
 :::tip
 Grove solves the "it works on my machine" problem by creating development environments that work exactly the same way on every computer, every time. No more spending hours setting up dependencies!
 :::
@@ -18,8 +22,8 @@ kanuka grove init
 ```
 
 That's it! Kānuka will create everything you need:
-- `devenv.nix` - where your environment is defined.
-- `devenv.yaml` - configuration for devenv.
+- `devenv.nix` - where your environment is defined ([devenv.nix reference](https://devenv.sh/reference/options/)).
+- `devenv.yaml` - configuration for devenv ([devenv.yaml reference](https://devenv.sh/inputs/)).
 - `kanuka.toml` - Kānuka's own configuration file.
 - Updates your `.gitignore` so you don't commit the wrong files.
 
