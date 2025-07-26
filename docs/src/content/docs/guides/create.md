@@ -39,8 +39,7 @@ kanuka secrets register --user {your_username}
 ```
 
 For more information about granting secrets to others, feel free to read the
-[guide on registering secrets](/guides/register), or read the [secrets register
-page]() and the [command reference]().
+[guide on registering secrets](/guides/register), or read the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
 
 :::caution[Note]
 We are aware of some rough edges around UX. For example, what if two people
@@ -51,8 +50,7 @@ features will come soon. In the meantime, if you have some good ideas, please
 
 ## Next steps
 
-To learn more about `kanuka secrets create`, see the [secrets create
-page]() and the [command reference]().
+To learn more about `kanuka secrets create`, see the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
 
 Or, continue reading to learn how to give access to a project's secrets which
 are managed by Kānuka.

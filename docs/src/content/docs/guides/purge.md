@@ -28,7 +28,6 @@ of any references to Kānuka.
 
 ## Next steps
 
-To learn more about `kanuka secrets purge`, see the [secrets purge
-page]() and the [command reference]().
+To learn more about `kanuka secrets purge`, see the [purge concepts](/concepts/purge) and the [command reference](/reference/references).
 
 Or, continue reading to learn core concepts on how Kānuka works.
