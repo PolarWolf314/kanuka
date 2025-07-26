@@ -1,143 +1,281 @@
-# Kānuka CLI Tool
+# Kānuka
 
-Kānuka is a CLI tool written in Go. It makes sharing secrets, creating
-development environments, deploying code, and testing, unified under one robust
-and simple interface. Never again will you need to ask another developer to send
-you their `.env` file, or what tools need to be installed on your system in
-order to start developing.
+Kānuka is a powerful command-line tool written in Go for managing development environments and secrets in your projects. It provides a unified interface for package management using the Nix ecosystem, container management, and secure secrets handling.
 
-## What’s with the name?
+## Documentation
 
-Kānuka (<i>Kunzea ericoides</i>) is a tree that is endemic to Aotearoa New
-Zealand. It is a robust species, critical to restoring wildlife destroyed by
-fire as it quickly propagates and regenerates the land. Its leaves have a
-characteristically soft touch, and it’s one of few plants that can survive the
-heat of geothermal features.
+**For complete documentation, examples, and guides, visit our [official documentation site](https://kanuka.guo.nz).**
+
+The documentation includes:
+
+- Detailed installation guides
+- Step-by-step tutorials
+- Configuration examples
+- Best practices
+- API reference
+
+## What's with the name?
+
+Kānuka (_Kunzea ericoides_) is a tree that is endemic to Aotearoa New Zealand. It is a robust species, critical to restoring wildlife destroyed by fire as it quickly propagates and regenerates the land. Its leaves have a characteristically soft touch, and it's one of few plants that can survive the heat of geothermal features.
 
 It is fast, resilient, yet pleasant to touch. This is the vision of Kānuka.
 
-## Feature roadmap
+## Features
 
-All features should be driven with the idea that things should be _fast_,
-_robust/secure_, and _easy to use_. There are many common pain points with
-developers. Kānuka wants to tackle the following:
+### Grove (Development Environment Management)
 
-1. It isn’t easy to share a `.env` file. A developer could make a change on one
-   machine, and by its very nature, that change will **not** reflect on another
-   developer’s machine. Without third party services, it also becomes taxing for
-   a developer to share secrets. Let’s be honest. Who hasn’t sent an API key
-   over a messaging service?
+- **Package Management**: Add, remove, and search for packages using the Nix ecosystem
+- **Development Shell**: Enter reproducible development environments with `devenv.nix`
+- **Channel Management**: Manage nixpkgs channels for different package versions
+- **Container Support**: Build and manage OCI containers from your development environment
+- **Environment Status**: Monitor your development environment configuration
 
-2. Developers can use a package manager, but what if a project now depends on
-   something that isn’t explicitly a part of the source code? For example, you
-   might have a Python project, but that depends on a developer to have Docker
-   installed in order to run tests properly. Docker can’t be defined in a Python
-   lockfile. But what if it didn’t need to be? What if you ran `kanuka shell`,
-   knowing with full confidence that no matter what machine your developer has,
-   you have the exact same environment down to the operating system?
+### Secrets Management
 
-3. One project, you might need to run `pytest`, and another, you might need to
-   run `npx jest` or `jest` (depending on the developer’s machine), and on yet
-   another, `gradle test` or `mvn test`. Some tests need special configuration,
-   such as setting a Python path before running the test. Sometimes you need to
-   call your package manager before you run the test. It is different every
-   time. But what if this was unified under one simple `kanuka test`?
+- **Secure Secret Management**: Store and encrypt environment variables using industry-standard encryption (AES-256 and RSA-2048)
+- **Team Collaboration**: Register and manage team member access to shared secrets
+- **User-friendly Interface**: Simple commands for managing secrets across your team
 
-4. While infrastructure-as-code paradigms have certainly simplified deployment,
-   and made the entire process reproducible, running the environment still often
-   requires installing packages that are separate to the source code of your
-   project. What if we just had `kanuka deploy@development`,
-   `kanuka deploy@staging`, and `kanuka deploy@production`, with all the secrets
-   and configuration handled for you?
+### General
 
-These points are ordered in priority. Therefore, at this stage of the project,
-the first goal is to achieve feature &nbsp;1.
+- **Cross-platform Support**: Works on Linux, macOS, and Windows
+- **Shell Autocompletion**: Supports bash, zsh, fish, and PowerShell
+- **Unified Interface**: Single tool for both development environment and secrets management
 
-### Secrets management
+## Prerequisites
 
-The idea of secrets management is this: Encrypt an `.env` file using a symmetric
-key, and then have the symmetric key encrypted with a public&ndash;private key pair.
-The new `.env.kanuka` and the `{users_key}.kanuka` should be committed with the
-project. For example:
+- Go 1.21 or later (for building from source)
+- Git (for version control)
+- Nix package manager (for Grove development environment features)
+- Docker (optional, for container management features)
+
+## Installation
+
+### Using Go
+
+The recommended way to install Kānuka is using Go:
 
 ```bash
-root
-├─ env.kanuka
-├─ .kanuka/secrets/
-│  ├─ user_1.kanuka
-│  ├─ user_2.kanuka
-│  └─ user_3.kanuka
-├─ src/
-└─ ...
+go install github.com/PolarWolf314/kanuka@latest
 ```
 
-- [ ] Decide whether there should be an owner/worker structure with the key
-      distribution, or a flat encryption structure where anybody with decrypt
-      access can add another user.
+Make sure your Go binaries directory is in your PATH:
 
-- [ ] Search the project for all `*.env*` files, and encrypt them automatically
-      with a `kanuka secrets encrypt` command, and `kanuka secrets decrypt` for
-      the reverse process.
+- **Linux**: Add `export PATH=$HOME/go/bin:$PATH` to your `~/.bashrc`
+- **macOS**: Add `export PATH=$HOME/go/bin:$PATH` to your `~/.zshrc`
+- **Windows**: Add `%USERPROFILE%\go\bin` to your user environment variables
 
-- [ ] Functionality to create and add another user’s encrypted symmetric key
-      with
-      `kanuka secrets add --file {path_to_pubkey_file} --username {username}`
-      (or decide on having just randomised encrypted key names).
+### Using GitHub Releases
 
-- [ ] Have a `kanuka secrets init`, which automatically generates a
-      public&ndash;private key pair for you in a `~/.kanuka/keys/` directory,
-      and then gives instructions for how to get your encrypted symmetric key
-      into the repo. If you are the first user to run the `init` command, then
-      automatically generate the encrypted symmetric key and encrypt all
-      discovered `*.env*` files.
+You can also download pre-built binaries from the [GitHub Releases page](https://github.com/PolarWolf314/kanuka/releases).
 
-- [ ] Have a `kanuka secrets remove` command, which will remove your own key
-      from the repo and your `~/.kanuka/keys/` directory.
+## Quick Start
 
-- [ ] Have a `kanuka secrets purge` command, which will delete every single key
-      in the git history (in the event that someone’s private key got leaked).
+### Getting Started with Grove (Development Environment)
 
-- [ ] Have a `.kanuka_settings.yaml` which will define any specialties, such as
-      globs for what files to encrypt, or the default encryption algorithm.
+1. **Check Installation**:
 
-### Shell management
+   ```bash
+   kanuka
+   ```
 
-TBD.
+2. **Initialize a Development Environment**:
 
-### Testing management
+   ```bash
+   kanuka grove init
+   ```
 
-TBD.
+3. **Add Packages to Your Environment**:
 
-### Deployment management
+   ```bash
+   kanuka grove add nodejs python3
+   ```
 
-TBD.
+4. **Enter the Development Shell**:
 
-## Project setup
+   ```bash
+   kanuka grove enter
+   # or use the shorthand alias:
+   kanuka dev
+   ```
 
-To get started, you must have Go&nbsp;1.23 or newer installed. To build the
-project, run the following command:
+5. **Check Environment Status**:
+   ```bash
+   kanuka grove status
+   ```
 
-```bash
-# Installs missing packages, removes unused packages
-go mod tidy
+### Getting Started with Secrets Management
+
+1. **Initialize Secrets Store**:
+
+   ```bash
+   kanuka secrets init
+   ```
+
+2. **Create Your Encryption Keys**:
+
+   ```bash
+   kanuka secrets create
+   ```
+
+3. **Encrypt Your Secrets**:
+
+   ```bash
+   kanuka secrets encrypt
+   ```
+
+4. **Register a Team Member**:
+   ```bash
+   kanuka secrets register --user username
+   ```
+
+## Commands
+
+### Grove Commands (Development Environment)
+
+- `kanuka grove init`: Initialize a development environment with devenv.nix
+- `kanuka grove add <package>`: Add a package to the development environment
+- `kanuka grove remove <package>`: Remove a package from the development environment
+- `kanuka grove list`: Show all Kanuka-managed packages and languages
+- `kanuka grove search <query>`: Search nixpkgs for packages
+- `kanuka grove enter`: Enter the development shell environment
+- `kanuka grove status`: Show development environment status
+- `kanuka dev`: Shorthand alias for `kanuka grove enter`
+
+#### Channel Management
+
+- `kanuka grove channel list`: Show all configured nixpkgs channels
+- `kanuka grove channel add <name> <url>`: Add a new nixpkgs channel
+- `kanuka grove channel remove <name>`: Remove a nixpkgs channel
+- `kanuka grove channel show <name>`: Show detailed information about a channel
+- `kanuka grove channel pin <name> <commit>`: Pin a channel to a specific commit
+- `kanuka grove channel update`: Update channels to their latest versions
+
+#### Container Management
+
+- `kanuka grove container init`: Initialize container support
+- `kanuka grove container build`: Build OCI container from Grove environment
+- `kanuka grove container sync`: Sync container from Nix store to Docker daemon
+- `kanuka grove container enter`: Enter container interactively
+
+### Secrets Commands
+
+- `kanuka secrets init`: Initialize a new secrets store
+- `kanuka secrets create`: Create new encryption keys
+- `kanuka secrets encrypt`: Encrypt .env files
+- `kanuka secrets decrypt`: Decrypt .kanuka files
+- `kanuka secrets register --user <username>`: Register a new user
+- `kanuka secrets remove --user <username>`: Remove a user
+- `kanuka secrets purge`: Purge all secrets
+
+### General Commands
+
+- `kanuka completion <shell>`: Generate autocompletion script for your shell
+- `kanuka --help`: Show help information
+- `kanuka <command> --help`: Show help for a specific command
+
+## How It Works
+
+### Grove (Development Environment)
+
+Kānuka Grove leverages the Nix ecosystem and devenv to provide reproducible development environments:
+
+1. **Environment Definition**: Uses `devenv.nix` to declaratively define your development environment
+2. **Package Management**: Integrates with nixpkgs to provide access to thousands of packages
+3. **Reproducibility**: Ensures consistent environments across different machines and team members
+4. **Container Generation**: Can build OCI containers from your development environment for deployment
+5. **Channel Management**: Allows using different versions of nixpkgs for specific package requirements
+
+### Secrets Management
+
+Kānuka uses a hybrid encryption approach for secure secrets management:
+
+1. A symmetric AES-256 key is used to encrypt your project secrets
+2. Each user's RSA-2048 key pair is used to encrypt/decrypt the symmetric key
+3. Public keys are stored in the project repository
+4. Private keys are stored securely on each user's machine
+
+This approach allows team members to securely share the same secrets without exposing sensitive information.
+
+## Project Structure
+
+### Grove Environment Files
+
+When using Grove, Kānuka creates and manages these files in your project:
+
+```
+project/
+├── devenv.nix            # Development environment configuration
+├── devenv.lock           # Lock file for reproducible builds
+├── .devenv/              # Generated environment files
+└── .envrc                # Optional direnv integration
 ```
 
-To test your changes, ensure that `$GOBIN` is in your `PATH` by adding this line
-to your `.bashrc` or `.zshrc` (or whatever other interpreter you use):
+### Secrets Management Files
 
-```bash
-export PATH=$PATH:$(go env GOPATH)/bin
+Kānuka stores secrets-related files in a `.kanuka` folder at the root of your project:
+
+```
+project/
+├── .env                  # Your secrets (should be in .gitignore)
+├── .env.kanuka           # Your secrets, encrypted by Kānuka
+└── .kanuka/
+    ├── public_keys/
+    │   ├── user_1.pub    # Public keys for each user
+    │   └── user_2.pub
+    └── secrets/
+        ├── user_1.kanuka # Encrypted symmetric key for each user
+        └── user_2.kanuka
 ```
 
-To build the package, run this from the project root:
+### User Data Storage
+
+User-specific private keys are stored in your system's data directory:
+
+- Linux/macOS: `~/.local/share/kanuka/keys/`
+- Windows: `%APPDATA%\kanuka\keys\`
+
+## Building from Source
+
+To build Kānuka from source:
 
 ```bash
-# builds the binary and places it in your $GOBIN
-go install
-# run the binary
-kanuka
+# Clone the repository
+git clone https://github.com/PolarWolf314/kanuka.git
+cd kanuka
 
-# alternatively, if you’d rather the binary be local
-go build
+# Build the binary
+go build -o kanuka
+
+# Run the binary
 ./kanuka
 ```
+
+## Running Tests
+
+```bash
+# Run all tests
+go test ./test/...
+
+# Run tests with verbose output
+go test -v ./test/...
+
+# Run specific command categories
+go test ./test/integration/init/...
+go test ./test/integration/create/...
+go test ./test/integration/register/...
+go test ./test/integration/encrypt/...
+go test ./test/integration/decrypt/...
+```
+
+## Shell Autocompletion
+
+Kānuka supports shell autocompletion for bash, zsh, fish, and PowerShell. Run `kanuka completion [shell]` to generate the appropriate completion script.
+
+## Contributing
+
+Contributions are welcome! Feel free to submit issues or pull requests.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

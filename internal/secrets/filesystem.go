@@ -3,10 +3,11 @@ package secrets
 import (
 	"fmt"
 	"io/fs"
-	"kanuka/internal/configs"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
 // EnsureUserSettings ensures that the user's Kanuka data and config directory exists.

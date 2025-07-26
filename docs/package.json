@@ -1,0 +1,17 @@
+{
+  "name": "docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.34.3",
+    "astro": "^5.9.1"
+  },
+  "packageManager": "pnpm@10.11.1+sha256.211e9990148495c9fc30b7e58396f7eeda83d9243eb75407ea4f8650fb161f7c"
+}
