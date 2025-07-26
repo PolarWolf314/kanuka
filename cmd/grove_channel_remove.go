@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/grove"
@@ -126,50 +124,7 @@ func handleChannelRemoval(channelName string, spinner *spinner.Spinner) error {
 	return nil
 }
 
-// isProtectedChannel checks if a channel is protected from removal
-func isProtectedChannel(channelName string) bool {
-	protectedChannels := map[string]bool{
-		"nixpkgs":        true,
-		"nixpkgs-stable": true,
-	}
-	return protectedChannels[channelName]
-}
-
-// getPackagesUsingChannel returns a list of packages that are using the specified channel
-func getPackagesUsingChannel(channelName string) ([]string, error) {
-	// Get the expected package prefix for this channel
-	var packagePrefix string
-	if channelName == "nixpkgs" {
-		packagePrefix = "pkgs."
-	} else {
-		// Convert channel name to package prefix (e.g., "custom-elm" -> "pkgs-custom_elm.")
-		packagePrefix = "pkgs-" + strings.ReplaceAll(channelName, "-", "_") + "."
-	}
-
-	// Get all Kanuka-managed packages (if devenv.nix exists)
-	packages, err := grove.GetKanukaManagedPackages()
-	if err != nil {
-		// If devenv.nix doesn't exist, no packages are using any channels
-		if os.IsNotExist(err) {
-			return []string{}, nil
-		}
-		return nil, fmt.Errorf("failed to get managed packages: %w", err)
-	}
-
-	var usingChannel []string
-	for _, pkg := range packages {
-		if strings.HasPrefix(pkg, packagePrefix) {
-			// Extract package name from full nix name (e.g., "pkgs-custom_elm.elm" -> "elm")
-			parts := strings.Split(pkg, ".")
-			if len(parts) >= 2 {
-				packageName := parts[len(parts)-1]
-				usingChannel = append(usingChannel, packageName)
-			}
-		}
-	}
-
-	return usingChannel, nil
-}
+// Functions moved to grove_channel_helpers.go for deduplication
 
 // cleanupChannelImports removes unused channel imports from devenv.nix let block
 func cleanupChannelImports(channelName string) error {

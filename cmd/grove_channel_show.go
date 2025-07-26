@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/grove"
@@ -80,7 +79,7 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 
 	// Get packages using this channel
 	GroveLogger.Debugf("Getting packages using channel: %s", channelName)
-	packagesUsingChannel, err := getPackagesUsingChannelForShow(channelName)
+	packagesUsingChannel, err := getPackagesUsingChannel(channelName)
 	if err != nil {
 		return GroveLogger.ErrorfAndReturn("Failed to check channel usage: %v", err)
 	}
@@ -143,7 +142,7 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 	} else {
 		output.WriteString(color.GreenString("✓ No packages currently using this channel\n"))
 		// Only show removal message for non-protected channels
-		if !isProtectedChannelForShow(channelName) {
+		if !isProtectedChannel(channelName) {
 			output.WriteString(color.CyanString("→ Channel can be safely removed if no longer needed\n"))
 		} else {
 			output.WriteString(color.YellowString("→ This is a protected channel required for Grove functionality\n"))
@@ -168,71 +167,4 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 	return nil
 }
 
-// getOfficialChannelMetadata attempts to get additional metadata for official nixpkgs channels
-func getOfficialChannelMetadata(url string) (commitInfo, lastUpdated, status string) {
-	// For now, return basic status - this could be enhanced later with GitHub API calls
-	status = checkURLAccessibility(url)
-	
-	// Placeholder for future enhancements
-	// TODO: Implement GitHub API calls to get:
-	// - Latest commit hash and message
-	// - Last updated timestamp
-	// - Branch/tag information
-	
-	return "", "", status
-}
-
-// checkURLAccessibility checks if a channel URL is accessible
-func checkURLAccessibility(url string) string {
-	// For now, just return a basic status
-	// TODO: Implement actual URL/Git accessibility checking
-	if strings.Contains(url, "github.com") || strings.Contains(url, "github:") {
-		return color.GreenString("✓") + " URL format valid"
-	}
-	return color.YellowString("?") + " Custom URL (not validated)"
-}
-
-// isProtectedChannelForShow checks if a channel is protected from removal
-func isProtectedChannelForShow(channelName string) bool {
-	protectedChannels := map[string]bool{
-		"nixpkgs":        true,
-		"nixpkgs-stable": true,
-	}
-	return protectedChannels[channelName]
-}
-
-// getPackagesUsingChannelForShow returns a list of packages that are using the specified channel
-func getPackagesUsingChannelForShow(channelName string) ([]string, error) {
-	// Get the expected package prefix for this channel
-	var packagePrefix string
-	if channelName == "nixpkgs" {
-		packagePrefix = "pkgs."
-	} else {
-		// Convert channel name to package prefix (e.g., "custom-elm" -> "pkgs-custom_elm.")
-		packagePrefix = "pkgs-" + strings.ReplaceAll(channelName, "-", "_") + "."
-	}
-
-	// Get all Kanuka-managed packages (if devenv.nix exists)
-	packages, err := grove.GetKanukaManagedPackages()
-	if err != nil {
-		// If devenv.nix doesn't exist, no packages are using any channels
-		if os.IsNotExist(err) {
-			return []string{}, nil
-		}
-		return nil, fmt.Errorf("failed to get managed packages: %w", err)
-	}
-
-	var usingChannel []string
-	for _, pkg := range packages {
-		if strings.HasPrefix(pkg, packagePrefix) {
-			// Extract package name from full nix name (e.g., "pkgs-custom_elm.elm" -> "elm")
-			parts := strings.Split(pkg, ".")
-			if len(parts) >= 2 {
-				packageName := parts[len(parts)-1]
-				usingChannel = append(usingChannel, packageName)
-			}
-		}
-	}
-
-	return usingChannel, nil
-}
+// Functions moved to grove_channel_helpers.go for deduplication
