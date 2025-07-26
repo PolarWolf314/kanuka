@@ -1,11 +1,13 @@
 # Implementation Plan for `kanuka grove channel`
 
 ## Overview
+
 Implement the complete channel management command suite to allow users to manage nixpkgs channels in their Grove environments. This will complete the Grove feature set by providing advanced channel management capabilities.
 
 ## Command Structure Design
 
 ### Main Channel Command
+
 ```go
 // cmd/grove_channel.go
 var groveChannelCmd = &cobra.Command{
@@ -27,7 +29,9 @@ var groveChannelCmd = &cobra.Command{
 ## Technical Implementation Strategy
 
 ### 1. Data Storage Approach
+
 **Store channel configuration in `devenv.yaml`** (following devenv patterns):
+
 ```yaml
 # devenv.yaml
 inputs:
@@ -59,7 +63,9 @@ func ValidateChannelURL(url string) error
 ```
 
 ### 3. devenv.yaml Integration
+
 Extend existing `internal/grove/filesystem.go` functions:
+
 ```go
 func UpdateDevenvYamlChannels(channels []ChannelConfig) error
 func GetChannelsFromDevenvYaml() ([]ChannelConfig, error)
@@ -68,13 +74,16 @@ func GetChannelsFromDevenvYaml() ([]ChannelConfig, error)
 ## Implementation Order & Priority
 
 ### Phase 1: Foundation (High Priority) ✅ IMPLEMENTING NOW
+
 1. **`grove channel list`** - Essential for discovering current state
    - Read from `devenv.yaml` inputs section
    - Display in user-friendly format with status indicators
    - Show which channel is currently used for packages
 
-### Phase 2: Basic Management (High Priority)  
+### Phase 2: Basic Management (High Priority)
+
 2. **`grove channel add`** - Core functionality
+
    - Validate URL format (github:owner/repo/branch pattern)
    - Check if channel name already exists
    - Update `devenv.yaml` inputs section
@@ -86,7 +95,9 @@ func GetChannelsFromDevenvYaml() ([]ChannelConfig, error)
    - Update `devenv.yaml`
 
 ### Phase 3: Advanced Features (Medium Priority)
+
 4. **`grove channel show`** - Detailed information
+
    - Show URL, current commit, last updated
    - List packages using this channel
    - Show channel health/accessibility
@@ -97,6 +108,7 @@ func GetChannelsFromDevenvYaml() ([]ChannelConfig, error)
    - Update `devenv.yaml` with pinned reference
 
 ### Phase 4: Maintenance (Lower Priority)
+
 6. **`grove channel update`** - Keep channels current
    - Fetch latest commit for unpinned channels
    - Update `devenv.yaml` references
@@ -122,14 +134,16 @@ internal/grove/
 ## User Experience Design
 
 ### Success Messages (Following Kanuka Style)
+
 ```bash
 kanuka grove channel add stable-custom github:MyOrg/nixpkgs/stable
 # ✓ Added channel 'stable-custom'
-# → Channel: github:MyOrg/nixpkgs/stable  
+# → Channel: github:MyOrg/nixpkgs/stable
 # → Use: kanuka grove add nodejs --channel stable-custom
 ```
 
 ### Error Handling
+
 ```bash
 kanuka grove channel add existing-name github:other/repo
 # ✗ Channel 'existing-name' already exists
@@ -138,6 +152,7 @@ kanuka grove channel add existing-name github:other/repo
 ```
 
 ### Integration with Existing Commands
+
 - **`grove add --channel <name>`** - Use custom channels
 - **`grove status`** - Show channel information in environment status
 - **`grove list`** - Indicate which channel each package uses
@@ -145,11 +160,13 @@ kanuka grove channel add existing-name github:other/repo
 ## Validation & Safety
 
 ### Input Validation
+
 - Channel names: alphanumeric + hyphens only
 - URLs: Must follow `github:owner/repo/branch` or `github:owner/repo/commit-hash` format
 - Commits: Validate hash format and existence
 
 ### Safety Checks
+
 - Prevent removing channels that have packages depending on them
 - Warn when adding channels that might conflict
 - Validate channel accessibility before adding
@@ -158,16 +175,18 @@ kanuka grove channel add existing-name github:other/repo
 ## Testing Strategy
 
 ### Integration Tests
+
 ```go
 // test/integration/channel/
 channel_add_test.go           # Test adding channels
-channel_remove_test.go        # Test removing channels  
+channel_remove_test.go        # Test removing channels
 channel_list_test.go          # Test listing channels
 channel_pin_test.go           # Test pinning functionality
 channel_integration_test.go   # Test with grove add --channel
 ```
 
 ### Test Scenarios
+
 - Add/remove channels in clean environment
 - Handle existing `devenv.yaml` with custom inputs
 - Channel validation and error cases
@@ -177,11 +196,13 @@ channel_integration_test.go   # Test with grove add --channel
 ## Dependencies & Requirements
 
 ### External Dependencies
+
 - No new external dependencies required
 - Leverage existing YAML parsing in grove module
 - Use existing HTTP client for URL validation
 
 ### System Requirements
+
 - Same as existing Grove commands
 - Network access for channel validation
 - Git access for commit validation (optional enhancement)
@@ -189,11 +210,13 @@ channel_integration_test.go   # Test with grove add --channel
 ## Migration & Backward Compatibility
 
 ### Existing Projects
+
 - Existing `devenv.yaml` files will continue to work
 - New channel commands only add functionality
 - Default behavior unchanged for `grove add` without `--channel`
 
 ### Default Channels
+
 - `unstable` (current default) maps to `nixpkgs` input
 - `stable` maps to auto-detected stable channel
 - Custom channels use their explicit names
@@ -201,6 +224,7 @@ channel_integration_test.go   # Test with grove add --channel
 ## Implementation Status
 
 ### Phase 1: Foundation ✅ COMPLETE
+
 - [x] Channel data structures and types
 - [x] Basic channel reading from devenv.yaml
 - [x] Channel validation and error handling
@@ -211,15 +235,19 @@ channel_integration_test.go   # Test with grove add --channel
 - [x] Enhanced devenv.nix template with let blocks
 
 ### Phase 2: Basic Management 🚧 IN PROGRESS
+
 - [x] `grove channel list` command ✅ COMPLETE
 - [x] `grove channel add` command ✅ COMPLETE
-- [ ] `grove channel remove` command 🚧 IN PROGRESS
+- [x] `grove channel remove` command ✅ COMPLETE
 
 ### Phase 3: Advanced Features 📋 PLANNED
+
 - [ ] `grove channel show` command
 - [ ] `grove channel pin` command
 
 ### Phase 4: Maintenance 📋 PLANNED
+
 - [ ] `grove channel update` command
 
 This implementation plan provides a complete, user-friendly channel management system that integrates seamlessly with the existing Grove functionality while following Kanuka's design patterns and user experience guidelines.
+

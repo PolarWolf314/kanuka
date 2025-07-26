@@ -305,11 +305,6 @@ func ListChannels() ([]ChannelConfig, error) {
 	// Convert inputs to ChannelConfig slice
 	var channels []ChannelConfig
 	for name, input := range devenvConfig.Inputs {
-		// Skip non-nixpkgs inputs
-		if !strings.Contains(input.URL, "nixpkgs") {
-			continue
-		}
-
 		description := generateChannelDescription(name, input.URL)
 		channels = append(channels, ChannelConfig{
 			Name:        name,
@@ -341,8 +336,11 @@ func generateChannelDescription(name, url string) string {
 		return "Stable packages"
 	case name == "nixpkgs":
 		return "Default nixpkgs channel"
-	default:
+	case strings.Contains(url, "nixpkgs"):
 		return "Custom nixpkgs channel"
+	default:
+		// For completely custom channels that don't contain "nixpkgs"
+		return "Custom package channel"
 	}
 }
 
