@@ -34,12 +34,11 @@ export default defineConfig({
         {
           label: "Grove (Development Environments)",
           items: [
-            "grove/introduction",
-            "grove/getting-started",
-            "grove/development-environments",
-            "grove/package-management",
-            "grove/channels",
-            "grove/containers",
+            "grove-guides/environment-init",
+            "grove-guides/adding-packages",
+            "grove-guides/entering-environment",
+            "grove-guides/managing-channels",
+            "grove-guides/building-containers",
           ],
         },
         {
@@ -61,6 +60,10 @@ export default defineConfig({
             "concepts/encryption",
             "concepts/registration",
             "concepts/purge",
+            "concepts/grove-environments",
+            "concepts/grove-packages",
+            "concepts/grove-channels",
+            "concepts/grove-containers",
           ],
         },
         {
