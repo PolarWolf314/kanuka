@@ -29,19 +29,19 @@ type ChannelInfo struct {
 	Description string
 }
 
-// ChannelConfig represents a channel configuration from devenv.yaml
+// ChannelConfig represents a channel configuration from devenv.yaml.
 type ChannelConfig struct {
 	Name        string `yaml:"name"`
 	URL         string `yaml:"url"`
 	Description string `yaml:"description,omitempty"`
 }
 
-// DevenvYamlInputs represents the inputs section of devenv.yaml
+// DevenvYamlInputs represents the inputs section of devenv.yaml.
 type DevenvYamlInputs struct {
 	URL string `yaml:"url"`
 }
 
-// DevenvYaml represents the structure of devenv.yaml
+// DevenvYaml represents the structure of devenv.yaml.
 type DevenvYaml struct {
 	Inputs      map[string]DevenvYamlInputs `yaml:"inputs"`
 	AllowUnfree bool                        `yaml:"allowUnfree,omitempty"`
@@ -277,7 +277,7 @@ func GetDefaultChannels() map[string]ChannelInfo {
 	}
 }
 
-// ListChannels returns all channels configured in devenv.yaml
+// ListChannels returns all channels configured in devenv.yaml.
 func ListChannels() ([]ChannelConfig, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -321,7 +321,7 @@ func ListChannels() ([]ChannelConfig, error) {
 	return channels, nil
 }
 
-// generateChannelDescription creates a user-friendly description for a channel
+// generateChannelDescription creates a user-friendly description for a channel.
 func generateChannelDescription(name, url string) string {
 	switch {
 	case strings.Contains(url, "nixpkgs-unstable"):
@@ -344,7 +344,7 @@ func generateChannelDescription(name, url string) string {
 	}
 }
 
-// AddChannel adds a new channel to devenv.yaml
+// AddChannel adds a new channel to devenv.yaml.
 func AddChannel(name, url string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -386,14 +386,14 @@ func AddChannel(name, url string) error {
 	}
 
 	// Write back to file
-	if err := os.WriteFile(devenvYamlPath, updatedContent, 0644); err != nil {
+	if err := os.WriteFile(devenvYamlPath, updatedContent, 0600); err != nil {
 		return fmt.Errorf("failed to write devenv.yaml: %w", err)
 	}
 
 	return nil
 }
 
-// RemoveChannel removes a channel from devenv.yaml
+// RemoveChannel removes a channel from devenv.yaml.
 func RemoveChannel(channelName string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -435,21 +435,21 @@ func RemoveChannel(channelName string) error {
 	}
 
 	// Write back to file
-	if err := os.WriteFile(devenvYamlPath, updatedContent, 0644); err != nil {
+	if err := os.WriteFile(devenvYamlPath, updatedContent, 0600); err != nil {
 		return fmt.Errorf("failed to write devenv.yaml: %w", err)
 	}
 
 	return nil
 }
 
-// GetChannelUsage returns which packages are using each channel
+// GetChannelUsage returns which packages are using each channel.
 func GetChannelUsage() (map[string][]string, error) {
 	// This is a placeholder for future implementation
 	// Would need to parse devenv.nix and track which packages use which channels
 	return map[string][]string{}, nil
 }
 
-// UpdateChannelURL updates the URL of an existing channel in devenv.yaml
+// UpdateChannelURL updates the URL of an existing channel in devenv.yaml.
 func UpdateChannelURL(channelName, newURL string) error {
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -496,7 +496,7 @@ func UpdateChannelURL(channelName, newURL string) error {
 	}
 
 	// Write back to file
-	if err := os.WriteFile(devenvYamlPath, updatedContent, 0644); err != nil {
+	if err := os.WriteFile(devenvYamlPath, updatedContent, 0600); err != nil {
 		return fmt.Errorf("failed to write devenv.yaml: %w", err)
 	}
 

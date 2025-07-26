@@ -45,7 +45,7 @@ func init() {
 	groveChannelCmd.AddCommand(groveChannelShowCmd)
 }
 
-// handleChannelShow displays detailed information about a specific channel
+// handleChannelShow displays detailed information about a specific channel.
 func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 	// Validate channel name
 	if channelName == "" {

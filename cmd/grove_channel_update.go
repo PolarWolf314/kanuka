@@ -81,14 +81,14 @@ func init() {
 	groveChannelCmd.AddCommand(groveChannelUpdateCmd)
 }
 
-// UpdateBehavior defines how a channel should be updated
+// UpdateBehavior defines how a channel should be updated.
 type UpdateBehavior struct {
 	ChannelType   string // "official", "pinned", "custom"
 	UpdateMethod  string // "branch", "commit", "manual"
 	CanAutoUpdate bool
 }
 
-// getUpdateBehavior determines how a channel should be updated
+// getUpdateBehavior determines how a channel should be updated.
 func getUpdateBehavior(channel grove.ChannelConfig) UpdateBehavior {
 	if isPinnedChannel(channel.Name) {
 		return UpdateBehavior{
@@ -113,7 +113,7 @@ func getUpdateBehavior(channel grove.ChannelConfig) UpdateBehavior {
 	}
 }
 
-// handleUpdateSingle updates a single channel
+// handleUpdateSingle updates a single channel.
 func handleUpdateSingle(channelName, commitHash string, spinner *spinner.Spinner) error {
 	// Get channel details
 	channels, err := grove.ListChannels()
@@ -151,7 +151,7 @@ func handleUpdateSingle(channelName, commitHash string, spinner *spinner.Spinner
 	return performChannelUpdate(*targetChannel, commitHash, behavior, spinner)
 }
 
-// handleUpdateAll updates all updatable channels
+// handleUpdateAll updates all updatable channels.
 func handleUpdateAll(spinner *spinner.Spinner) error {
 	channels, err := grove.ListChannels()
 	if err != nil {
@@ -222,7 +222,7 @@ func handleUpdateAll(spinner *spinner.Spinner) error {
 	return nil
 }
 
-// handleUpdatePinnedOnly updates only pinned channels
+// handleUpdatePinnedOnly updates only pinned channels.
 func handleUpdatePinnedOnly(spinner *spinner.Spinner) error {
 	channels, err := grove.ListChannels()
 	if err != nil {
@@ -301,7 +301,7 @@ func handleUpdatePinnedOnly(spinner *spinner.Spinner) error {
 	return nil
 }
 
-// performChannelUpdate performs the actual update for a single channel
+// performChannelUpdate performs the actual update for a single channel.
 func performChannelUpdate(channel grove.ChannelConfig, commitHash string, behavior UpdateBehavior, spinner *spinner.Spinner) error {
 	// Check if update is needed
 	updateNeeded, newURL, err := checkUpdateNeeded(channel, behavior)

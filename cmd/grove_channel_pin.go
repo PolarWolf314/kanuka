@@ -50,7 +50,7 @@ func init() {
 	groveChannelCmd.AddCommand(groveChannelPinCmd)
 }
 
-// handleChannelPin creates a new pinned channel from an existing channel
+// handleChannelPin creates a new pinned channel from an existing channel.
 func handleChannelPin(channelName, commitHash string, spinner *spinner.Spinner) error {
 	// Validate inputs
 	if channelName == "" {
@@ -160,7 +160,7 @@ func handleChannelPin(channelName, commitHash string, spinner *spinner.Spinner) 
 	return nil
 }
 
-// validateAndNormalizeCommit validates a commit hash and returns the normalized version
+// validateAndNormalizeCommit validates a commit hash and returns the normalized version.
 func validateAndNormalizeCommit(commitHash string) (string, error) {
 	// Remove any whitespace
 	commitHash = strings.TrimSpace(commitHash)
@@ -172,7 +172,7 @@ func validateAndNormalizeCommit(commitHash string) (string, error) {
 
 	// Check if it's a valid hex string
 	for _, char := range commitHash {
-		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
 			return "", fmt.Errorf("commit hash must contain only hexadecimal characters")
 		}
 	}
@@ -181,19 +181,7 @@ func validateAndNormalizeCommit(commitHash string) (string, error) {
 	return strings.ToLower(commitHash), nil
 }
 
-// isNixpkgsChannel checks if a channel URL is a nixpkgs-based channel
+// isNixpkgsChannel checks if a channel URL is a nixpkgs-based channel.
 func isNixpkgsChannel(url string) bool {
 	return strings.Contains(url, "github:NixOS/nixpkgs") || strings.Contains(url, "github.com/NixOS/nixpkgs")
-}
-
-// verifyCommitExists checks if a commit exists in the NixOS/nixpkgs repository
-func verifyCommitExists(commitHash string) (bool, string) {
-	// Use the existing GitHub API functionality from helpers
-	commitInfo, _ := fetchGitHubCommitInfo("NixOS", "nixpkgs", commitHash)
-
-	if commitInfo != "" {
-		return true, commitInfo
-	}
-
-	return false, ""
 }

@@ -578,14 +578,14 @@ func GetKanukaManagedLanguages() ([]string, error) {
 	return languages, nil
 }
 
-// ChannelValidationInfo contains information about how to validate a channel
+// ChannelValidationInfo contains information about how to validate a channel.
 type ChannelValidationInfo struct {
 	Name          string
 	IsOfficial    bool
 	SearchChannel string // For nix-search-cli ("unstable" or version like "24.05")
 }
 
-// GetChannelValidationInfo determines how to validate packages for a given channel
+// GetChannelValidationInfo determines how to validate packages for a given channel.
 func GetChannelValidationInfo(resolvedChannelName string) ChannelValidationInfo {
 	switch resolvedChannelName {
 	case "nixpkgs":
@@ -612,7 +612,7 @@ func GetChannelValidationInfo(resolvedChannelName string) ChannelValidationInfo 
 	}
 }
 
-// resolveChannelAndNixName resolves a channel name to actual channel and generates the appropriate nix name
+// resolveChannelAndNixName resolves a channel name to actual channel and generates the appropriate nix name.
 func resolveChannelAndNixName(packageName, channel string) (string, string, error) {
 	// Get available channels from devenv.yaml
 	availableChannels, err := ListChannels()
@@ -677,13 +677,14 @@ func resolveChannelAndNixName(packageName, channel string) (string, string, erro
 
 	// Generate appropriate nix name based on resolved channel using the correct devenv pattern
 	var nixName string
-	if resolvedChannelName == "nixpkgs" {
+	switch resolvedChannelName {
+	case "nixpkgs":
 		// Default nixpkgs uses pkgs.
 		nixName = "pkgs." + packageName
-	} else if resolvedChannelName == "nixpkgs-stable" {
+	case "nixpkgs-stable":
 		// nixpkgs-stable uses the imported pkgs-stable from the let block
 		nixName = "pkgs-stable." + packageName
-	} else {
+	default:
 		// Custom channels use pkgs-<channel-name> pattern
 		// We need to ensure the let block imports them properly
 		channelVarName := "pkgs-" + strings.ReplaceAll(resolvedChannelName, "-", "_")
@@ -693,7 +694,7 @@ func resolveChannelAndNixName(packageName, channel string) (string, string, erro
 	return resolvedChannelName, nixName, nil
 }
 
-// ensureChannelImportsInLetBlock ensures that the let block contains the necessary channel imports
+// ensureChannelImportsInLetBlock ensures that the let block contains the necessary channel imports.
 func ensureChannelImportsInLetBlock(content, channelName string) (string, error) {
 	// If it's the default nixpkgs channel, no import needed
 	if channelName == "nixpkgs" {
@@ -757,7 +758,7 @@ func ensureChannelImportsInLetBlock(content, channelName string) (string, error)
 	return strings.Join(newLines, "\n"), nil
 }
 
-// addLetBlockToDevenvNix adds a let block to devenv.nix if it doesn't exist
+// addLetBlockToDevenvNix adds a let block to devenv.nix if it doesn't exist.
 func addLetBlockToDevenvNix(content, channelName string) (string, error) {
 	// Generate the import variable name and line
 	var importVarName string

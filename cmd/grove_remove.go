@@ -187,7 +187,7 @@ func handleLanguageRemoval(languageName string, spinner *spinner.Spinner) error 
 }
 
 // findPackageInDevenv searches for a package by name in the Kanuka-managed section
-// and returns the actual nix name (e.g., "pkgs.curl", "pkgs-stable.python3", "pkgs-custom_elm.elm")
+// and returns the actual nix name (e.g., "pkgs.curl", "pkgs-stable.python3", "pkgs-custom_elm.elm").
 func findPackageInDevenv(packageName string) (string, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {

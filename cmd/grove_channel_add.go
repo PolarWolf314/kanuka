@@ -117,7 +117,7 @@ After adding a channel, use it with:
 	},
 }
 
-// validateChannelName validates that a channel name follows the required format
+// validateChannelName validates that a channel name follows the required format.
 func validateChannelName(name string) error {
 	if name == "" {
 		return fmt.Errorf("channel name cannot be empty")
@@ -153,7 +153,7 @@ func validateChannelName(name string) error {
 	return nil
 }
 
-// validateChannelURL validates that a channel URL follows the required format
+// validateChannelURL validates that a channel URL follows the required format.
 func validateChannelURL(url string) error {
 	if url == "" {
 		return fmt.Errorf("channel URL cannot be empty")

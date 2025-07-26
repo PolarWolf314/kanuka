@@ -46,7 +46,7 @@ func init() {
 	groveChannelCmd.AddCommand(groveChannelRemoveCmd)
 }
 
-// handleChannelRemoval handles the removal of a channel from devenv.yaml
+// handleChannelRemoval handles the removal of a channel from devenv.yaml.
 func handleChannelRemoval(channelName string, spinner *spinner.Spinner) error {
 	// Validate channel name
 	if channelName == "" {
@@ -126,7 +126,7 @@ func handleChannelRemoval(channelName string, spinner *spinner.Spinner) error {
 
 // Functions moved to grove_channel_helpers.go for deduplication
 
-// cleanupChannelImports removes unused channel imports from devenv.nix let block
+// cleanupChannelImports removes unused channel imports from devenv.nix let block.
 func cleanupChannelImports(channelName string) error {
 	// This is a placeholder for now - implementing let block cleanup is complex
 	// and not critical for the remove functionality to work

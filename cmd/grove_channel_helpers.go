@@ -12,7 +12,7 @@ import (
 	"github.com/fatih/color"
 )
 
-// GitHubCommitInfo represents commit information from GitHub API
+// GitHubCommitInfo represents commit information from GitHub API.
 type GitHubCommitInfo struct {
 	SHA    string `json:"sha"`
 	Commit struct {
@@ -23,7 +23,7 @@ type GitHubCommitInfo struct {
 	} `json:"commit"`
 }
 
-// isProtectedChannel checks if a channel is protected from removal
+// isProtectedChannel checks if a channel is protected from removal.
 func isProtectedChannel(channelName string) bool {
 	protectedChannels := map[string]bool{
 		"nixpkgs":        true,
@@ -32,7 +32,7 @@ func isProtectedChannel(channelName string) bool {
 	return protectedChannels[channelName]
 }
 
-// getPackagesUsingChannel returns a list of packages that are using the specified channel
+// getPackagesUsingChannel returns a list of packages that are using the specified channel.
 func getPackagesUsingChannel(channelName string) ([]string, error) {
 	// Get the expected package prefix for this channel
 	var packagePrefix string
@@ -68,7 +68,7 @@ func getPackagesUsingChannel(channelName string) ([]string, error) {
 	return usingChannel, nil
 }
 
-// checkURLAccessibility checks if a channel URL is accessible
+// checkURLAccessibility checks if a channel URL is accessible.
 func checkURLAccessibility(url string) string {
 	// For now, just return a basic status
 	// TODO: Implement actual URL/Git accessibility checking
@@ -78,7 +78,7 @@ func checkURLAccessibility(url string) string {
 	return color.YellowString("?") + " Custom URL (not validated)"
 }
 
-// getOfficialChannelMetadata attempts to get additional metadata for official nixpkgs channels
+// getOfficialChannelMetadata attempts to get additional metadata for official nixpkgs channels.
 func getOfficialChannelMetadata(url string) (commitInfo, lastUpdated, status string) {
 	// Check if this is a GitHub nixpkgs URL
 	if !strings.Contains(url, "github:NixOS/nixpkgs") {
@@ -108,7 +108,7 @@ func getOfficialChannelMetadata(url string) (commitInfo, lastUpdated, status str
 	return commitInfo, lastUpdated, status
 }
 
-// fetchGitHubCommitInfo fetches the latest commit information from GitHub API
+// fetchGitHubCommitInfo fetches the latest commit information from GitHub API.
 func fetchGitHubCommitInfo(owner, repo, ref string) (commitInfo, lastUpdated string) {
 	// GitHub API URL for getting the latest commit on a branch/ref
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits/%s", owner, repo, ref)
@@ -160,12 +160,12 @@ func fetchGitHubCommitInfo(owner, repo, ref string) (commitInfo, lastUpdated str
 	return commitInfo, lastUpdated
 }
 
-// isPinnedChannel checks if a channel is a pinned channel based on naming pattern
+// isPinnedChannel checks if a channel is a pinned channel based on naming pattern.
 func isPinnedChannel(channelName string) bool {
 	return strings.Contains(channelName, "-pinned-")
 }
 
-// getPinnedChannelAge calculates the age of a pinned channel by fetching commit date
+// getPinnedChannelAge calculates the age of a pinned channel by fetching commit date.
 func getPinnedChannelAge(channelName, url string) (time.Duration, error) {
 	// Extract commit hash from pinned channel name
 	parts := strings.Split(channelName, "-pinned-")
@@ -190,7 +190,7 @@ func getPinnedChannelAge(channelName, url string) (time.Duration, error) {
 	return time.Since(commitTime), nil
 }
 
-// shouldWarnAboutPinnedChannel checks if a pinned channel is older than 6 months
+// shouldWarnAboutPinnedChannel checks if a pinned channel is older than 6 months.
 func shouldWarnAboutPinnedChannel(channelName, url string) (bool, string) {
 	if !isPinnedChannel(channelName) {
 		return false, ""
@@ -210,7 +210,7 @@ func shouldWarnAboutPinnedChannel(channelName, url string) (bool, string) {
 	return false, ""
 }
 
-// checkUpdateNeeded determines if a channel needs updating and returns the new URL
+// checkUpdateNeeded determines if a channel needs updating and returns the new URL.
 func checkUpdateNeeded(channel grove.ChannelConfig, behavior UpdateBehavior) (bool, string, error) {
 	switch behavior.ChannelType {
 	case "official":
@@ -222,7 +222,7 @@ func checkUpdateNeeded(channel grove.ChannelConfig, behavior UpdateBehavior) (bo
 	}
 }
 
-// checkOfficialChannelUpdate checks if an official nixpkgs channel needs updating
+// checkOfficialChannelUpdate checks if an official nixpkgs channel needs updating.
 func checkOfficialChannelUpdate(channel grove.ChannelConfig) (bool, string, error) {
 	// For unstable channel, it's always "latest" so no update needed
 	if strings.Contains(channel.URL, "nixpkgs-unstable") {
@@ -243,7 +243,7 @@ func checkOfficialChannelUpdate(channel grove.ChannelConfig) (bool, string, erro
 	return false, "", nil
 }
 
-// checkPinnedChannelUpdate checks if a pinned channel can be updated to latest commit
+// checkPinnedChannelUpdate checks if a pinned channel can be updated to latest commit.
 func checkPinnedChannelUpdate(channel grove.ChannelConfig) (bool, string, error) {
 	// Extract current commit from URL
 	parts := strings.Split(channel.URL, "/")
@@ -284,7 +284,7 @@ func checkPinnedChannelUpdate(channel grove.ChannelConfig) (bool, string, error)
 	return false, "", nil
 }
 
-// getOriginalBranchFromPinnedChannel extracts the original branch from a pinned channel name
+// getOriginalBranchFromPinnedChannel extracts the original branch from a pinned channel name.
 func getOriginalBranchFromPinnedChannel(pinnedChannelName string) string {
 	// Extract base channel name from pinned name
 	// e.g., "nixpkgs-pinned-abc123" -> "nixpkgs"
@@ -304,7 +304,7 @@ func getOriginalBranchFromPinnedChannel(pinnedChannelName string) string {
 	}
 }
 
-// extractVersionFromURL extracts version information from a channel URL for display
+// extractVersionFromURL extracts version information from a channel URL for display.
 func extractVersionFromURL(url string) string {
 	parts := strings.Split(url, "/")
 	if len(parts) < 3 {
@@ -327,20 +327,20 @@ func extractVersionFromURL(url string) string {
 	return lastPart
 }
 
-// isCommitHash checks if a string looks like a Git commit hash
+// isCommitHash checks if a string looks like a Git commit hash.
 func isCommitHash(s string) bool {
 	if len(s) < 8 || len(s) > 40 {
 		return false
 	}
 	for _, char := range s {
-		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
 			return false
 		}
 	}
 	return true
 }
 
-// isOfficialNixpkgsChannel checks if a channel URL is an official nixpkgs channel
+// isOfficialNixpkgsChannel checks if a channel URL is an official nixpkgs channel.
 func isOfficialNixpkgsChannel(url string) bool {
 	return strings.Contains(url, "github:NixOS/nixpkgs") || strings.Contains(url, "github.com/NixOS/nixpkgs")
 }
