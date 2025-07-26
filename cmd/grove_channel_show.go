@@ -41,7 +41,6 @@ Examples:
 	},
 }
 
-
 // handleChannelShow displays detailed information about a specific channel.
 func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 	// Validate channel name
@@ -100,7 +99,7 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 			output.WriteString(color.CyanString("Type:             ") + "Pinned nixpkgs channel\n")
 
 			// Get pinned channel specific info
-			if age, err := getPinnedChannelAge(channelName, targetChannel.URL); err == nil {
+			if age, err := getPinnedChannelAge(channelName); err == nil {
 				days := int(age.Hours() / 24)
 				if days > 30 {
 					months := days / 30

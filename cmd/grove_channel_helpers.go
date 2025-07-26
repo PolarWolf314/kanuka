@@ -166,7 +166,7 @@ func isPinnedChannel(channelName string) bool {
 }
 
 // getPinnedChannelAge calculates the age of a pinned channel by fetching commit date.
-func getPinnedChannelAge(channelName, url string) (time.Duration, error) {
+func getPinnedChannelAge(channelName string) (time.Duration, error) {
 	// Extract commit hash from pinned channel name
 	parts := strings.Split(channelName, "-pinned-")
 	if len(parts) != 2 {
@@ -196,7 +196,7 @@ func shouldWarnAboutPinnedChannel(channelName, url string) (bool, string) {
 		return false, ""
 	}
 
-	age, err := getPinnedChannelAge(channelName, url)
+	age, err := getPinnedChannelAge(channelName)
 	if err != nil {
 		return false, ""
 	}

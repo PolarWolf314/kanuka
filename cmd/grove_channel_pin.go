@@ -46,7 +46,6 @@ Note: You can find commit hashes at https://github.com/NixOS/nixpkgs/commits/`,
 	},
 }
 
-
 // handleChannelPin creates a new pinned channel from an existing channel.
 func handleChannelPin(channelName, commitHash string, spinner *spinner.Spinner) error {
 	// Validate inputs

@@ -195,4 +195,3 @@ func validateChannelURL(url string) error {
 
 	return nil
 }
-
