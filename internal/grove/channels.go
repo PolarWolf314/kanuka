@@ -285,7 +285,7 @@ func ListChannels() ([]ChannelConfig, error) {
 	}
 
 	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
-	
+
 	// Check if devenv.yaml exists
 	if _, err := os.Stat(devenvYamlPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("devenv.yaml not found")
@@ -352,7 +352,7 @@ func AddChannel(name, url string) error {
 	}
 
 	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
-	
+
 	// Check if devenv.yaml exists
 	if _, err := os.Stat(devenvYamlPath); os.IsNotExist(err) {
 		return fmt.Errorf("devenv.yaml not found")
@@ -401,7 +401,7 @@ func RemoveChannel(channelName string) error {
 	}
 
 	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
-	
+
 	// Read current devenv.yaml
 	content, err := os.ReadFile(devenvYamlPath)
 	if err != nil {
@@ -457,7 +457,7 @@ func UpdateChannelURL(channelName, newURL string) error {
 	}
 
 	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
-	
+
 	// Read current devenv.yaml
 	content, err := os.ReadFile(devenvYamlPath)
 	if err != nil {

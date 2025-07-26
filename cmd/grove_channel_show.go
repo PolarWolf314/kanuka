@@ -89,26 +89,26 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 
 	// Build the detailed output
 	var output strings.Builder
-	
+
 	// Header
 	output.WriteString(color.BlueString("📦 Channel Details: ") + color.HiWhiteString(channelName) + "\n\n")
-	
+
 	// Basic information (always available)
 	output.WriteString(color.CyanString("URL:              ") + targetChannel.URL + "\n")
-	
+
 	// Enhanced information for official channels
 	if channelInfo.IsOfficial {
 		// Check if this is a pinned channel
 		if isPinnedChannel(channelName) {
 			output.WriteString(color.CyanString("Type:             ") + "Pinned nixpkgs channel\n")
-			
+
 			// Get pinned channel specific info
 			if age, err := getPinnedChannelAge(channelName, targetChannel.URL); err == nil {
 				days := int(age.Hours() / 24)
 				if days > 30 {
 					months := days / 30
 					output.WriteString(color.CyanString("Age:              ") + fmt.Sprintf("%d months old", months))
-					
+
 					// Add warning if older than 6 months
 					if shouldWarn, _ := shouldWarnAboutPinnedChannel(channelName, targetChannel.URL); shouldWarn {
 						output.WriteString(" " + color.RedString("⚠️  Consider updating"))
@@ -118,7 +118,7 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 					output.WriteString(color.CyanString("Age:              ") + fmt.Sprintf("%d days old\n", days))
 				}
 			}
-			
+
 			// Get commit info for pinned channels
 			parts := strings.Split(channelName, "-pinned-")
 			if len(parts) == 2 {
@@ -133,7 +133,7 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 			}
 		} else {
 			output.WriteString(color.CyanString("Type:             ") + "Official nixpkgs channel\n")
-			
+
 			// Try to get additional metadata for official channels
 			commitInfo, lastUpdated, status := getOfficialChannelMetadata(targetChannel.URL)
 			if commitInfo != "" {
@@ -153,13 +153,13 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 		output.WriteString(color.CyanString("Status:           ") + urlStatus + "\n")
 		output.WriteString(color.YellowString("Note:             ") + "Limited metadata available for custom channels\n")
 	}
-	
+
 	// Package usage information (always shown)
 	output.WriteString("\n")
 	if len(packagesUsingChannel) > 0 {
-		output.WriteString(color.BlueString("📋 Packages using this channel ") + 
+		output.WriteString(color.BlueString("📋 Packages using this channel ") +
 			color.HiWhiteString(fmt.Sprintf("(%d)", len(packagesUsingChannel))) + ":\n")
-		
+
 		for _, pkg := range packagesUsingChannel {
 			// Generate the nix name for display
 			var nixName string
@@ -170,7 +170,7 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 			}
 			output.WriteString(fmt.Sprintf("  - %-15s (%s)\n", pkg, color.HiBlackString(nixName)))
 		}
-		
+
 		output.WriteString("\n" + color.YellowString("💡 Remove these packages before removing the channel:\n"))
 		packageList := strings.Join(packagesUsingChannel, " ")
 		output.WriteString(color.CyanString("   kanuka grove remove ") + packageList + "\n")
@@ -183,11 +183,11 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 			output.WriteString(color.YellowString("→ This is a protected channel required for Grove functionality\n"))
 		}
 	}
-	
+
 	// Usage examples
 	output.WriteString("\n" + color.BlueString("💡 Usage:\n"))
 	output.WriteString(color.CyanString("   kanuka grove add <package> --channel ") + channelName + "\n")
-	
+
 	// For custom channels, provide link to source
 	if !channelInfo.IsOfficial && strings.HasPrefix(targetChannel.URL, "github:") {
 		// Convert github:owner/repo/branch to https://github.com/owner/repo

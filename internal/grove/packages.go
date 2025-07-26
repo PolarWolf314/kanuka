@@ -38,7 +38,7 @@ func ParsePackageNameWithChannel(packageName, channel string) (*Package, error) 
 
 	// Get channel validation info to determine how to validate
 	channelInfo := GetChannelValidationInfo(resolvedChannel)
-	
+
 	var result *NixSearchResult
 	if channelInfo.IsOfficial {
 		// Validate against official nixpkgs using the appropriate channel
@@ -580,9 +580,9 @@ func GetKanukaManagedLanguages() ([]string, error) {
 
 // ChannelValidationInfo contains information about how to validate a channel
 type ChannelValidationInfo struct {
-	Name           string
-	IsOfficial     bool
-	SearchChannel  string // For nix-search-cli ("unstable" or version like "24.05")
+	Name          string
+	IsOfficial    bool
+	SearchChannel string // For nix-search-cli ("unstable" or version like "24.05")
 }
 
 // GetChannelValidationInfo determines how to validate packages for a given channel
@@ -669,7 +669,7 @@ func resolveChannelAndNixName(packageName, channel string) (string, string, erro
 			for _, ch := range availableChannels {
 				availableNames = append(availableNames, ch.Name)
 			}
-			return "", "", fmt.Errorf("channel '%s' not found in devenv.yaml. Available channels: %s", 
+			return "", "", fmt.Errorf("channel '%s' not found in devenv.yaml. Available channels: %s",
 				channel, strings.Join(availableNames, ", "))
 		}
 		resolvedChannelName = channel
@@ -722,7 +722,7 @@ func ensureChannelImportsInLetBlock(content, channelName string) (string, error)
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		
+
 		// Detect start of let block
 		if strings.HasPrefix(trimmed, "let") {
 			inLetBlock = true
@@ -730,7 +730,7 @@ func ensureChannelImportsInLetBlock(content, channelName string) (string, error)
 			newLines = append(newLines, line)
 			continue
 		}
-		
+
 		// Detect end of let block (line starting with "in")
 		if inLetBlock && strings.HasPrefix(trimmed, "in") {
 			// Insert the new import before the "in" line
@@ -739,13 +739,13 @@ func ensureChannelImportsInLetBlock(content, channelName string) (string, error)
 			inLetBlock = false
 			continue
 		}
-		
+
 		// If we're in the let block and this is an import line, just add it
 		if inLetBlock && strings.Contains(line, "= import inputs.") {
 			newLines = append(newLines, line)
 			continue
 		}
-		
+
 		newLines = append(newLines, line)
 	}
 
@@ -766,12 +766,12 @@ func addLetBlockToDevenvNix(content, channelName string) (string, error) {
 	} else {
 		importVarName = "pkgs-" + strings.ReplaceAll(channelName, "-", "_")
 	}
-	
+
 	importLine := fmt.Sprintf("  %s = import inputs.%s { system = pkgs.stdenv.system; };", importVarName, channelName)
-	
+
 	lines := strings.Split(content, "\n")
 	var newLines []string
-	
+
 	for _, line := range lines {
 		// Look for the function signature line
 		if strings.Contains(line, "{ pkgs, inputs, ... }:") {
@@ -787,9 +787,9 @@ func addLetBlockToDevenvNix(content, channelName string) (string, error) {
 			newLines = append(newLines, "in")
 			continue
 		}
-		
+
 		newLines = append(newLines, line)
 	}
-	
+
 	return strings.Join(newLines, "\n"), nil
 }

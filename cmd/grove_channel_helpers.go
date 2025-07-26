@@ -90,7 +90,7 @@ func getOfficialChannelMetadata(url string) (commitInfo, lastUpdated, status str
 	if len(parts) < 3 {
 		return "", "", checkURLAccessibility(url)
 	}
-	
+
 	ref := parts[len(parts)-1]
 	if ref == "" {
 		ref = "master" // fallback
@@ -98,7 +98,7 @@ func getOfficialChannelMetadata(url string) (commitInfo, lastUpdated, status str
 
 	// Fetch commit information from GitHub API
 	commitInfo, lastUpdated = fetchGitHubCommitInfo("NixOS", "nixpkgs", ref)
-	
+
 	if commitInfo != "" {
 		status = color.GreenString("✓") + " Accessible"
 	} else {
@@ -112,35 +112,35 @@ func getOfficialChannelMetadata(url string) (commitInfo, lastUpdated, status str
 func fetchGitHubCommitInfo(owner, repo, ref string) (commitInfo, lastUpdated string) {
 	// GitHub API URL for getting the latest commit on a branch/ref
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits/%s", owner, repo, ref)
-	
+
 	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	
+
 	// Make the request
 	resp, err := client.Get(apiURL)
 	if err != nil {
 		return "", ""
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != 200 {
 		return "", ""
 	}
-	
+
 	// Parse the JSON response
 	var commit GitHubCommitInfo
 	if err := json.NewDecoder(resp.Body).Decode(&commit); err != nil {
 		return "", ""
 	}
-	
+
 	// Format commit info
 	shortSHA := commit.SHA
 	if len(shortSHA) > 8 {
 		shortSHA = shortSHA[:8]
 	}
-	
+
 	// Get first line of commit message
 	message := commit.Commit.Message
 	if idx := strings.Index(message, "\n"); idx != -1 {
@@ -149,14 +149,14 @@ func fetchGitHubCommitInfo(owner, repo, ref string) (commitInfo, lastUpdated str
 	if len(message) > 50 {
 		message = message[:47] + "..."
 	}
-	
+
 	commitInfo = fmt.Sprintf("%s (%s)", shortSHA, message)
-	
+
 	// Parse and format the timestamp
 	if parsedTime, err := time.Parse(time.RFC3339, commit.Commit.Author.Date); err == nil {
 		lastUpdated = parsedTime.UTC().Format("2006-01-02 15:04:05 UTC")
 	}
-	
+
 	return commitInfo, lastUpdated
 }
 
@@ -172,21 +172,21 @@ func getPinnedChannelAge(channelName, url string) (time.Duration, error) {
 	if len(parts) != 2 {
 		return 0, fmt.Errorf("invalid pinned channel name format")
 	}
-	
+
 	shortHash := parts[1]
-	
+
 	// Fetch commit info to get the date
 	_, lastUpdated := fetchGitHubCommitInfo("NixOS", "nixpkgs", shortHash)
 	if lastUpdated == "" {
 		return 0, fmt.Errorf("could not fetch commit date")
 	}
-	
+
 	// Parse the timestamp
 	commitTime, err := time.Parse("2006-01-02 15:04:05 UTC", lastUpdated)
 	if err != nil {
 		return 0, fmt.Errorf("could not parse commit date: %w", err)
 	}
-	
+
 	return time.Since(commitTime), nil
 }
 
@@ -195,18 +195,18 @@ func shouldWarnAboutPinnedChannel(channelName, url string) (bool, string) {
 	if !isPinnedChannel(channelName) {
 		return false, ""
 	}
-	
+
 	age, err := getPinnedChannelAge(channelName, url)
 	if err != nil {
 		return false, ""
 	}
-	
+
 	sixMonths := 6 * 30 * 24 * time.Hour // Approximate 6 months
 	if age > sixMonths {
 		months := int(age.Hours() / (24 * 30))
 		return true, fmt.Sprintf("%d months old", months)
 	}
-	
+
 	return false, ""
 }
 

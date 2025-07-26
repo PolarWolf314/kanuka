@@ -144,12 +144,12 @@ func handleChannelPin(channelName, commitHash string, spinner *spinner.Spinner) 
 	var output strings.Builder
 	output.WriteString(color.GreenString("✓") + " Created pinned channel '" + pinnedChannelName + "'\n")
 	output.WriteString(color.CyanString("→") + " Pinned to commit: " + shortHash)
-	
+
 	if commitInfo != "" {
 		output.WriteString(" (" + commitInfo + ")")
 	}
 	output.WriteString("\n")
-	
+
 	output.WriteString(color.CyanString("→") + " Original channel '" + channelName + "' remains unchanged\n")
 	output.WriteString("\n")
 	output.WriteString(color.BlueString("💡 Usage:\n"))
@@ -164,19 +164,19 @@ func handleChannelPin(channelName, commitHash string, spinner *spinner.Spinner) 
 func validateAndNormalizeCommit(commitHash string) (string, error) {
 	// Remove any whitespace
 	commitHash = strings.TrimSpace(commitHash)
-	
+
 	// Check length (Git SHA can be 8-40 characters)
 	if len(commitHash) < 8 || len(commitHash) > 40 {
 		return "", fmt.Errorf("commit hash must be 8-40 characters long")
 	}
-	
+
 	// Check if it's a valid hex string
 	for _, char := range commitHash {
 		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
 			return "", fmt.Errorf("commit hash must contain only hexadecimal characters")
 		}
 	}
-	
+
 	// Convert to lowercase for consistency
 	return strings.ToLower(commitHash), nil
 }
@@ -190,10 +190,10 @@ func isNixpkgsChannel(url string) bool {
 func verifyCommitExists(commitHash string) (bool, string) {
 	// Use the existing GitHub API functionality from helpers
 	commitInfo, _ := fetchGitHubCommitInfo("NixOS", "nixpkgs", commitHash)
-	
+
 	if commitInfo != "" {
 		return true, commitInfo
 	}
-	
+
 	return false, ""
 }

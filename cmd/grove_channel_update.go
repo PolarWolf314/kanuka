@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	updateAll     bool
-	updatePinned  bool
-	dryRun        bool
-	interactive   bool
+	updateAll    bool
+	updatePinned bool
+	dryRun       bool
+	interactive  bool
 )
 
 var groveChannelUpdateCmd = &cobra.Command{
@@ -77,7 +77,7 @@ func init() {
 	groveChannelUpdateCmd.Flags().BoolVar(&updatePinned, "pinned-only", false, "Update only pinned channels")
 	groveChannelUpdateCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview changes without applying them")
 	groveChannelUpdateCmd.Flags().BoolVar(&interactive, "interactive", false, "Prompt for each channel update")
-	
+
 	groveChannelCmd.AddCommand(groveChannelUpdateCmd)
 }
 
