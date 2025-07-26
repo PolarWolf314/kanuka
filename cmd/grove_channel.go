@@ -31,7 +31,7 @@ func init() {
 	groveChannelCmd.AddCommand(groveChannelListCmd)
 	groveChannelCmd.AddCommand(groveChannelAddCmd)
 	// Future commands will be added here:
-	// groveChannelCmd.AddCommand(groveChannelRemoveCmd)
+	// groveChannelCmd.AddCommand(groveChannelRemoveCmd) // Now implemented in grove_channel_remove.go
 	// groveChannelCmd.AddCommand(groveChannelShowCmd)
 	// groveChannelCmd.AddCommand(groveChannelPinCmd)
 	// groveChannelCmd.AddCommand(groveChannelUpdateCmd)

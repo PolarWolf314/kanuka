@@ -251,6 +251,10 @@ func GetKanukaManagedPackages() ([]string, error) {
 	devenvPath := filepath.Join(currentDir, "devenv.nix")
 	file, err := os.Open(devenvPath)
 	if err != nil {
+		// If devenv.nix doesn't exist, return empty list (no packages managed)
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
 		return nil, fmt.Errorf("failed to open devenv.nix: %w", err)
 	}
 	defer file.Close()
@@ -260,7 +264,7 @@ func GetKanukaManagedPackages() ([]string, error) {
 	inKanukaSection := false
 
 	// Regex to match package lines like "    pkgs.nodejs_18" or "    pkgs-stable.python3"
-	packageRegex := regexp.MustCompile(`^\s+pkgs(?:-\w+)?\.(\w+)`)
+	packageRegex := regexp.MustCompile(`^\s+(pkgs(?:-\w+)?\.(\w+))`)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -279,7 +283,7 @@ func GetKanukaManagedPackages() ([]string, error) {
 		if inKanukaSection {
 			matches := packageRegex.FindStringSubmatch(line)
 			if len(matches) > 1 {
-				packages = append(packages, matches[1])
+				packages = append(packages, matches[1]) // Return full nix name (e.g., "pkgs-stable.python3")
 			}
 		}
 	}
