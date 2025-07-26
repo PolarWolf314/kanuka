@@ -10,8 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var skipValidation bool
-var channel string
+var (
+	skipValidation bool
+	channel        string
+)
 
 var groveAddCmd = &cobra.Command{
 	Use:   "add <package>[@version]",
@@ -25,9 +27,9 @@ Examples:
   kanuka grove add typescript      # Add typescript package from unstable
   kanuka grove add awscli2         # Add AWS CLI v2 from unstable
   # Note: AWS SSO authentication now uses integrated AWS SDK - no external tools needed!
-  kanuka grove add nodejs --channel stable         # Add nodejs from stable channel
-  kanuka grove add nodejs --channel nixpkgs-stable # Add nodejs from nixpkgs-stable channel
-  kanuka grove add nodejs --channel custom-channel # Add nodejs from custom channel`,
+  kanuka grove add nodejs --channel stable         # Add nodejs from stable channel (validated)
+  kanuka grove add nodejs --channel nixpkgs-stable # Add nodejs from nixpkgs-stable channel (validated)
+  kanuka grove add elm --channel custom-elm        # Add elm from custom channel (validation skipped)`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packageName := args[0]
@@ -199,12 +201,24 @@ func handlePackageAddition(packageName string, spinner *spinner.Spinner, skipVal
 	}
 	GroveLogger.Infof("Package added successfully")
 
+	// Generate channel-specific messaging
 	channelInfo := ""
-	if parsedPackage.Channel == "stable" {
-		channelInfo = " (from stable channel)"
+	validationInfo := ""
+
+	// Get channel validation info to provide appropriate messaging
+	channelValidationInfo := grove.GetChannelValidationInfo(parsedPackage.Channel)
+
+	if channelValidationInfo.IsOfficial {
+		if parsedPackage.Channel == "nixpkgs-stable" || parsedPackage.Channel == "stable" {
+			channelInfo = " (from stable channel)"
+		}
+	} else {
+		// Custom channel - inform user that validation was skipped
+		channelInfo = fmt.Sprintf(" (from custom channel '%s')", parsedPackage.Channel)
+		validationInfo = "\n" + color.YellowString("!") + " Package validation skipped for custom channel"
 	}
 
-	finalMessage := color.GreenString("✓") + " Added " + parsedPackage.NixName + " to devenv.nix" + channelInfo + "\n" +
+	finalMessage := color.GreenString("✓") + " Added " + parsedPackage.NixName + " to devenv.nix" + channelInfo + validationInfo + "\n" +
 		color.CyanString("→") + " Run " + color.YellowString("kanuka grove enter") + " to start using " + parsedPackage.DisplayName
 
 	spinner.FinalMSG = finalMessage
@@ -267,5 +281,5 @@ func handleLanguageAddition(languageName string, spinner *spinner.Spinner) error
 
 func init() {
 	groveAddCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "skip nixpkgs validation (for testing)")
-	groveAddCmd.Flags().StringVar(&channel, "channel", "unstable", "nixpkgs channel to use (unstable, stable, or any channel name from devenv.yaml)")
+	groveAddCmd.Flags().StringVar(&channel, "channel", "unstable", "nixpkgs channel to use (unstable, stable, or any channel name from devenv.yaml)\nNote: Custom channels automatically skip validation")
 }

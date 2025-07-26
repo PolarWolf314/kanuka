@@ -36,14 +36,26 @@ func ParsePackageNameWithChannel(packageName, channel string) (*Package, error) 
 		return nil, err
 	}
 
-	// Validate package exists in nixpkgs.
-	exists, result, err := ValidatePackageExists(packageName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate package: %w", err)
-	}
-
-	if !exists {
-		return nil, fmt.Errorf("package '%s' not found in nixpkgs", packageName)
+	// Get channel validation info to determine how to validate
+	channelInfo := GetChannelValidationInfo(resolvedChannel)
+	
+	var result *NixSearchResult
+	if channelInfo.IsOfficial {
+		// Validate against official nixpkgs using the appropriate channel
+		exists, searchResult, err := ValidatePackageExistsInChannel(packageName, channelInfo.SearchChannel)
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate package: %w", err)
+		}
+		if !exists {
+			return nil, fmt.Errorf("package '%s' not found in %s channel", packageName, channelInfo.Name)
+		}
+		result = searchResult
+	} else {
+		// Custom channel - skip validation but create a basic result
+		result = &NixSearchResult{
+			PackageName: packageName,
+			Description: fmt.Sprintf("Package from custom channel '%s'", channelInfo.Name),
+		}
 	}
 
 	// Create package with validated information.
@@ -560,6 +572,40 @@ func GetKanukaManagedLanguages() ([]string, error) {
 	}
 
 	return languages, nil
+}
+
+// ChannelValidationInfo contains information about how to validate a channel
+type ChannelValidationInfo struct {
+	Name           string
+	IsOfficial     bool
+	SearchChannel  string // For nix-search-cli ("unstable" or version like "24.05")
+}
+
+// GetChannelValidationInfo determines how to validate packages for a given channel
+func GetChannelValidationInfo(resolvedChannelName string) ChannelValidationInfo {
+	switch resolvedChannelName {
+	case "nixpkgs":
+		return ChannelValidationInfo{
+			Name:          "nixpkgs",
+			IsOfficial:    true,
+			SearchChannel: "unstable",
+		}
+	case "nixpkgs-stable":
+		// Extract version from the latest stable channel (e.g., "nixos-24.05" -> "24.05")
+		latestStable := GetLatestStableChannel()
+		stableVersion := strings.TrimPrefix(latestStable, "nixos-")
+		return ChannelValidationInfo{
+			Name:          "nixpkgs-stable",
+			IsOfficial:    true,
+			SearchChannel: stableVersion,
+		}
+	default:
+		return ChannelValidationInfo{
+			Name:          resolvedChannelName,
+			IsOfficial:    false,
+			SearchChannel: "",
+		}
+	}
 }
 
 // resolveChannelAndNixName resolves a channel name to actual channel and generates the appropriate nix name

@@ -36,7 +36,13 @@ func convertPackageToResult(pkg nixsearch.Package) *NixSearchResult {
 }
 
 // ValidatePackageExists checks if a package exists in nixpkgs using nix-search-cli.
+// This function uses the unstable channel by default for backward compatibility.
 func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
+	return ValidatePackageExistsInChannel(packageName, "unstable")
+}
+
+// ValidatePackageExistsInChannel checks if a package exists in a specific nixpkgs channel using nix-search-cli.
+func ValidatePackageExistsInChannel(packageName, channel string) (bool, *NixSearchResult, error) {
 	client, err := nixsearch.NewElasticSearchClient()
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to create search client: %w", err)
@@ -45,7 +51,7 @@ func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
 	// Try exact name match first.
 	query := nixsearch.Query{
 		MaxResults: 1,
-		Channel:    "unstable",
+		Channel:    channel,
 		Name:       &nixsearch.MatchName{Name: packageName},
 	}
 
@@ -61,7 +67,7 @@ func ValidatePackageExists(packageName string) (bool, *NixSearchResult, error) {
 	// If no exact match, try a general search to see if package exists with similar name.
 	generalQuery := nixsearch.Query{
 		MaxResults: 5,
-		Channel:    "unstable",
+		Channel:    channel,
 		Search:     &nixsearch.MatchSearch{Search: packageName},
 	}
 
