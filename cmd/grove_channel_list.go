@@ -85,8 +85,15 @@ Examples:
 					// Channel URL
 					finalMessage.WriteString(color.CyanString("    URL: ") + channel.URL + "\n")
 					
-					// Channel description
-					finalMessage.WriteString(color.CyanString("    Description: ") + channel.Description + "\n")
+					// Channel description with potential warning
+					description := channel.Description
+					
+					// Check if this is an old pinned channel and add warning
+					if shouldWarn, ageInfo := shouldWarnAboutPinnedChannel(channel.Name, channel.URL); shouldWarn {
+						description = channel.Description + " " + color.RedString("⚠️  "+ageInfo)
+					}
+					
+					finalMessage.WriteString(color.CyanString("    Description: ") + description + "\n")
 					
 					// Add spacing between channels (except for the last one)
 					if i < len(channels)-1 {

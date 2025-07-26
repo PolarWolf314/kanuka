@@ -159,3 +159,53 @@ func fetchGitHubCommitInfo(owner, repo, ref string) (commitInfo, lastUpdated str
 	
 	return commitInfo, lastUpdated
 }
+
+// isPinnedChannel checks if a channel is a pinned channel based on naming pattern
+func isPinnedChannel(channelName string) bool {
+	return strings.Contains(channelName, "-pinned-")
+}
+
+// getPinnedChannelAge calculates the age of a pinned channel by fetching commit date
+func getPinnedChannelAge(channelName, url string) (time.Duration, error) {
+	// Extract commit hash from pinned channel name
+	parts := strings.Split(channelName, "-pinned-")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("invalid pinned channel name format")
+	}
+	
+	shortHash := parts[1]
+	
+	// Fetch commit info to get the date
+	_, lastUpdated := fetchGitHubCommitInfo("NixOS", "nixpkgs", shortHash)
+	if lastUpdated == "" {
+		return 0, fmt.Errorf("could not fetch commit date")
+	}
+	
+	// Parse the timestamp
+	commitTime, err := time.Parse("2006-01-02 15:04:05 UTC", lastUpdated)
+	if err != nil {
+		return 0, fmt.Errorf("could not parse commit date: %w", err)
+	}
+	
+	return time.Since(commitTime), nil
+}
+
+// shouldWarnAboutPinnedChannel checks if a pinned channel is older than 6 months
+func shouldWarnAboutPinnedChannel(channelName, url string) (bool, string) {
+	if !isPinnedChannel(channelName) {
+		return false, ""
+	}
+	
+	age, err := getPinnedChannelAge(channelName, url)
+	if err != nil {
+		return false, ""
+	}
+	
+	sixMonths := 6 * 30 * 24 * time.Hour // Approximate 6 months
+	if age > sixMonths {
+		months := int(age.Hours() / (24 * 30))
+		return true, fmt.Sprintf("%d months old", months)
+	}
+	
+	return false, ""
+}

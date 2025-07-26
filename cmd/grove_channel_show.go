@@ -98,18 +98,53 @@ func handleChannelShow(channelName string, spinner *spinner.Spinner) error {
 	
 	// Enhanced information for official channels
 	if channelInfo.IsOfficial {
-		output.WriteString(color.CyanString("Type:             ") + "Official nixpkgs channel\n")
-		
-		// Try to get additional metadata for official channels
-		commitInfo, lastUpdated, status := getOfficialChannelMetadata(targetChannel.URL)
-		if commitInfo != "" {
-			output.WriteString(color.CyanString("Current Commit:   ") + commitInfo + "\n")
-		}
-		if lastUpdated != "" {
-			output.WriteString(color.CyanString("Last Updated:     ") + lastUpdated + "\n")
-		}
-		if status != "" {
-			output.WriteString(color.CyanString("Status:           ") + status + "\n")
+		// Check if this is a pinned channel
+		if isPinnedChannel(channelName) {
+			output.WriteString(color.CyanString("Type:             ") + "Pinned nixpkgs channel\n")
+			
+			// Get pinned channel specific info
+			if age, err := getPinnedChannelAge(channelName, targetChannel.URL); err == nil {
+				days := int(age.Hours() / 24)
+				if days > 30 {
+					months := days / 30
+					output.WriteString(color.CyanString("Age:              ") + fmt.Sprintf("%d months old", months))
+					
+					// Add warning if older than 6 months
+					if shouldWarn, _ := shouldWarnAboutPinnedChannel(channelName, targetChannel.URL); shouldWarn {
+						output.WriteString(" " + color.RedString("⚠️  Consider updating"))
+					}
+					output.WriteString("\n")
+				} else {
+					output.WriteString(color.CyanString("Age:              ") + fmt.Sprintf("%d days old\n", days))
+				}
+			}
+			
+			// Get commit info for pinned channels
+			parts := strings.Split(channelName, "-pinned-")
+			if len(parts) == 2 {
+				shortHash := parts[1]
+				commitInfo, lastUpdated := fetchGitHubCommitInfo("NixOS", "nixpkgs", shortHash)
+				if commitInfo != "" {
+					output.WriteString(color.CyanString("Pinned Commit:    ") + commitInfo + "\n")
+				}
+				if lastUpdated != "" {
+					output.WriteString(color.CyanString("Pinned Date:      ") + lastUpdated + "\n")
+				}
+			}
+		} else {
+			output.WriteString(color.CyanString("Type:             ") + "Official nixpkgs channel\n")
+			
+			// Try to get additional metadata for official channels
+			commitInfo, lastUpdated, status := getOfficialChannelMetadata(targetChannel.URL)
+			if commitInfo != "" {
+				output.WriteString(color.CyanString("Current Commit:   ") + commitInfo + "\n")
+			}
+			if lastUpdated != "" {
+				output.WriteString(color.CyanString("Last Updated:     ") + lastUpdated + "\n")
+			}
+			if status != "" {
+				output.WriteString(color.CyanString("Status:           ") + status + "\n")
+			}
 		}
 		output.WriteString(color.CyanString("Description:      ") + targetChannel.Description + "\n")
 	} else {
