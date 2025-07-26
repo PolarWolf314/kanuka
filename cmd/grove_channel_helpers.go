@@ -209,3 +209,138 @@ func shouldWarnAboutPinnedChannel(channelName, url string) (bool, string) {
 	
 	return false, ""
 }
+
+// checkUpdateNeeded determines if a channel needs updating and returns the new URL
+func checkUpdateNeeded(channel grove.ChannelConfig, behavior UpdateBehavior) (bool, string, error) {
+	switch behavior.ChannelType {
+	case "official":
+		return checkOfficialChannelUpdate(channel)
+	case "pinned":
+		return checkPinnedChannelUpdate(channel)
+	default:
+		return false, "", fmt.Errorf("cannot update custom channels")
+	}
+}
+
+// checkOfficialChannelUpdate checks if an official nixpkgs channel needs updating
+func checkOfficialChannelUpdate(channel grove.ChannelConfig) (bool, string, error) {
+	// For unstable channel, it's always "latest" so no update needed
+	if strings.Contains(channel.URL, "nixpkgs-unstable") {
+		return false, "", nil
+	}
+
+	// For stable channels, check if there's a newer stable release
+	if strings.Contains(channel.URL, "nixos-") {
+		currentVersion := extractVersionFromURL(channel.URL)
+		latestStable := grove.GetLatestStableChannel()
+
+		if currentVersion != latestStable {
+			newURL := "github:NixOS/nixpkgs/" + latestStable
+			return true, newURL, nil
+		}
+	}
+
+	return false, "", nil
+}
+
+// checkPinnedChannelUpdate checks if a pinned channel can be updated to latest commit
+func checkPinnedChannelUpdate(channel grove.ChannelConfig) (bool, string, error) {
+	// Extract current commit from URL
+	parts := strings.Split(channel.URL, "/")
+	if len(parts) < 3 {
+		return false, "", fmt.Errorf("invalid pinned channel URL format")
+	}
+
+	currentCommit := parts[len(parts)-1]
+
+	// Determine original branch from pinned channel name
+	originalBranch := getOriginalBranchFromPinnedChannel(channel.Name)
+
+	// Get latest commit from the original branch
+	latestCommit, _ := fetchGitHubCommitInfo("NixOS", "nixpkgs", originalBranch)
+	if latestCommit == "" {
+		return false, "", fmt.Errorf("could not fetch latest commit for branch %s", originalBranch)
+	}
+
+	// Extract just the commit hash (first 8 chars for comparison)
+	latestCommitHash := strings.Split(latestCommit, " ")[0]
+	if len(latestCommitHash) > 8 {
+		latestCommitHash = latestCommitHash[:8]
+	}
+
+	// Compare with current commit (first 8 chars)
+	currentCommitShort := currentCommit
+	if len(currentCommitShort) > 8 {
+		currentCommitShort = currentCommitShort[:8]
+	}
+
+	if currentCommitShort != latestCommitHash {
+		// Get the full commit hash for the new URL
+		fullLatestCommit := strings.Split(latestCommit, " ")[0]
+		newURL := "github:NixOS/nixpkgs/" + fullLatestCommit
+		return true, newURL, nil
+	}
+
+	return false, "", nil
+}
+
+// getOriginalBranchFromPinnedChannel extracts the original branch from a pinned channel name
+func getOriginalBranchFromPinnedChannel(pinnedChannelName string) string {
+	// Extract base channel name from pinned name
+	// e.g., "nixpkgs-pinned-abc123" -> "nixpkgs"
+	parts := strings.Split(pinnedChannelName, "-pinned-")
+	if len(parts) != 2 {
+		return "nixpkgs-unstable" // fallback
+	}
+
+	baseChannel := parts[0]
+	switch baseChannel {
+	case "nixpkgs":
+		return "nixpkgs-unstable"
+	case "nixpkgs-stable":
+		return grove.GetLatestStableChannel()
+	default:
+		return "nixpkgs-unstable" // fallback
+	}
+}
+
+// extractVersionFromURL extracts version information from a channel URL for display
+func extractVersionFromURL(url string) string {
+	parts := strings.Split(url, "/")
+	if len(parts) < 3 {
+		return "unknown"
+	}
+
+	lastPart := parts[len(parts)-1]
+
+	// Handle different URL formats
+	if strings.HasPrefix(lastPart, "nixos-") {
+		return lastPart // e.g., "nixos-24.05"
+	}
+	if lastPart == "nixpkgs-unstable" {
+		return "unstable"
+	}
+	if len(lastPart) >= 8 && isCommitHash(lastPart) {
+		return lastPart[:8] + "..." // e.g., "abc123de..."
+	}
+
+	return lastPart
+}
+
+// isCommitHash checks if a string looks like a Git commit hash
+func isCommitHash(s string) bool {
+	if len(s) < 8 || len(s) > 40 {
+		return false
+	}
+	for _, char := range s {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+// isOfficialNixpkgsChannel checks if a channel URL is an official nixpkgs channel
+func isOfficialNixpkgsChannel(url string) bool {
+	return strings.Contains(url, "github:NixOS/nixpkgs") || strings.Contains(url, "github.com/NixOS/nixpkgs")
+}

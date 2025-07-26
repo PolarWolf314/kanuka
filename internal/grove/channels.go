@@ -448,3 +448,57 @@ func GetChannelUsage() (map[string][]string, error) {
 	// Would need to parse devenv.nix and track which packages use which channels
 	return map[string][]string{}, nil
 }
+
+// UpdateChannelURL updates the URL of an existing channel in devenv.yaml
+func UpdateChannelURL(channelName, newURL string) error {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvYamlPath := filepath.Join(currentDir, "devenv.yaml")
+	
+	// Read current devenv.yaml
+	content, err := os.ReadFile(devenvYamlPath)
+	if err != nil {
+		return fmt.Errorf("failed to read devenv.yaml: %w", err)
+	}
+
+	// Parse YAML
+	var config map[string]interface{}
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		return fmt.Errorf("failed to parse devenv.yaml: %w", err)
+	}
+
+	// Check if inputs section exists
+	inputs, ok := config["inputs"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("no inputs section found in devenv.yaml")
+	}
+
+	// Check if channel exists
+	channelConfig, exists := inputs[channelName]
+	if !exists {
+		return fmt.Errorf("channel '%s' not found in devenv.yaml", channelName)
+	}
+
+	// Update the URL
+	if channelMap, ok := channelConfig.(map[string]interface{}); ok {
+		channelMap["url"] = newURL
+	} else {
+		return fmt.Errorf("invalid channel configuration for '%s'", channelName)
+	}
+
+	// Marshal back to YAML
+	updatedContent, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated devenv.yaml: %w", err)
+	}
+
+	// Write back to file
+	if err := os.WriteFile(devenvYamlPath, updatedContent, 0644); err != nil {
+		return fmt.Errorf("failed to write devenv.yaml: %w", err)
+	}
+
+	return nil
+}
