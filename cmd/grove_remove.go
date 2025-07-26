@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/grove"
@@ -73,36 +76,21 @@ Examples:
 
 // handlePackageRemoval handles the removal of a package from devenv.nix.
 func handlePackageRemoval(packageName string, spinner *spinner.Spinner) error {
-	// Parse package name to get the proper nix name format
-	GroveLogger.Debugf("Parsing package name: %s", packageName)
-	var nixName string
-	if strings.HasPrefix(packageName, "pkgs.") {
-		nixName = packageName
-	} else {
-		nixName = "pkgs." + packageName
-	}
-
-	// Check if package exists and is managed by Kanuka
-	GroveLogger.Debugf("Checking if package exists in devenv.nix")
-	exists, isKanukaManaged, err := grove.DoesPackageExistInDevenv(nixName)
+	// Find the actual package in devenv.nix (handles all channels)
+	GroveLogger.Debugf("Finding package in devenv.nix: %s", packageName)
+	actualNixName, err := findPackageInDevenv(packageName)
 	if err != nil {
-		return GroveLogger.ErrorfAndReturn("Failed to check existing packages: %v", err)
+		return GroveLogger.ErrorfAndReturn("Failed to find package: %v", err)
 	}
 
-	if !exists {
-		finalMessage := color.RedString("✗") + " Package '" + packageName + "' not found in devenv.nix\n" +
+	if actualNixName == "" {
+		finalMessage := color.RedString("✗") + " Package '" + packageName + "' not found in Kanuka-managed packages\n" +
 			color.CyanString("→") + " Use " + color.YellowString("kanuka grove search "+packageName) + " to find available packages"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
 
-	if !isKanukaManaged {
-		finalMessage := color.RedString("✗") + " Package '" + packageName + "' is not managed by Kanuka\n" +
-			color.CyanString("→") + " Only Kanuka-managed packages can be removed with this command\n" +
-			color.CyanString("→") + " Edit devenv.nix manually to remove packages added outside of Kanuka"
-		spinner.FinalMSG = finalMessage
-		return nil
-	}
+	GroveLogger.Debugf("Found package with nix name: %s", actualNixName)
 
 	// Ask for confirmation
 	spinner.Stop()
@@ -125,9 +113,9 @@ func handlePackageRemoval(packageName string, spinner *spinner.Spinner) error {
 	// Update spinner message for the actual removal step
 	spinner.Suffix = " Removing package from devenv.nix..."
 
-	// Remove package from devenv.nix
-	GroveLogger.Debugf("Removing package from devenv.nix")
-	if err := grove.RemovePackageFromDevenv(nixName); err != nil {
+	// Remove package from devenv.nix using the actual nix name found
+	GroveLogger.Debugf("Removing package from devenv.nix: %s", actualNixName)
+	if err := grove.RemovePackageFromDevenv(actualNixName); err != nil {
 		return GroveLogger.ErrorfAndReturn("Failed to remove package: %v", err)
 	}
 	GroveLogger.Infof("Package removed successfully")
@@ -196,4 +184,48 @@ func handleLanguageRemoval(languageName string, spinner *spinner.Spinner) error 
 
 	spinner.FinalMSG = finalMessage
 	return nil
+}
+
+// findPackageInDevenv searches for a package by name in the Kanuka-managed section
+// and returns the actual nix name (e.g., "pkgs.curl", "pkgs-stable.python3", "pkgs-custom_elm.elm")
+func findPackageInDevenv(packageName string) (string, error) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	devenvPath := filepath.Join(currentDir, "devenv.nix")
+	content, err := os.ReadFile(devenvPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read devenv.nix: %w", err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	inKanukaSection := false
+
+	// Regex to match package lines like "pkgs.nodejs", "pkgs-stable.python3", "pkgs-custom_elm.elm"
+	packageRegex := regexp.MustCompile(`^\s+(pkgs(?:-\w+)?\.` + regexp.QuoteMeta(packageName) + `)\s*(?:#.*)?$`)
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if strings.Contains(trimmed, "# Kanuka-managed packages - DO NOT EDIT MANUALLY") {
+			inKanukaSection = true
+			continue
+		}
+
+		if strings.Contains(trimmed, "# End Kanuka-managed packages") {
+			inKanukaSection = false
+			continue
+		}
+
+		if inKanukaSection {
+			matches := packageRegex.FindStringSubmatch(line)
+			if len(matches) > 1 {
+				return matches[1], nil // Return the full nix name (e.g., "pkgs-stable.python3")
+			}
+		}
+	}
+
+	return "", nil // Package not found
 }
