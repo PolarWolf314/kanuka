@@ -18,10 +18,10 @@ kanuka grove init
 ```
 
 That's it! Kānuka will create everything you need:
-- `devenv.nix` - where your environment is defined
-- `devenv.yaml` - configuration for devenv
-- `kanuka.toml` - Kānuka's own configuration file
-- Updates your `.gitignore` so you don't commit the wrong files
+- `devenv.nix` - where your environment is defined.
+- `devenv.yaml` - configuration for devenv.
+- `kanuka.toml` - Kānuka's own configuration file.
+- Updates your `.gitignore` so you don't commit the wrong files.
 
 ## Adding container support
 

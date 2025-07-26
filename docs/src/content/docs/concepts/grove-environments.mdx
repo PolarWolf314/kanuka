@@ -13,10 +13,10 @@ import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
 
-1. Grove creates a `devenv.nix` file that declares what's in your environment
-2. Grove creates a `devenv.yaml` file that tells devenv where to get packages from
-3. Grove creates a `kanuka.toml` file to track what it has added to your environment
-4. Grove updates your `.gitignore` to exclude build artifacts
+1. Grove creates a `devenv.nix` file that declares what's in your environment.
+2. Grove creates a `devenv.yaml` file that tells devenv where to get packages from.
+3. Grove creates a `kanuka.toml` file to track what it has added to your environment.
+4. Grove updates your `.gitignore` to exclude build artifacts.
 
 </Steps>
 
@@ -64,19 +64,19 @@ inputs:
 
 One of the best things about Grove is that your environments are completely separate from your system:
 
-- **No system dependencies**: Everything your project needs is declared in devenv.nix
-- **Clean PATH**: Only the packages you've added are available
-- **Reproducible**: You get the same environment on every machine
-- **Project-specific**: Each project has its own environment that doesn't interfere with others
+- **No system dependencies**: Everything your project needs is declared in devenv.nix.
+- **Clean PATH**: Only the packages you've added are available.
+- **Reproducible**: You get the same environment on every machine.
+- **Project-specific**: Each project has its own environment that doesn't interfere with others.
 
 ## How environment isolation works
 
 When you run `kanuka grove enter`, Grove creates a new shell environment where:
 
-1. **PATH is controlled**: Only packages declared in your environment are available
-2. **Environment variables are set**: Each package can set its own environment variables
-3. **Dependencies are resolved**: All package dependencies are automatically included
-4. **System is protected**: Your system packages remain untouched
+1. **PATH is controlled**: Only packages declared in your environment are available.
+2. **Environment variables are set**: Each package can set its own environment variables.
+3. **Dependencies are resolved**: All package dependencies are automatically included.
+4. **System is protected**: Your system packages remain untouched.
 
 This means you can have Python 3.9 in one project and Python 3.11 in another, without any conflicts.
 
@@ -87,16 +87,16 @@ When you run `kanuka grove init`, Grove sets up the foundation files but doesn't
 
 ### Package addition
 When you run `kanuka grove add <package>`, Grove:
-1. Updates `devenv.nix` with the new package
-2. Updates `kanuka.toml` to track the addition
-3. The environment is ready for the next time you enter it
+1. Updates `devenv.nix` with the new package.
+2. Updates `kanuka.toml` to track the addition.
+3. The environment is ready for the next time you enter it.
 
 ### Environment entry
 When you run `kanuka grove enter`, devenv:
-1. Reads your `devenv.nix` configuration
-2. Downloads any missing packages from the Nix binary cache
-3. Creates an isolated shell with only your declared packages
-4. Sets up all necessary environment variables
+1. Reads your `devenv.nix` configuration.
+2. Downloads any missing packages from the Nix binary cache.
+3. Creates an isolated shell with only your declared packages.
+4. Sets up all necessary environment variables.
 
 ### Updates
 When you update channels or packages, Grove rebuilds the environment with the new versions while maintaining the same isolation guarantees.

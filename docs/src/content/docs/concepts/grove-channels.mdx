@@ -9,9 +9,9 @@ Channels are how Grove controls which versions of packages you get. Think of the
 
 Channels are basically different versions or branches of the nixpkgs package repository. Each channel represents a snapshot of the repository at a particular point in time, with different stability guarantees:
 
-- **unstable**: The latest packages with all the newest features (this is the default)
-- **stable**: Well-tested packages that change less often
-- **custom**: Your own channel definitions for specific needs
+- **unstable**: The latest packages with all the newest features (this is the default).
+- **stable**: Well-tested packages that change less often.
+- **custom**: Your own channel definitions for specific needs.
 
 ## How channels work
 
@@ -21,10 +21,10 @@ import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
 
-1. Grove looks at your `devenv.yaml` file to see which channels are configured
-2. Grove searches the specified channel for the package you requested
-3. Grove finds the version of the package available in that channel
-4. Grove downloads that specific version and all its dependencies
+1. Grove looks at your `devenv.yaml` file to see which channels are configured.
+2. Grove searches the specified channel for the package you requested.
+3. Grove finds the version of the package available in that channel.
+4. Grove downloads that specific version and all its dependencies.
 
 </Steps>
 
@@ -32,9 +32,9 @@ import { Steps } from '@astrojs/starlight/components';
 
 Grove uses a priority system for channels:
 
-1. **Explicit channel**: If you specify `--channel stable`, Grove uses that channel
-2. **Default channel**: If no channel is specified, Grove uses the default (usually unstable)
-3. **Fallback**: If a package isn't found, Grove may search other configured channels
+1. **Explicit channel**: If you specify `--channel stable`, Grove uses that channel.
+2. **Default channel**: If no channel is specified, Grove uses the default (usually unstable).
+3. **Fallback**: If a package isn't found, Grove may search other configured channels.
 
 ## Channel configuration
 
@@ -56,10 +56,10 @@ When you run `kanuka grove channel update`, Grove:
 
 <Steps>
 
-1. Fetches the latest commit hash for each channel
-2. Updates the channel references in your configuration
-3. Downloads any new package definitions
-4. The next time you enter your environment, you get the updated packages
+1. Fetches the latest commit hash for each channel.
+2. Updates the channel references in your configuration.
+3. Downloads any new package definitions.
+4. The next time you enter your environment, you get the updated packages.
 
 </Steps>
 
@@ -78,19 +78,19 @@ This locks the channel to that exact commit, so everyone on your team gets the s
 Channels give you control over the trade-off between stability and freshness:
 
 ### Unstable channel
-- **Pros**: Latest features, newest packages, frequent updates
-- **Cons**: Occasional breaking changes, less tested
-- **Best for**: Development, experimentation, staying current
+- **Pros**: Latest features, newest packages, frequent updates.
+- **Cons**: Occasional breaking changes, less tested.
+- **Best for**: Development, experimentation, staying current.
 
 ### Stable channel
-- **Pros**: Well-tested, predictable, fewer breaking changes
-- **Cons**: Older package versions, slower updates
-- **Best for**: Production environments, critical projects
+- **Pros**: Well-tested, predictable, fewer breaking changes.
+- **Cons**: Older package versions, slower updates.
+- **Best for**: Production environments, critical projects.
 
 ### Custom channels
-- **Pros**: Complete control, specific package versions, organizational standards
-- **Cons**: Maintenance overhead, need to manage updates yourself
-- **Best for**: Enterprise environments, specific compliance requirements
+- **Pros**: Complete control, specific package versions, organizational standards.
+- **Cons**: Maintenance overhead, need to manage updates yourself.
+- **Best for**: Enterprise environments, specific compliance requirements.
 
 ## Channel mixing
 
@@ -108,9 +108,9 @@ This gives you fine-grained control over which packages get which level of stabi
 
 Grove leverages Nix's binary cache system:
 
-- **Fast downloads**: Pre-built packages are cached and ready to download
-- **Reproducible builds**: Same inputs always produce the same outputs
-- **Efficient storage**: Packages are deduplicated across environments
-- **Offline capability**: Once downloaded, packages work offline
+- **Fast downloads**: Pre-built packages are cached and ready to download.
+- **Reproducible builds**: Same inputs always produce the same outputs.
+- **Efficient storage**: Packages are deduplicated across environments.
+- **Offline capability**: Once downloaded, packages work offline.
 
 Continue reading to learn about how Grove builds containers from your environment.

@@ -13,10 +13,10 @@ import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
 
-1. Grove reads your `devenv.nix` configuration to understand your environment
-2. Grove uses nix2container to create an OCI (Open Container Initiative) container
-3. Grove includes all your packages and their dependencies in the container
-4. Grove creates a minimal container image with only what's needed
+1. Grove reads your `devenv.nix` configuration to understand your environment.
+2. Grove uses nix2container to create an OCI (Open Container Initiative) container.
+3. Grove includes all your packages and their dependencies in the container.
+4. Grove creates a minimal container image with only what's needed.
 
 </Steps>
 
@@ -50,30 +50,30 @@ inputs:
 
 When Grove builds a container, it includes:
 
-- **All declared packages**: Everything from your `packages` list
-- **Language environments**: Any languages you've enabled
-- **Dependencies**: All required system libraries and dependencies
-- **Environment variables**: Proper PATH and other environment setup
-- **Minimal base**: Only essential system components
+- **All declared packages**: Everything from your `packages` list.
+- **Language environments**: Any languages you've enabled.
+- **Dependencies**: All required system libraries and dependencies.
+- **Environment variables**: Proper PATH and other environment setup.
+- **Minimal base**: Only essential system components.
 
 What doesn't get included:
-- **Development tools**: Things like debuggers or development servers (unless explicitly added)
-- **System packages**: Nothing from your host system
-- **Temporary files**: No build artifacts or cache files
+- **Development tools**: Things like debuggers or development servers (unless explicitly added).
+- **System packages**: Nothing from your host system.
+- **Temporary files**: No build artifacts or cache files.
 
 ## Container layers
 
 Grove creates efficient container layers:
 
-1. **Base layer**: Minimal system components (glibc, basic utilities)
-2. **Package layers**: Each package and its dependencies
-3. **Configuration layer**: Environment variables and setup scripts
-4. **Application layer**: Your project-specific files (if any)
+1. **Base layer**: Minimal system components (glibc, basic utilities).
+2. **Package layers**: Each package and its dependencies.
+3. **Configuration layer**: Environment variables and setup scripts.
+4. **Application layer**: Your project-specific files (if any).
 
 This layering approach means:
-- **Efficient caching**: Common packages are shared between containers
-- **Fast builds**: Only changed layers need to be rebuilt
-- **Small images**: No unnecessary duplication
+- **Efficient caching**: Common packages are shared between containers.
+- **Fast builds**: Only changed layers need to be rebuilt.
+- **Small images**: No unnecessary duplication.
 
 ## Container workflow
 
@@ -82,10 +82,10 @@ When you run `kanuka grove container build`:
 
 <Steps>
 
-1. Grove validates your container configuration
-2. Grove resolves all package dependencies
-3. nix2container creates the container layers
-4. Grove stores the container in the Nix store
+1. Grove validates your container configuration.
+2. Grove resolves all package dependencies.
+3. nix2container creates the container layers.
+4. Grove stores the container in the Nix store.
 
 </Steps>
 
@@ -94,10 +94,10 @@ When you run `kanuka grove container sync`:
 
 <Steps>
 
-1. Grove finds the built container in the Nix store
-2. Grove copies the container to your Docker daemon
-3. Grove tags the container with your project name
-4. The container is now available for `docker run`
+1. Grove finds the built container in the Nix store.
+2. Grove copies the container to your Docker daemon.
+3. Grove tags the container with your project name.
+4. The container is now available for `docker run`.
 
 </Steps>
 
@@ -113,36 +113,36 @@ docker run -d -p 3000:3000 my-project
 
 Grove containers are completely reproducible:
 
-- **Same inputs, same outputs**: Identical environments produce identical containers
-- **Bit-for-bit reproducible**: The same configuration always creates the same container
-- **Cross-platform**: Containers built on different systems are identical
-- **Deterministic**: No random elements or timestamps affect the build
+- **Same inputs, same outputs**: Identical environments produce identical containers.
+- **Bit-for-bit reproducible**: The same configuration always creates the same container.
+- **Cross-platform**: Containers built on different systems are identical.
+- **Deterministic**: No random elements or timestamps affect the build.
 
 ## Container efficiency
 
 Grove containers are highly efficient:
 
-- **Minimal size**: Only includes what's actually needed
-- **Layer sharing**: Common packages are shared between containers
-- **No package managers**: No npm, pip, or other package managers in the final image
-- **Static dependencies**: All dependencies are resolved at build time
+- **Minimal size**: Only includes what's actually needed.
+- **Layer sharing**: Common packages are shared between containers.
+- **No package managers**: No npm, pip, or other package managers in the final image.
+- **Static dependencies**: All dependencies are resolved at build time.
 
 ## Container security
 
 Grove containers have several security advantages:
 
-- **Minimal attack surface**: Only essential components are included
-- **No package managers**: Can't install additional packages at runtime
-- **Immutable**: Container contents can't be modified
-- **Reproducible**: Easy to audit and verify what's included
+- **Minimal attack surface**: Only essential components are included.
+- **No package managers**: Can't install additional packages at runtime.
+- **Immutable**: Container contents can't be modified.
+- **Reproducible**: Easy to audit and verify what's included.
 
 ## Platform limitations
 
 Container building has some platform requirements:
 
-- **Linux required**: Container building only works on Linux systems
-- **macOS workaround**: Use CI/CD or remote Linux systems for building
-- **Windows workaround**: Use WSL2 or remote Linux systems
+- **Linux required**: Container building only works on Linux systems.
+- **macOS workaround**: Use CI/CD or remote Linux systems for building.
+- **Windows workaround**: Use WSL2 or remote Linux systems.
 
 This is because containers are fundamentally Linux-based, and the Nix build process needs to run on the target platform.
 

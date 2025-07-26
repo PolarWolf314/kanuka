@@ -12,18 +12,18 @@ Grove distinguishes between two types of additions:
 ### Packages
 These are individual tools and applications like `nodejs`, `docker`, or `git`. When you add a package, Grove:
 
-1. Finds the package in the nixpkgs repository
-2. Adds it to your `devenv.nix` file
-3. Updates `kanuka.toml` to track the addition
-4. Includes all necessary dependencies automatically
+1. Finds the package in the nixpkgs repository.
+2. Adds it to your `devenv.nix` file.
+3. Updates `kanuka.toml` to track the addition.
+4. Includes all necessary dependencies automatically.
 
 ### Languages
 These are full programming language environments with extra tooling like `typescript`, `rust`, or `go`. Language environments often include:
 
-- The language runtime
-- Package managers (npm, cargo, go mod)
-- Language servers for IDE support
-- Common development tools
+- The language runtime.
+- Package managers (npm, cargo, go mod).
+- Language servers for IDE support.
+- Common development tools.
 
 ## Package resolution
 
@@ -33,11 +33,11 @@ import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
 
-1. Grove searches the nixpkgs repository for a package named "nodejs"
-2. Grove finds the latest version (unless you specified a version)
-3. Grove adds `pkgs.nodejs` to your `devenv.nix` file
-4. Grove updates `kanuka.toml` with the package name
-5. The next time you enter your environment, Nix downloads the package and all its dependencies
+1. Grove searches the nixpkgs repository for a package named "nodejs".
+2. Grove finds the latest version (unless you specified a version).
+3. Grove adds `pkgs.nodejs` to your `devenv.nix` file.
+4. Grove updates `kanuka.toml` with the package name.
+5. The next time you enter your environment, Nix downloads the package and all its dependencies.
 
 </Steps>
 
@@ -45,16 +45,16 @@ import { Steps } from '@astrojs/starlight/components';
 
 One of the biggest advantages of Grove is automatic dependency management:
 
-- **No dependency conflicts**: Each package brings its own dependencies
-- **No system pollution**: Dependencies don't affect your system
-- **Reproducible builds**: Same dependencies everywhere
-- **Automatic resolution**: You never have to manually install dependencies
+- **No dependency conflicts**: Each package brings its own dependencies.
+- **No system pollution**: Dependencies don't affect your system.
+- **Reproducible builds**: Same dependencies everywhere.
+- **Automatic resolution**: You never have to manually install dependencies.
 
 For example, when you add `nodejs`, you automatically get:
-- The Node.js runtime
-- npm package manager
-- All required system libraries
-- Proper environment variables
+- The Node.js runtime.
+- npm package manager.
+- All required system libraries.
+- Proper environment variables.
 
 ## Version management
 
@@ -79,10 +79,10 @@ When you add a package, Grove records the exact version in a lock file, ensuring
 
 Grove gets packages from nixpkgs, which is:
 
-- **Huge**: Over 100,000 packages available
-- **Fresh**: Updated continuously
-- **Tested**: Packages are built and tested automatically
-- **Cached**: Binary packages are pre-built and cached
+- **Huge**: Over 100,000 packages available.
+- **Fresh**: Updated continuously.
+- **Tested**: Packages are built and tested automatically.
+- **Cached**: Binary packages are pre-built and cached.
 
 ## How Grove updates packages
 
@@ -90,10 +90,10 @@ When you run `kanuka grove channel update`:
 
 <Steps>
 
-1. Grove fetches the latest channel definitions
-2. Grove updates the package repository references
-3. The next time you enter your environment, you get updated packages
-4. All dependencies are automatically updated too
+1. Grove fetches the latest channel definitions.
+2. Grove updates the package repository references.
+3. The next time you enter your environment, you get updated packages.
+4. All dependencies are automatically updated too.
 
 </Steps>
 
@@ -101,10 +101,10 @@ When you run `kanuka grove channel update`:
 
 Each Grove environment has its own package set:
 
-- **Project isolation**: Packages in one project don't affect another
-- **Version isolation**: Different projects can use different versions
-- **Clean environments**: Only declared packages are available
-- **No conflicts**: Multiple versions of the same package can coexist
+- **Project isolation**: Packages in one project don't affect another.
+- **Version isolation**: Different projects can use different versions.
+- **Clean environments**: Only declared packages are available.
+- **No conflicts**: Multiple versions of the same package can coexist.
 
 This means you can have a project using Node.js 16 and another using Node.js 18, without any conflicts or complex version management.
 
