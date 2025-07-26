@@ -670,7 +670,7 @@ func ensureChannelImportsInLetBlock(content, channelName string) (string, error)
 	inLetBlock := false
 	letBlockFound := false
 
-	for i, line := range lines {
+	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		
 		// Detect start of let block
@@ -690,14 +690,9 @@ func ensureChannelImportsInLetBlock(content, channelName string) (string, error)
 			continue
 		}
 		
-		// If we're in the let block and this is the last import line, add after it
+		// If we're in the let block and this is an import line, just add it
 		if inLetBlock && strings.Contains(line, "= import inputs.") {
 			newLines = append(newLines, line)
-			// Check if the next line is "in" or another import
-			if i+1 < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i+1]), "in") {
-				// Add our import before "in"
-				newLines = append(newLines, "  "+importLine)
-			}
 			continue
 		}
 		
