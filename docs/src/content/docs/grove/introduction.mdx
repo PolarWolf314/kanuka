@@ -1,0 +1,47 @@
+---
+title: What is Grove?
+description: Introduction to Kānuka's development environment management system
+---
+
+Grove is Kānuka's development environment management system that provides reproducible, isolated development environments using the Nix ecosystem and devenv.
+
+## Overview
+
+Grove solves the "it works on my machine" problem by creating declarative, reproducible development environments that work consistently across different systems and team members.
+
+## Key Benefits
+
+- **Reproducible**: Same environment everywhere, every time
+- **Isolated**: No conflicts with system packages or other projects
+- **Declarative**: Environment defined in code (devenv.nix)
+- **Fast**: Leverages Nix's binary cache for quick setup
+- **Flexible**: Support for any language or tool available in nixpkgs
+
+## How Grove Works
+
+Grove integrates with the devenv ecosystem to provide:
+
+1. **Environment Definition**: Uses `devenv.nix` to declare your development environment
+2. **Package Management**: Integrates with nixpkgs for access to thousands of packages
+3. **Shell Integration**: Provides clean, isolated development shells
+4. **Container Support**: Build OCI containers from your development environment
+5. **Channel Management**: Control nixpkgs versions and package sources
+
+## Core Concepts
+
+### devenv.nix
+The heart of your development environment - a Nix file that declaratively defines all packages, languages, and services needed for your project.
+
+### kanuka.toml
+Kānuka's configuration file that tracks Grove-managed packages and settings.
+
+### Channels
+Different versions of the nixpkgs package repository (stable, unstable, or custom) that provide different package versions.
+
+## Getting Started
+
+Ready to create your first Grove environment? Check out the [Grove getting started guide](/grove/getting-started/).
+
+:::tip
+Grove can be used alongside Kānuka's secrets management features for a complete development workflow.
+:::

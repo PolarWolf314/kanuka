@@ -32,7 +32,18 @@ export default defineConfig({
           ],
         },
         {
-          label: "Guides",
+          label: "Grove (Development Environments)",
+          items: [
+            "grove/introduction",
+            "grove/getting-started",
+            "grove/development-environments",
+            "grove/package-management",
+            "grove/channels",
+            "grove/containers",
+          ],
+        },
+        {
+          label: "Secrets Management",
           items: [
             "guides/project-init",
             "guides/encryption",

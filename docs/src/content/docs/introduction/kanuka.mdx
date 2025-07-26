@@ -3,15 +3,9 @@ title: Kānuka
 description: What is Kānuka?
 ---
 
-Kānuka is a CLI tool written in Go. It makes sharing secrets, creating
-development environments, deploying code, and testing, unified under one robust
-and simple interface. Never again will you need to ask another developer to send
-you their `.env` file, or what tools need to be installed on your system in
-order to start developing.
+Kānuka is a powerful CLI tool written in Go that unifies development environment management and secure secrets sharing. It provides reproducible development environments using the Nix ecosystem, comprehensive package management, container support, and industry-standard encryption for team secrets.
 
-:::caution[Note]
-The current scope of the project only encompasses secrets managements right now.
-:::
+With Kānuka, you'll never need to ask "what tools do I need installed?" or "can you send me the API keys?" again. Create isolated, reproducible development environments and securely share secrets across your entire team.
 
 ## What’s with the name?
 
@@ -22,6 +16,21 @@ characteristically soft touch, and it’s one of few plants that can survive the
 heat of geothermal features.
 
 It is fast, resilient, yet pleasant to touch. This is the vision of Kānuka.
+
+## Core Features
+
+### Grove (Development Environment Management)
+- **Reproducible Environments**: Create isolated development environments using devenv.nix
+- **Package Management**: Add, remove, and search packages from the vast Nix ecosystem
+- **Channel Management**: Control nixpkgs versions and pin specific commits
+- **Container Support**: Build OCI containers directly from your development environment
+- **AWS Integration**: Built-in AWS SSO authentication for seamless cloud development
+
+### Secrets Management
+- **Secure Encryption**: Industry-standard AES-256 and RSA-2048 encryption
+- **Team Collaboration**: Register team members and share secrets securely
+- **Git-Safe**: Encrypted secrets can be safely committed to version control
+- **Cross-Platform**: Works consistently across Linux, macOS, and Windows
 
 ## Installation
 
