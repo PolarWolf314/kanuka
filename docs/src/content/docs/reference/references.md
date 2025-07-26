@@ -1,15 +1,11 @@
 ---
-title: Kānuka CLI Reference
-description: An explanation for how Kānuka handles configuration.
+title: Command Reference
+description: Complete reference for all Kānuka commands and their options.
 ---
 
-Kānuka is a powerful command-line tool for managing infrastructure, handling project packages using a nix shell environment, and securely storing environment secrets.
+This page provides a comprehensive reference for all Kānuka commands and their options.
 
-## Features
-
-- Store and retrieve secrets securely.
-
-## Main Commands
+## Secrets Management Commands
 
 ### `kanuka`
 

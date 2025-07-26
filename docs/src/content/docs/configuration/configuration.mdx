@@ -1,6 +1,154 @@
 ---
-title: Configuration Options
-description: An explanation for how Kānuka handles configuration.
+title: Configuration
+description: Configuration options for Kānuka secrets and Grove environments.
 ---
 
-¯\\\_(ツ)_/¯ idk yet it's not implemented! Feel free to contribute 😊
+Kānuka can be configured using environment variables, command-line flags, and configuration files.
+
+## Environment Variables
+
+:::caution[Note]
+The log level env var is still a work in progress!
+:::
+
+### `KANUKA_LOG_LEVEL`
+
+Controls the verbosity of log output.
+
+**Default**: `info`
+
+**Options**: `trace`, `debug`, `info`, `warn`, `error`
+
+**Example**:
+```bash
+export KANUKA_LOG_LEVEL=debug
+kanuka encrypt secrets.env
+```
+
+### `KANUKA_DATA_DIR`
+
+Overrides the default data directory where Kānuka stores user-specific files like private keys.
+
+**Default**: 
+- Linux/macOS: `$XDG_DATA_HOME/kanuka` (usually `~/.local/share/kanuka`)
+- Windows: `%APPDATA%\kanuka`
+
+**Example**:
+```bash
+export KANUKA_DATA_DIR=/custom/path/to/kanuka
+kanuka init
+```
+
+## Grove Configuration Files
+
+Grove uses several configuration files to manage your development environment:
+
+### kanuka.toml
+
+Kānuka's own configuration file that tracks Grove-managed packages and settings:
+
+```toml
+[grove]
+packages = ["nodejs_18", "python3", "git", "docker"]
+languages = ["typescript", "rust"]
+
+[grove.channels]
+default = "nixpkgs-unstable"
+stable = "nixos-23.11"
+
+[grove.container]
+enabled = true
+name = "my-project"
+```
+
+### devenv.nix
+
+The main environment definition file written in Nix language:
+
+```nix
+{ pkgs, ... }: {
+  # Project name for containers
+  name = "my-project";
+  
+  # Packages managed by Kānuka Grove
+  packages = [
+    pkgs.nodejs_18
+    pkgs.python3
+    pkgs.git
+    pkgs.docker
+  ];
+
+  # Languages (also managed by Grove)
+  languages.typescript.enable = true;
+  languages.rust.enable = true;
+  
+  # Services and additional configuration
+  services.postgres.enable = true;
+  
+  # Environment variables
+  env.NODE_ENV = "development";
+}
+```
+
+### devenv.yaml
+
+Configuration for devenv, including channel sources and inputs:
+
+```yaml
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixpkgs-unstable
+  nixpkgs-stable:
+    url: github:NixOS/nixpkgs/nixos-23.11
+  nix2container:
+    url: github:nlewo/nix2container
+    inputs.nixpkgs.follows: nixpkgs
+```
+
+## AWS Configuration
+
+For AWS SSO integration, configure your `~/.aws/config`:
+
+```ini
+[default]
+sso_start_url = https://your-org.awsapps.com/start
+sso_region = us-east-1
+sso_account_id = 123456789012
+sso_role_name = DeveloperAccess
+region = us-east-1
+
+[profile production]
+sso_start_url = https://your-org.awsapps.com/start
+sso_region = us-east-1
+sso_account_id = 987654321098
+sso_role_name = ProductionAccess
+region = us-west-2
+```
+
+## Command-Line Flags
+
+Most Kānuka commands support common flags:
+
+### Global Flags
+
+- `--verbose`, `-v`: Enable verbose output.
+- `--quiet`, `-q`: Suppress non-error output.
+- `--help`, `-h`: Show help information.
+
+### Grove-Specific Flags
+
+- `--channel`: Specify package channel for `grove add`.
+- `--auth`: Enable AWS authentication for `grove enter`.
+- `--env`: Specify environment name for `grove enter`.
+
+**Examples**:
+```bash
+# Use verbose output
+kanuka --verbose grove add nodejs
+
+# Add package from specific channel
+kanuka grove add python3 --channel stable
+
+# Enter environment with AWS authentication
+kanuka grove enter --auth
+```

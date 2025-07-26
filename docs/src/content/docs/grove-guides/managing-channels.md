@@ -25,7 +25,7 @@ You can add custom channels for specific package versions:
 
 ```bash
 # Add a specific nixpkgs branch
-kanuka grove channel add nixos-22.11 github:NixOS/nixpkgs/nixos-22.11
+kanuka grove channel add nixos-22-11 github:NixOS/nixpkgs/nixos-22.11
 
 # Add a custom channel
 kanuka grove channel add my-packages github:myorg/my-nixpkgs
@@ -60,3 +60,4 @@ kanuka grove channel update
 To learn more about `kanuka grove channel`, see the [channel management concepts](/concepts/grove-channels) and the [command reference](/reference/references).
 
 Or, continue reading to learn how to build containers from your environment.
+

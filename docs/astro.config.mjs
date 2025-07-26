@@ -36,9 +36,14 @@ export default defineConfig({
           items: [
             "grove-guides/environment-init",
             "grove-guides/adding-packages",
+            "grove-guides/removing-packages",
+            "grove-guides/searching-packages",
+            "grove-guides/listing-packages",
             "grove-guides/entering-environment",
+            "grove-guides/environment-status",
             "grove-guides/managing-channels",
             "grove-guides/building-containers",
+            "grove-guides/aws-integration",
           ],
         },
         {
@@ -56,14 +61,24 @@ export default defineConfig({
         {
           label: "Concepts",
           items: [
-            "concepts/structure",
-            "concepts/encryption",
-            "concepts/registration",
-            "concepts/purge",
-            "concepts/grove-environments",
-            "concepts/grove-packages",
-            "concepts/grove-channels",
-            "concepts/grove-containers",
+            {
+              label: "Secrets Management",
+              items: [
+                "concepts/structure",
+                "concepts/encryption",
+                "concepts/registration",
+                "concepts/purge",
+              ],
+            },
+            {
+              label: "Development Environments",
+              items: [
+                "concepts/grove-environments",
+                "concepts/grove-packages",
+                "concepts/grove-channels",
+                "concepts/grove-containers",
+              ],
+            },
           ],
         },
         {

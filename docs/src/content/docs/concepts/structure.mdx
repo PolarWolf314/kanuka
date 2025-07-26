@@ -1,12 +1,14 @@
 ---
 title: Where Kānuka Stores Your Files
-description: An explanation for the project structure.
+description: An explanation for the project structure and file organization.
 ---
 
-## Project specific files
+Kānuka creates different files depending on which features you're using. Understanding where everything goes helps you work effectively with the tool.
 
-Kānuka stores all your project related files in a `.kanuka` folder at the root
-of your project. For example, if you had as Astro project, it may look like
+## Secrets Management Files
+
+Kānuka stores all your secrets-related files in a `.kanuka` folder at the root
+of your project. For example, if you had an Astro project, it may look like
 this:
 
 import { FileTree } from '@astrojs/starlight/components';
@@ -30,8 +32,41 @@ import { FileTree } from '@astrojs/starlight/components';
 
 </FileTree>
 
-Any files created by Kānuka in your project are safe to commit to your version
-control.
+## Grove Development Environment Files
+
+When you use Grove for development environments, Kānuka creates additional files:
+
+<FileTree>
+
+- astro.config.mjs
+- package.json
+- **devenv.nix** environment definition
+- **devenv.yaml** devenv configuration
+- **kanuka.toml** Grove configuration
+- .envrc direnv integration (optional)
+- .devenv/ generated files (not committed)
+  - profile/
+  - state/
+- .kanuka secrets management (if using secrets)
+  - public_keys/
+  - secrets/
+
+</FileTree>
+
+### Grove Files Explained
+
+- **devenv.nix**: The main environment definition written in Nix language.
+- **devenv.yaml**: Configuration for devenv, including package sources.
+- **kanuka.toml**: Kānuka's own configuration tracking what Grove has added.
+- **.envrc**: Optional direnv integration for automatic environment activation.
+- **.devenv/**: Generated environment files (automatically excluded from git).
+
+## What Gets Committed
+
+All files created by Kānuka are safe to commit to version control, except:
+
+- Private keys (stored in your user directory).
+- Generated environment files (`.devenv/` directory).
 
 A core concept to understand is that each user has _their own_ version of a
 symmetric key, but everyone has the _same_ symmetric key. To read more about
