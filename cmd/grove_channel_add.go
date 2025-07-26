@@ -196,6 +196,3 @@ func validateChannelURL(url string) error {
 	return nil
 }
 
-func init() {
-	// No flags needed for basic add functionality
-}

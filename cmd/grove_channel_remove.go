@@ -42,9 +42,6 @@ Note: You cannot remove the default nixpkgs or nixpkgs-stable channels.`,
 	},
 }
 
-func init() {
-	groveChannelCmd.AddCommand(groveChannelRemoveCmd)
-}
 
 // handleChannelRemoval handles the removal of a channel from devenv.yaml.
 func handleChannelRemoval(channelName string, spinner *spinner.Spinner) error {
