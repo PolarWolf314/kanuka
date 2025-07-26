@@ -1,52 +1,52 @@
 ---
-title: Container Support
-description: Building and managing OCI containers from Grove environments
+title: Building Containers
+description: A guide to building containers from your Grove development environment.
 ---
 
-Grove provides integrated container support, allowing you to build OCI (Open Container Initiative) containers directly from your development environment. This ensures your deployment containers match your development environment exactly.
+One of the coolest things about Grove is that you can build containers directly from your development environment. This means your deployment containers will match your development environment exactly - no more "it works on my machine" problems!
 
-## Overview
+## How it works
 
-Grove's container support uses nix2container to build efficient, reproducible containers from your development environment configuration.
+Grove uses a tool called nix2container to build efficient, reproducible containers from your development environment. Everything you've added to your Grove environment can be packaged up into a container.
 
-## Container Commands
+## Setting up container support
 
-### Initialize Container Support
+### Add containers to an existing environment
 ```bash
 kanuka grove container init
 ```
 
-This adds container configuration to your existing Grove environment.
+This adds container support to your existing Grove environment.
 
-Or initialize with containers from the start:
+### Or start with containers from the beginning
 ```bash
 kanuka grove init --containers
 ```
 
-### Build Container
+### Build your container
 ```bash
 kanuka grove container build
 ```
 
-Builds an OCI container from your current Grove environment.
+This builds a container from your current Grove environment.
 
 ### Sync to Docker
 ```bash
 kanuka grove container sync
 ```
 
-Syncs the built container from Nix store to Docker daemon, making it available for `docker run`.
+This copies the built container from the Nix store to your Docker daemon, so you can use it with `docker run`.
 
-### Enter Container
+### Enter the container
 ```bash
 kanuka grove container enter
 ```
 
-Starts an interactive shell inside the container for testing and debugging.
+This starts an interactive shell inside the container, which is great for testing and debugging.
 
-## Container Workflow
+## How to build containers
 
-### 1. Enable Container Support
+### 1. Enable container support
 ```bash
 # For new projects
 kanuka grove init --containers
@@ -55,15 +55,15 @@ kanuka grove init --containers
 kanuka grove container init
 ```
 
-### 2. Configure Your Environment
+### 2. Set up your environment
 ```bash
-# Add packages as normal
+# Add packages like you normally would
 kanuka grove add nodejs
 kanuka grove add python3
 kanuka grove add git
 ```
 
-### 3. Build Container
+### 3. Build your container
 ```bash
 kanuka grove container build
 ```

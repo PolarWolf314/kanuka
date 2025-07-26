@@ -1,18 +1,22 @@
 ---
-title: Package Management
-description: Adding, removing, and managing packages in Grove environments
+title: Managing Packages
+description: A guide to adding, removing, and managing packages in your Grove environment.
 ---
 
-Grove provides comprehensive package management through integration with the Nix ecosystem, giving you access to thousands of packages and tools.
+One of the best things about Grove is how easy it is to add and manage the tools your project needs. You get access to thousands of packages from the Nix ecosystem without any of the usual dependency headaches.
 
-## Adding Packages
+## Adding packages
 
-### Basic Package Addition
+### The basics
+
+Adding a package is as simple as:
+
 ```bash
 kanuka grove add <package-name>
 ```
 
-Examples:
+Here are some examples:
+
 ```bash
 kanuka grove add nodejs     # Latest Node.js
 kanuka grove add python3    # Python 3
@@ -21,26 +25,31 @@ kanuka grove add docker     # Docker CLI
 kanuka grove add awscli2    # AWS CLI v2
 ```
 
-### Version-Specific Packages
+### Adding specific versions
+
+Sometimes you need a specific version of a package. You can do that too:
 ```bash
 kanuka grove add nodejs_18  # Node.js version 18
 kanuka grove add python39   # Python 3.9
 kanuka grove add go_1_19    # Go version 1.19
 ```
 
-### Channel Selection
+### Using different channels
+
+You can also choose which channel (version source) to use:
+
 ```bash
 kanuka grove add nodejs --channel stable      # From stable channel
 kanuka grove add python3 --channel unstable   # From unstable channel
 kanuka grove add rust --channel nixpkgs-stable # From specific channel
 ```
 
-## Language Environments
+## Languages vs packages
 
-Grove distinguishes between packages and language environments:
+Grove treats languages and packages a bit differently:
 
-### Languages vs Packages
-- **Languages**: Full development environments with tooling
+### What's the difference?
+- **Languages**: Full development environments with extra tooling and setup
 - **Packages**: Individual tools and applications
 
 ```bash

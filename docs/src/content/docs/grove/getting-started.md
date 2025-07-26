@@ -1,37 +1,37 @@
 ---
-title: Grove Getting Started
-description: Quick start guide for Grove development environments
+title: Getting Started with Grove
+description: A guide to setting up your first development environment using Kānuka.
 ---
 
-Get up and running with Grove development environments in just a few minutes.
+Ever struggled with "it works on my machine" problems? Grove solves this by giving you reproducible development environments that work the same everywhere.
 
-## Prerequisites
+## What you'll need
 
-Before using Grove, you'll need:
+Before you can use Grove, you'll need a couple of things installed:
 
-- **Nix**: The Nix package manager ([installation guide](https://nixos.org/download.html))
-- **devenv**: Development environment tool ([installation guide](https://devenv.sh/getting-started/))
-- **Kānuka**: Already installed if you're reading this!
+- **Nix**: The package manager that makes Grove possible ([get it here](https://nixos.org/download.html))
+- **devenv**: The tool that Grove uses under the hood ([installation guide](https://devenv.sh/getting-started/))
+- **Kānuka**: You've already got this if you're reading this!
 
-## Quick Start
+## Setting up your first environment
 
-### 1. Initialize Grove Environment
+### 1. Initialize Grove
 
-Create a new development environment in your project:
+To get started with Grove in your project, just run:
 
 ```bash
 kanuka grove init
 ```
 
-This creates:
-- `devenv.nix` - Your environment definition
-- `devenv.yaml` - devenv configuration
-- `kanuka.toml` - Kānuka's Grove configuration
-- Updates `.gitignore` with appropriate entries
+That's it! Kānuka will create everything you need:
+- `devenv.nix` - where your environment is defined
+- `devenv.yaml` - configuration for devenv
+- `kanuka.toml` - Kānuka's own configuration file
+- Updates your `.gitignore` so you don't commit the wrong files
 
-### 2. Add Packages
+### 2. Add the tools you need
 
-Add the tools and languages you need:
+Now you can add whatever packages your project needs:
 
 ```bash
 # Add programming languages
@@ -45,74 +45,78 @@ kanuka grove add docker
 kanuka grove add awscli2
 ```
 
-### 3. Enter Development Environment
+### 3. Enter your environment
 
-Start using your environment:
+To start using your new environment, run:
 
 ```bash
 kanuka grove enter
-# or use the shorthand
+# or use the shortcut
 kanuka dev
 ```
 
-This drops you into a clean shell with all your packages available.
+This will drop you into a clean shell where all your packages are available and ready to use.
 
-### 4. Verify Your Environment
+### 4. Check everything works
 
-Check what's available:
+You can verify your environment is working by checking the versions:
 
 ```bash
-# Inside the grove shell
+# Inside your grove environment
 node --version
 python --version
 go version
 ```
 
-## Common Workflows
+## What else can you do?
 
-### Adding Container Support
+### Adding container support
 
-Enable container building:
+If you want to build containers from your environment, you can enable that too:
 
 ```bash
 kanuka grove init --containers
-# or add to existing environment
+# or if you already have Grove set up
 kanuka grove container init
 ```
 
-### Using Different Package Channels
+### Using different package versions
+
+Sometimes you want stable packages instead of the latest ones:
 
 ```bash
-# Use stable packages
+# Use stable packages for production-like environments
 kanuka grove add nodejs --channel stable
 
-# Use specific channel
+# Use a specific channel
 kanuka grove add python3 --channel nixpkgs-stable
 ```
 
-### AWS Development
+### AWS development
 
-Enable AWS SSO authentication:
+If you're working with AWS, Grove can handle authentication for you:
 
 ```bash
 kanuka grove enter --auth
 ```
 
-## Next Steps
+## Next steps
 
-- Learn about [development environments](/grove/development-environments/) in depth
-- Explore [package management](/grove/package-management/) features
-- Set up [container support](/grove/containers/) for deployment
-- Configure [AWS integration](/grove/aws-integration/) for cloud development
+To learn more about Grove, you can read about:
 
-## Troubleshooting
+- [Development environments](/grove/development-environments/) and how they work
+- [Package management](/grove/package-management/) for adding and removing tools
+- [Container support](/grove/containers/) for building deployable containers
+- [Channel management](/grove/channels/) for controlling package versions
 
-### Common Issues
+## When things go wrong
 
-**"devenv not found"**: Make sure devenv is installed and in your PATH.
+### Common problems
 
-**"Nix not found"**: Install Nix package manager first.
+**"devenv not found"**: Make sure you've installed devenv and it's in your PATH.
 
-**Package not found**: Try searching with `kanuka grove search <package-name>`.
+**"Nix not found"**: You'll need to install the Nix package manager first.
 
-**Environment conflicts**: Grove environments are isolated, but ensure you're not in another development shell.
+**Package not found**: Try searching for it with `kanuka grove search <package-name>`.
+
+**Environment conflicts**: Grove environments are isolated, but make sure you're not already inside another development shell.

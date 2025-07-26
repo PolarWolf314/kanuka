@@ -1,27 +1,27 @@
 ---
-title: Channel Management
-description: Managing nixpkgs channels for package versions and sources
+title: Managing Channels
+description: A guide to controlling package versions and sources in your Grove environment.
 ---
 
-Channels in Grove control which versions of packages are available in your development environment. Understanding and managing channels is key to creating reproducible, stable environments.
+Channels are how Grove controls which versions of packages you get. Think of them as different "streams" of packages - some have the latest and greatest, others focus on stability.
 
-## What are Channels?
+## What are channels?
 
-Channels are different versions or branches of the nixpkgs package repository:
+Channels are basically different versions of the package repository:
 
-- **unstable**: Latest packages with newest features (default)
-- **stable**: Tested, stable packages with fewer updates
+- **unstable**: The latest packages with all the newest features (this is the default)
+- **stable**: Well-tested packages that change less often
 - **custom**: Your own channel definitions for specific needs
 
-## Default Channels
+## The channels Grove gives you
 
-Grove comes with standard channels configured:
+Grove comes with a couple of standard channels already set up:
 
-### unstable (default)
+### unstable (the default)
 - Latest package versions
-- Frequent updates
-- Best for development and experimentation
-- May have occasional breaking changes
+- Gets updated frequently
+- Great for development and trying new things
+- Sometimes things might break (that's the trade-off for being cutting-edge)
 
 ### stable
 - Well-tested package versions

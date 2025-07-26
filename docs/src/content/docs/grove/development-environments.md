@@ -1,16 +1,16 @@
 ---
-title: Development Environments
-description: Understanding Grove's development environment concepts
+title: How Development Environments Work
+description: Understanding what Grove does and how it creates reproducible environments.
 ---
 
-Grove creates reproducible development environments using the Nix ecosystem and devenv. This guide explains the core concepts and how they work together.
+Grove solves the "it works on my machine" problem by creating development environments that work exactly the same way on every computer. Here's how it all works under the hood.
 
-## Environment Files
+## The files Grove creates
 
-Grove manages several files in your project:
+When you run `kanuka grove init`, Grove creates several files that work together to define your environment:
 
 ### devenv.nix
-The main environment definition file written in the Nix language:
+This is the main file that defines what's in your environment. It's written in the Nix language:
 
 ```nix
 { pkgs, ... }: {
@@ -30,7 +30,7 @@ The main environment definition file written in the Nix language:
 ```
 
 ### kanuka.toml
-Kānuka's configuration file tracking Grove-managed packages:
+This is Kānuka's own configuration file where it keeps track of what you've added:
 
 ```toml
 [grove]
@@ -39,7 +39,7 @@ languages = ["typescript"]
 ```
 
 ### devenv.yaml
-devenv configuration for inputs and channels:
+This file tells devenv where to get packages from:
 
 ```yaml
 inputs:
@@ -47,21 +47,21 @@ inputs:
     url: github:NixOS/nixpkgs/nixpkgs-unstable
 ```
 
-## Environment Isolation
+## Why Grove environments are isolated
 
-Grove environments are completely isolated from your system:
+One of the best things about Grove is that your environments are completely separate from your system:
 
-- **No system dependencies**: Everything needed is declared in devenv.nix
-- **Clean PATH**: Only declared packages are available
-- **Reproducible**: Same environment on every machine
-- **Project-specific**: Each project has its own environment
+- **No system dependencies**: Everything your project needs is declared in devenv.nix
+- **Clean PATH**: Only the packages you've added are available
+- **Reproducible**: You get the same environment on every machine
+- **Project-specific**: Each project has its own environment that doesn't interfere with others
 
-## Package Management
+## Adding things to your environment
 
-Grove distinguishes between two types of additions:
+Grove handles two types of additions:
 
 ### Packages
-Individual tools and applications:
+These are individual tools and applications:
 ```bash
 kanuka grove add nodejs    # Adds Node.js runtime
 kanuka grove add docker    # Adds Docker CLI
@@ -69,18 +69,18 @@ kanuka grove add awscli2   # Adds AWS CLI v2
 ```
 
 ### Languages
-Programming language environments with additional tooling:
+These are full programming language environments with extra tooling:
 ```bash
 kanuka grove add typescript  # Enables TypeScript language support
 kanuka grove add rust       # Enables Rust language environment
 kanuka grove add go         # Enables Go language environment
 ```
 
-## Channel Management
+## Controlling package versions
 
 Channels determine which version of packages you get:
 
-- **unstable**: Latest packages (default)
+- **unstable**: Latest packages (this is the default)
 - **stable**: Stable, tested packages
 - **custom**: Your own channel definitions
 
