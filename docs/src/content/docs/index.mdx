@@ -1,9 +1,9 @@
 ---
 title: Welcome to Kānuka
-description: Managing secrets, made easy
+description: Unified development environments and secrets management
 template: splash
 hero:
-  tagline: No third parties. Just fast, resilient, and pleasant secrets management.
+  tagline: Fast, resilient development environments and secure secrets management in one powerful CLI tool.
   image:
     {
       light: "/public/assets/kanuka-light-circular.png",
@@ -23,18 +23,28 @@ hero:
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
 <CardGrid stagger>
-  <Card title="“Hey, what's the API key?”" icon="warning">
-    Never again will you need to maintain a `.env.example`, or send an API key
-    over Slack. Let Kānuka handle secrets for you.
+  <Card title="Reproducible Development Environments" icon="laptop">
+    Create isolated, reproducible development environments using the Nix ecosystem. 
+    Never worry about "it works on my machine" again.
+  </Card>
+  <Card title="Secure Secrets Management" icon="approve-check">
+    Share team secrets securely using industry-standard encryption. 
+    No more sending API keys over Slack or maintaining `.env.example` files.
+  </Card>
+  <Card title="Container-Ready" icon="puzzle">
+    Build OCI containers directly from your development environment. 
+    Deploy the exact same environment you develop in.
+  </Card>
+  <Card title="AWS Integration" icon="setting">
+    Built-in AWS SSO authentication with automatic credential management. 
+    Seamlessly work with AWS services in your development shell.
   </Card>
   <Card title="Powered by Go" icon="rocket">
-    Leverage the native speeds that Go provides, on any platform, anywhere.
+    Cross-platform native performance on Linux, macOS, and Windows. 
+    Single binary with no external dependencies.
   </Card>
-  <Card title="Secure by design" icon="approve-check">
-    Kānuka uses the same cryptographic technology that powers the internet —
-    2048-bit RSA encryption.
-  </Card>
-  <Card title="Works on any project" icon="open-book">
-    As long as your project uses a `.env` file, Kānuka can handle it.
+  <Card title="Unified Workflow" icon="open-book">
+    One tool for development environments, package management, containers, and secrets. 
+    Streamline your entire development workflow.
   </Card>
 </CardGrid>

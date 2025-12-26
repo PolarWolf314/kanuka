@@ -32,7 +32,6 @@ safely commit these files to your version control.
 
 ## Next steps
 
-To learn more about `kanuka secrets encrypt`, see the [secrets encryption
-page]() and the [command reference]().
+To learn more about `kanuka secrets encrypt`, see the [encryption concepts](/concepts/encryption) and the [command reference](/reference/references).
 
 Or, continue reading to learn how to decrypt secrets using Kānuka.
