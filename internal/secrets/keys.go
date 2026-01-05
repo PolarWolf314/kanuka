@@ -69,7 +69,7 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 	}
 
 	// Save private key
-	privFile, err := os.Create(privatePath)
+	privFile, err := os.OpenFile(privatePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to create private key file at %s: %w", privatePath, err)
 	}
@@ -89,7 +89,7 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 	}
 
 	// Save public key
-	pubFile, err := os.Create(publicPath)
+	pubFile, err := os.OpenFile(publicPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create public key file at %s: %w", publicPath, err)
 	}
