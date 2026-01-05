@@ -56,24 +56,30 @@ import (
 - Run `goimports` before committing (handled by linter)
 
 ### Naming Conventions
-- **Packages**: lowercase, single word (`grove`, `secrets`, `cmd`)
+- **Packages**: lowercase, single word (`secrets`, `configs`, `cmd`)
 - **Public functions/types**: PascalCase (`ParsePackageName`, `Package`)
 - **Private functions**: PascalCase (`isInKanukaManagedSection`)
 - **Variables**: camelCase (`packageName`, `tempDir`)
-- **Constants**: PascalCase (`supportedLanguages`, `GroveCmd`)
-- **Global package vars**: PascalCase (`GroveLogger`, `groveVerbose`)
+- **Constants**: PascalCase (`supportedLanguages`, `SecretsCmd`)
+- **Global package vars**: PascalCase (`Logger`, `verbose`)
 
 ### Types
 - Use explicit types for function returns
 - Prefer returning pointers to structs for large data
 - Define structs with field comments:
 ```go
-type Package struct {
-	Name        string // Original name as provided by user.
-	NixName     string // Nix package name (e.g., pkgs.nodejs_18)
-	DisplayName string // Display name for user feedback.
-	Version     string // Version if specified.
-	Channel     string // Channel used (unstable, stable)
+type UserSettings struct {
+	UserKeysPath    string // Path to user's encryption keys directory.
+	UserConfigsPath string // Path to user's configuration directory.
+	Username        string // Current username.
+}
+
+type ProjectSettings struct {
+	ProjectUUID          string // Unique identifier for the project.
+	ProjectName          string // Name of the project.
+	ProjectPath          string // Path to the project root.
+	ProjectPublicKeyPath string // Path to the project's public keys directory.
+	ProjectSecretsPath   string // Path to the project's secrets directory.
 }
 ```
 
@@ -83,7 +89,7 @@ type Package struct {
 - Use descriptive error messages:
 ```go
 if err != nil {
-	return fmt.Errorf("failed to read devenv.nix: %w", err)
+	return fmt.Errorf("failed to read .kanuka file: %w", err)
 }
 ```
 
@@ -137,11 +143,10 @@ defer func() {
 ```
 cmd/              - CLI command definitions
 internal/
-  configs/        - Configuration management
-  grove/          - Development environment logic
+  configs/        - Configuration management (user and project settings)
   logging/        - Logging utilities
-  secrets/        - Secrets encryption/decryption
-  utils/          - Shared utilities (filesystem, strings, system)
+  secrets/        - Secrets encryption/decryption/management
+  utils/          - Shared utilities (filesystem, strings, system, project)
 test/
   integration/    - Integration tests by feature
     shared/       - Shared test utilities
