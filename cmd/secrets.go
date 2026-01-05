@@ -14,7 +14,7 @@ var (
 	SecretsCmd = &cobra.Command{
 		Use:   "secrets",
 		Short: "Manage secrets stored in the repository",
-		Long:  `	Provides encryption, decryption, registration, revocation, initialization, and purging of secrets.`,
+		Long:  `	Provides encryption, decryption, registration, revocation, and initialization of secrets.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			Logger = logger.Logger{
 				Verbose: verbose,
@@ -35,7 +35,6 @@ func init() {
 	SecretsCmd.AddCommand(RegisterCmd)
 	SecretsCmd.AddCommand(revokeCmd)
 	SecretsCmd.AddCommand(initCmd)
-	SecretsCmd.AddCommand(purgeCmd)
 }
 
 // Helper functions for testing

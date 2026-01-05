@@ -11,8 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var revokeUsername string
-var revokeFilePath string
+var (
+	revokeUsername string
+	revokeFilePath string
+)
 
 func resetRevokeCommandState() {
 	revokeUsername = ""
@@ -304,6 +306,8 @@ func revokeFiles(spinner *spinner.Spinner, username string, filesToRevoke []file
 	if len(allUsers) > 0 {
 		finalMessage += color.CyanString("→") + " Symmetric key has been rotated for remaining users\n"
 	}
+	finalMessage += color.YellowString("⚠") + color.RedString(" Warning: ") + color.YellowString(username) + " may still have access to old secrets from their local git history.\n" +
+		color.CyanString("→") + " If necessary, rotate your actual secret values after this revocation.\n"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
