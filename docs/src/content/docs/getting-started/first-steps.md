@@ -18,25 +18,9 @@ Kānuka is under very active development, and so features will be constantly
 added and changed over time. It is NOT production ready.
 :::
 
-## Choose Your Path
+## Getting Started with Kānuka
 
-Kānuka provides two main feature sets that can be used independently or together:
-
-### 🏗️ Grove (Development Environments)
-Perfect for creating reproducible development environments and managing project dependencies.
-
-```bash
-# Initialize a development environment
-kanuka grove init
-
-# Add packages to your environment  
-kanuka grove add nodejs python3
-
-# Enter your development shell
-kanuka grove enter
-```
-
-**Next steps for Grove**: Check out the [Grove introduction](/grove/introduction/) or jump to [Grove getting started](/grove/getting-started/).
+Kānuka provides secrets management for securely sharing environment variables and API keys across your team.
 
 ### 🔐 Secrets Management
 Ideal for securely sharing environment variables and API keys across your team.
@@ -52,7 +36,7 @@ kanuka secrets create
 kanuka secrets encrypt
 ```
 
-**Next steps for Secrets**: Continue to [project initialization](/guides/project-init/) or learn about [encryption concepts](/concepts/encryption/).
+**Next steps**: Continue to [project initialization](/guides/project-init/) or learn about [encryption concepts](/concepts/encryption/).
 
 ## Getting Help
 

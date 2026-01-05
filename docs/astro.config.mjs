@@ -32,21 +32,6 @@ export default defineConfig({
           ],
         },
         {
-          label: "Grove (Development Environments)",
-          items: [
-            "grove-guides/environment-init",
-            "grove-guides/adding-packages",
-            "grove-guides/removing-packages",
-            "grove-guides/searching-packages",
-            "grove-guides/listing-packages",
-            "grove-guides/entering-environment",
-            "grove-guides/environment-status",
-            "grove-guides/managing-channels",
-            "grove-guides/building-containers",
-            "grove-guides/aws-integration",
-          ],
-        },
-        {
           label: "Secrets Management",
           items: [
             "guides/project-init",
@@ -61,24 +46,10 @@ export default defineConfig({
         {
           label: "Concepts",
           items: [
-            {
-              label: "Secrets Management",
-              items: [
-                "concepts/structure",
-                "concepts/encryption",
-                "concepts/registration",
-                "concepts/purge",
-              ],
-            },
-            {
-              label: "Development Environments",
-              items: [
-                "concepts/grove-environments",
-                "concepts/grove-packages",
-                "concepts/grove-channels",
-                "concepts/grove-containers",
-              ],
-            },
+            "concepts/structure",
+            "concepts/encryption",
+            "concepts/registration",
+            "concepts/purge",
           ],
         },
         {
@@ -87,10 +58,7 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: [
-            "reference/references",
-            "reference/credits",
-          ],
+          items: ["reference/references", "reference/credits"],
         },
       ],
     }),
