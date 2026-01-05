@@ -33,7 +33,6 @@ var removeCmd = &cobra.Command{
 		spinner, cleanup := startSpinner("Removing user access...", verbose)
 		defer cleanup()
 
-		// Check for required flags
 		Logger.Debugf("Checking command flags: removeUsername=%s, removeFilePath=%s", removeUsername, removeFilePath)
 		if removeUsername == "" && removeFilePath == "" {
 			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + " or " + color.YellowString("--file") + " flag is required.\n" +
@@ -54,7 +53,6 @@ var removeCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 
-		// Check if project is initialized
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		if projectPath == "" {
 			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
@@ -63,7 +61,6 @@ var removeCmd = &cobra.Command{
 			return nil
 		}
 
-		// Check if project exists
 		exists, err := secrets.DoesProjectKanukaSettingsExist()
 		if err != nil {
 			return Logger.ErrorfAndReturn("failed to check if project exists: %v", err)
@@ -75,26 +72,38 @@ var removeCmd = &cobra.Command{
 			return nil
 		}
 
-		if removeFilePath != "" {
-			return handleFileRemoval(spinner)
+		username, filesToRemove, err := getFilesToRemove(spinner)
+		if err != nil {
+			return err
 		}
-		return handleUserRemoval(spinner)
+
+		return removeFiles(spinner, username, filesToRemove)
 	},
 }
 
-func handleUserRemoval(spinner *spinner.Spinner) error {
+type fileToRemove struct {
+	Path string
+	Name string
+}
+
+func getFilesToRemove(spinner *spinner.Spinner) (string, []fileToRemove, error) {
+	if removeUsername != "" {
+		return getFilesByUsername(spinner)
+	}
+	return getFilesByPath(spinner)
+}
+
+func getFilesByUsername(spinner *spinner.Spinner) (string, []fileToRemove, error) {
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 
 	Logger.Debugf("Project public key path: %s, Project secrets path: %s", projectPublicKeyPath, projectSecretsPath)
 
-	// Define file paths for the user
 	publicKeyPath := filepath.Join(projectPublicKeyPath, removeUsername+".pub")
 	kanukaKeyPath := filepath.Join(projectSecretsPath, removeUsername+".kanuka")
 
 	Logger.Debugf("Checking for user files: %s, %s", publicKeyPath, kanukaKeyPath)
 
-	// Check if user exists (has both files)
 	publicKeyExists := false
 	kanukaKeyExists := false
 
@@ -105,7 +114,7 @@ func handleUserRemoval(spinner *spinner.Spinner) error {
 		finalMessage := color.RedString("✗") + " Failed to check user's public key file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); err == nil {
@@ -115,65 +124,29 @@ func handleUserRemoval(spinner *spinner.Spinner) error {
 		finalMessage := color.RedString("✗") + " Failed to check user's kanuka key file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
-	// If neither file exists, user doesn't exist
 	if !publicKeyExists && !kanukaKeyExists {
 		Logger.Infof("User %s does not exist in the project", removeUsername)
 		finalMessage := color.RedString("✗") + " User " + color.YellowString(removeUsername) + " does not exist in this project\n" +
 			color.CyanString("→") + " No files found for this user\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
-	// Remove files that exist
-	var removedFiles []string
-	var errors []error
-
+	var files []fileToRemove
 	if publicKeyExists {
-		Logger.Debugf("Removing public key file: %s", publicKeyPath)
-		if err := os.Remove(publicKeyPath); err != nil {
-			Logger.Errorf("Failed to remove public key file %s: %v", publicKeyPath, err)
-			errors = append(errors, err)
-		} else {
-			removedFiles = append(removedFiles, removeUsername+".pub")
-			Logger.Infof("Successfully removed public key file")
-		}
+		files = append(files, fileToRemove{Path: publicKeyPath, Name: removeUsername + ".pub"})
 	}
-
 	if kanukaKeyExists {
-		Logger.Debugf("Removing kanuka key file: %s", kanukaKeyPath)
-		if err := os.Remove(kanukaKeyPath); err != nil {
-			Logger.Errorf("Failed to remove kanuka key file %s: %v", kanukaKeyPath, err)
-			errors = append(errors, err)
-		} else {
-			removedFiles = append(removedFiles, removeUsername+".kanuka")
-			Logger.Infof("Successfully removed kanuka key file")
-		}
+		files = append(files, fileToRemove{Path: kanukaKeyPath, Name: removeUsername + ".kanuka"})
 	}
 
-	// Report results
-	if len(errors) > 0 {
-		finalMessage := color.RedString("✗") + " Failed to completely remove user " + color.YellowString(removeUsername) + "\n"
-		for _, err := range errors {
-			finalMessage += color.RedString("Error: ") + err.Error() + "\n"
-		}
-		if len(removedFiles) > 0 {
-			finalMessage += color.YellowString("Warning: ") + "Some files were removed successfully\n"
-		}
-		spinner.FinalMSG = finalMessage
-		return nil
-	}
-
-	Logger.Infof("User removal completed successfully for: %s", removeUsername)
-	finalMessage := color.GreenString("✓") + " User " + color.YellowString(removeUsername) + " has been removed successfully!\n" +
-		color.CyanString("→") + " They no longer have access to decrypt the repository's secrets\n"
-	spinner.FinalMSG = finalMessage
-	return nil
+	return removeUsername, files, nil
 }
 
-func handleFileRemoval(spinner *spinner.Spinner) error {
+func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRemove, error) {
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 
@@ -183,7 +156,7 @@ func handleFileRemoval(spinner *spinner.Spinner) error {
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Failed to resolve file path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	Logger.Debugf("Absolute file path: %s", absFilePath)
@@ -194,39 +167,39 @@ func handleFileRemoval(spinner *spinner.Spinner) error {
 			Logger.Infof("File does not exist: %s", absFilePath)
 			finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " does not exist\n"
 			spinner.FinalMSG = finalMessage
-			return nil
+			return "", nil, nil
 		}
 		Logger.Errorf("Failed to check file %s: %v", absFilePath, err)
 		finalMessage := color.RedString("✗") + " Failed to check file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	if fileInfo.IsDir() {
 		finalMessage := color.RedString("✗") + " Path " + color.YellowString(absFilePath) + " is a directory, not a file\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	absProjectSecretsPath, err := filepath.Abs(projectSecretsPath)
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Failed to resolve project secrets path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	if filepath.Dir(absFilePath) != absProjectSecretsPath {
 		finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " is not in the project secrets directory\n" +
 			color.CyanString("→") + " Expected directory: " + color.YellowString(absProjectSecretsPath) + "\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	if filepath.Ext(absFilePath) != ".kanuka" {
 		finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " is not a .kanuka file\n"
 		spinner.FinalMSG = finalMessage
-		return nil
+		return "", nil, nil
 	}
 
 	baseName := filepath.Base(absFilePath)
@@ -234,42 +207,39 @@ func handleFileRemoval(spinner *spinner.Spinner) error {
 
 	Logger.Debugf("Extracted username from file: %s", username)
 
-	kanukaKeyPath := absFilePath
+	var files []fileToRemove
+	files = append(files, fileToRemove{Path: absFilePath, Name: baseName})
+
 	publicKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
-
-	Logger.Debugf("Checking for user files: %s, %s", publicKeyPath, kanukaKeyPath)
-
-	publicKeyExists := false
 	if _, err := os.Stat(publicKeyPath); err == nil {
-		publicKeyExists = true
+		files = append(files, fileToRemove{Path: publicKeyPath, Name: username + ".pub"})
 	} else if !os.IsNotExist(err) {
 		Logger.Errorf("Failed to check public key file %s: %v", publicKeyPath, err)
 		finalMessage := color.RedString("✗") + " Failed to check public key file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
+		return "", nil, nil
+	}
+
+	return username, files, nil
+}
+
+func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []fileToRemove) error {
+	if len(filesToRemove) == 0 {
 		return nil
 	}
 
 	var removedFiles []string
 	var errors []error
 
-	Logger.Debugf("Removing kanuka key file: %s", kanukaKeyPath)
-	if err := os.Remove(kanukaKeyPath); err != nil {
-		Logger.Errorf("Failed to remove kanuka key file %s: %v", kanukaKeyPath, err)
-		errors = append(errors, err)
-	} else {
-		removedFiles = append(removedFiles, baseName)
-		Logger.Infof("Successfully removed kanuka key file")
-	}
-
-	if publicKeyExists {
-		Logger.Debugf("Removing public key file: %s", publicKeyPath)
-		if err := os.Remove(publicKeyPath); err != nil {
-			Logger.Errorf("Failed to remove public key file %s: %v", publicKeyPath, err)
+	for _, file := range filesToRemove {
+		Logger.Debugf("Removing file: %s", file.Path)
+		if err := os.Remove(file.Path); err != nil {
+			Logger.Errorf("Failed to remove file %s: %v", file.Path, err)
 			errors = append(errors, err)
 		} else {
-			removedFiles = append(removedFiles, username+".pub")
-			Logger.Infof("Successfully removed public key file")
+			removedFiles = append(removedFiles, file.Name)
+			Logger.Infof("Successfully removed file: %s", file.Name)
 		}
 	}
 
@@ -285,11 +255,14 @@ func handleFileRemoval(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	Logger.Infof("File removal completed successfully for: %s", username)
+	Logger.Infof("Files removal completed successfully for: %s", username)
 	finalMessage := color.GreenString("✓") + " Files for " + color.YellowString(username) + " have been removed successfully!\n" +
-		color.CyanString("→") + " Removed: " + color.YellowString(removedFiles[0])
-	if len(removedFiles) > 1 {
-		finalMessage += ", " + color.YellowString(removedFiles[1])
+		color.CyanString("→") + " Removed: "
+	for i, file := range removedFiles {
+		if i > 0 {
+			finalMessage += ", "
+		}
+		finalMessage += color.YellowString(file)
 	}
 	finalMessage += "\n"
 	spinner.FinalMSG = finalMessage
