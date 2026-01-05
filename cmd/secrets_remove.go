@@ -229,6 +229,12 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 		return nil
 	}
 
+	currentUsername := configs.UserKanukaSettings.Username
+	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
+	projectName := configs.ProjectKanukaSettings.ProjectName
+
+	Logger.Debugf("Current user: %s, Project: %s", currentUsername, projectName)
+
 	var removedFiles []string
 	var errors []error
 
@@ -255,6 +261,37 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 		return nil
 	}
 
+	allUsers, err := secrets.GetAllUsersInProject()
+	if err != nil {
+		Logger.Errorf("Failed to get list of users: %v", err)
+		finalMessage := color.RedString("✗") + " Files were removed but failed to rotate key: " + err.Error() + "\n"
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	if len(allUsers) > 0 {
+		spinner.Suffix = " Rotating symmetric key for remaining users..."
+		Logger.Infof("Rotating symmetric key for %d remaining users", len(allUsers))
+
+		privateKeyPath := filepath.Join(currentUserKeysPath, projectName)
+		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+		if err != nil {
+			Logger.Errorf("Failed to load private key: %v", err)
+			finalMessage := color.RedString("✗") + " Files were removed but failed to rotate key: " + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
+		if err := secrets.RotateSymmetricKey(currentUsername, privateKey, verbose); err != nil {
+			Logger.Errorf("Failed to rotate symmetric key: %v", err)
+			finalMessage := color.RedString("✗") + " Files were removed but failed to rotate key: " + err.Error() + "\n"
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
+		Logger.Infof("Symmetric key rotated successfully")
+	}
+
 	Logger.Infof("Files removal completed successfully for: %s", username)
 	finalMessage := color.GreenString("✓") + " Files for " + color.YellowString(username) + " have been removed successfully!\n" +
 		color.CyanString("→") + " Removed: "
@@ -265,6 +302,9 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 		finalMessage += color.YellowString(file)
 	}
 	finalMessage += "\n"
+	if len(allUsers) > 0 {
+		finalMessage += color.CyanString("→") + " Symmetric key has been rotated for remaining users\n"
+	}
 	spinner.FinalMSG = finalMessage
 	return nil
 }

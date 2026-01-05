@@ -360,3 +360,27 @@ func SavePublicKeyToFile(publicKey *rsa.PublicKey, filePath string) error {
 	// #nosec G306 -- This is a pubkey
 	return os.WriteFile(filePath, pemBytes, 0644)
 }
+
+// GetAllUsersInProject returns a list of all users with access to the project.
+func GetAllUsersInProject() ([]string, error) {
+	if err := configs.InitProjectSettings(); err != nil {
+		return nil, fmt.Errorf("failed to init project settings: %w", err)
+	}
+
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+
+	entries, err := os.ReadDir(projectPublicKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read public keys directory: %w", err)
+	}
+
+	var usernames []string
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".pub" {
+			username := entry.Name()[:len(entry.Name())-len(".pub")]
+			usernames = append(usernames, username)
+		}
+	}
+
+	return usernames, nil
+}

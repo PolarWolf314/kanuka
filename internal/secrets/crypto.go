@@ -139,3 +139,110 @@ func DecryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 
 	return nil
 }
+
+// RotateSymmetricKey rotates the symmetric key for all users in the project.
+// It generates a new symmetric key, encrypts it for all users, and re-encrypts all files.
+func RotateSymmetricKey(currentUsername string, privateKey *rsa.PrivateKey, verbose bool) error {
+	if err := configs.InitProjectSettings(); err != nil {
+		return fmt.Errorf("failed to init project settings: %w", err)
+	}
+
+	projectPath := configs.ProjectKanukaSettings.ProjectPath
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+
+	// Get all users in the project
+	usernames, err := GetAllUsersInProject()
+	if err != nil {
+		return fmt.Errorf("failed to get list of users: %w", err)
+	}
+
+	if len(usernames) == 0 {
+		return fmt.Errorf("no users found in project")
+	}
+
+	// Get current encrypted symmetric key
+	currentEncryptedSymKey, err := GetProjectKanukaKey(currentUsername)
+	if err != nil {
+		return fmt.Errorf("failed to get current symmetric key for user %s: %w", currentUsername, err)
+	}
+
+	// Decrypt current symmetric key
+	currentSymKey, err := DecryptWithPrivateKey(currentEncryptedSymKey, privateKey)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt current symmetric key: %w", err)
+	}
+
+	// Decrypt all .kanuka files to get plaintext
+	kanukaFiles, err := FindEnvOrKanukaFiles(projectPath, []string{}, true)
+	if err != nil {
+		return fmt.Errorf("failed to find .kanuka files: %w", err)
+	}
+
+	var plaintexts []struct {
+		Path    string
+		Content []byte
+		NewPath string
+	}
+
+	for _, kanukaFile := range kanukaFiles {
+		var key [32]byte
+		copy(key[:], currentSymKey)
+
+		ciphertext, err := os.ReadFile(kanukaFile)
+		if err != nil {
+			return fmt.Errorf("failed to read .kanuka file %s: %w", kanukaFile, err)
+		}
+
+		var decryptNonce [24]byte
+		copy(decryptNonce[:], ciphertext[:24])
+
+		plaintext, ok := secretbox.Open(nil, ciphertext[24:], &decryptNonce, &key)
+		if !ok {
+			return fmt.Errorf("failed to decrypt file %s", kanukaFile)
+		}
+
+		plaintexts = append(plaintexts, struct {
+			Path    string
+			Content []byte
+			NewPath string
+		}{
+			Path:    kanukaFile,
+			Content: plaintext,
+			NewPath: strings.TrimSuffix(kanukaFile, ".kanuka"),
+		})
+	}
+
+	// Generate new symmetric key
+	newSymKey, err := CreateSymmetricKey()
+	if err != nil {
+		return fmt.Errorf("failed to generate new symmetric key: %w", err)
+	}
+
+	// Encrypt new symmetric key for each user
+	for _, username := range usernames {
+		publicKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
+		publicKey, err := LoadPublicKey(publicKeyPath)
+		if err != nil {
+			return fmt.Errorf("failed to load public key for user %s: %w", username, err)
+		}
+
+		encryptedSymKey, err := EncryptWithPublicKey(newSymKey, publicKey)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt symmetric key for user %s: %w", username, err)
+		}
+
+		if err := SaveKanukaKeyToProject(username, encryptedSymKey); err != nil {
+			return fmt.Errorf("failed to save symmetric key for user %s: %w", username, err)
+		}
+	}
+
+	// Re-encrypt all files with new symmetric key
+	for _, fileData := range plaintexts {
+		inputPaths := []string{fileData.NewPath}
+		if err := EncryptFiles(newSymKey, inputPaths, verbose); err != nil {
+			return fmt.Errorf("failed to re-encrypt file %s: %w", fileData.NewPath, err)
+		}
+	}
+
+	return nil
+}
