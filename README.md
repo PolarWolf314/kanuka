@@ -86,7 +86,7 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 - `kanuka secrets encrypt`: Encrypt .env files
 - `kanuka secrets decrypt`: Decrypt .kanuka files
 - `kanuka secrets register --user <username>`: Register a new user
-- `kanuka secrets remove --user <username>`: Remove a user
+- `kanuka secrets revoke --user <username>`: Revoke a user
 - `kanuka secrets purge`: Purge all secrets
 
 ### General Commands

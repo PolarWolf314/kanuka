@@ -39,7 +39,7 @@ export default defineConfig({
             "guides/decryption",
             "guides/create",
             "guides/register",
-            "guides/remove",
+            "guides/revoke",
             "guides/purge",
           ],
         },

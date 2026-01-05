@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"os"
@@ -9,55 +9,55 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
-func TestRemoveCommand_FileFlag(t *testing.T) {
+func TestRevokeCommand_FileFlag(t *testing.T) {
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	t.Run("RemoveFileWithBothFilesPresent", func(t *testing.T) {
-		testRemoveFileWithBothFilesPresent(t, originalWd, originalUserSettings)
+	t.Run("RevokeFileWithBothFilesPresent", func(t *testing.T) {
+		testRevokeFileWithBothFilesPresent(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RemoveFileWithRelativePath", func(t *testing.T) {
-		testRemoveFileWithRelativePath(t, originalWd, originalUserSettings)
+	t.Run("RevokeFileWithRelativePath", func(t *testing.T) {
+		testRevokeFileWithRelativePath(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RemoveFileWithOnlyKanukaFile", func(t *testing.T) {
-		testRemoveFileWithOnlyKanukaFile(t, originalWd, originalUserSettings)
+	t.Run("RevokeFileWithOnlyKanukaFile", func(t *testing.T) {
+		testRevokeFileWithOnlyKanukaFile(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("RemoveNonExistentFile", func(t *testing.T) {
-		testRemoveNonExistentFile(t, originalWd, originalUserSettings)
+		testRevokeNonExistentFile(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("RemoveDirectoryPath", func(t *testing.T) {
-		testRemoveDirectoryPath(t, originalWd, originalUserSettings)
+		testRevokeDirectoryPath(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RemoveFileOutsideSecretsDir", func(t *testing.T) {
-		testRemoveFileOutsideSecretsDir(t, originalWd, originalUserSettings)
+	t.Run("RevokeFileOutsideSecretsDir", func(t *testing.T) {
+		testRevokeFileOutsideSecretsDir(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("RemoveNonKanukaExtension", func(t *testing.T) {
-		testRemoveNonKanukaExtension(t, originalWd, originalUserSettings)
+		testRevokeNonKanukaExtension(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("BothUserAndFileFlags", func(t *testing.T) {
 		testBothUserAndFileFlags(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RemoveFileWithDotsInUsername", func(t *testing.T) {
-		testRemoveFileWithDotsInUsername(t, originalWd, originalUserSettings)
+	t.Run("RevokeFileWithDotsInUsername", func(t *testing.T) {
+		testRevokeFileWithDotsInUsername(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RemoveFileWithEmptyUsername", func(t *testing.T) {
-		testRemoveFileWithEmptyUsername(t, originalWd, originalUserSettings)
+	t.Run("RevokeFileWithEmptyUsername", func(t *testing.T) {
+		testRevokeFileWithEmptyUsername(t, originalWd, originalUserSettings)
 	})
 }
 
-func testRemoveFileWithBothFilesPresent(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeFileWithBothFilesPresent(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -132,7 +132,7 @@ func testRemoveFileWithBothFilesPresent(t *testing.T, originalWd string, origina
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", relativeFilePath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -140,15 +140,15 @@ func testRemoveFileWithBothFilesPresent(t *testing.T, originalWd string, origina
 	}
 
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be removed")
+		t.Error("Public key file should be revokedd")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 }
 
-func testRemoveFileWithRelativePath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeFileWithRelativePath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -215,7 +215,7 @@ func testRemoveFileWithRelativePath(t *testing.T, originalWd string, originalUse
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", relativeFilePath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -223,15 +223,15 @@ func testRemoveFileWithRelativePath(t *testing.T, originalWd string, originalUse
 	}
 
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be removed")
+		t.Error("Public key file should be revokedd")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 }
 
-func testRemoveFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -301,7 +301,7 @@ func testRemoveFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalU
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", relativeFilePath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -309,7 +309,7 @@ func testRemoveFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalU
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
@@ -317,7 +317,7 @@ func testRemoveFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalU
 	}
 }
 
-func testRemoveNonExistentFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeNonExistentFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -370,7 +370,7 @@ func testRemoveNonExistentFile(t *testing.T, originalWd string, originalUserSett
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", nonExistentPath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", nonExistentPath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -378,7 +378,7 @@ func testRemoveNonExistentFile(t *testing.T, originalWd string, originalUserSett
 	}
 }
 
-func testRemoveDirectoryPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeDirectoryPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -431,7 +431,7 @@ func testRemoveDirectoryPath(t *testing.T, originalWd string, originalUserSettin
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", directoryPath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", directoryPath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -439,7 +439,7 @@ func testRemoveDirectoryPath(t *testing.T, originalWd string, originalUserSettin
 	}
 }
 
-func testRemoveFileOutsideSecretsDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeFileOutsideSecretsDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -496,7 +496,7 @@ func testRemoveFileOutsideSecretsDir(t *testing.T, originalWd string, originalUs
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", tempFile.Name()})
+	secretsCmd.SetArgs([]string{"revoke", "--file", tempFile.Name()})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -508,7 +508,7 @@ func testRemoveFileOutsideSecretsDir(t *testing.T, originalWd string, originalUs
 	}
 }
 
-func testRemoveNonKanukaExtension(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeNonKanukaExtension(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -573,7 +573,7 @@ func testRemoveNonKanukaExtension(t *testing.T, originalWd string, originalUserS
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", testFilePathRelative})
+	secretsCmd.SetArgs([]string{"revoke", "--file", testFilePathRelative})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -652,7 +652,7 @@ func testBothUserAndFileFlags(t *testing.T, originalWd string, originalUserSetti
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", testUser, "--file", relativeFilePath})
+	secretsCmd.SetArgs([]string{"revoke", "--user", testUser, "--file", relativeFilePath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -668,7 +668,7 @@ func testBothUserAndFileFlags(t *testing.T, originalWd string, originalUserSetti
 	}
 }
 
-func testRemoveFileWithDotsInUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeFileWithDotsInUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -743,7 +743,7 @@ func testRemoveFileWithDotsInUsername(t *testing.T, originalWd string, originalU
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", relativeFilePath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -751,15 +751,15 @@ func testRemoveFileWithDotsInUsername(t *testing.T, originalWd string, originalU
 	}
 
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be removed")
+		t.Error("Public key file should be revokedd")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 }
 
-func testRemoveFileWithEmptyUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeFileWithEmptyUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -823,7 +823,7 @@ func testRemoveFileWithEmptyUsername(t *testing.T, originalWd string, originalUs
 
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--file", relativeFilePath})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -831,6 +831,6 @@ func testRemoveFileWithEmptyUsername(t *testing.T, originalWd string, originalUs
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 }

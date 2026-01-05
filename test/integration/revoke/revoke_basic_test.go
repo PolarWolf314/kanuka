@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
-func TestRemoveCommand_RequiresUserFlag(t *testing.T) {
+func TestRevokeCommand_RequiresUserFlag(t *testing.T) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -62,10 +62,10 @@ func TestRemoveCommand_RequiresUserFlag(t *testing.T) {
 		t.Fatalf("Failed to create secrets directory: %v", err)
 	}
 
-	// Test remove command without --user flag
+	// Test revoke command without --user flag
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove"})
+	secretsCmd.SetArgs([]string{"revoke"})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -73,7 +73,7 @@ func TestRemoveCommand_RequiresUserFlag(t *testing.T) {
 	}
 }
 
-func TestRemoveCommand_UserNotFound(t *testing.T) {
+func TestRevokeCommand_UserNotFound(t *testing.T) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -126,10 +126,10 @@ func TestRemoveCommand_UserNotFound(t *testing.T) {
 		t.Fatalf("Failed to create secrets directory: %v", err)
 	}
 
-	// Test remove command for non-existent user
+	// Test revoke command for non-existent user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", "nonexistentuser"})
+	secretsCmd.SetArgs([]string{"revoke", "--user", "nonexistentuser"})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -137,7 +137,7 @@ func TestRemoveCommand_UserNotFound(t *testing.T) {
 	}
 }
 
-func TestRemoveCommand_SuccessfulRemoval(t *testing.T) {
+func TestRevokeCommand_SuccessfulRemoval(t *testing.T) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -218,7 +218,7 @@ func TestRemoveCommand_SuccessfulRemoval(t *testing.T) {
 	// Remove the user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -227,10 +227,10 @@ func TestRemoveCommand_SuccessfulRemoval(t *testing.T) {
 
 	// Verify files are removed
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be removed")
+		t.Error("Public key file should be revokedd")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 }

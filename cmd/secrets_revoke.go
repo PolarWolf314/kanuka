@@ -11,39 +11,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var removeUsername string
-var removeFilePath string
+var revokeUsername string
+var revokeFilePath string
 
-// resetRemoveCommandState resets all remove command global variables to their default values for testing.
-func resetRemoveCommandState() {
-	removeUsername = ""
-	removeFilePath = ""
+func resetRevokeCommandState() {
+	revokeUsername = ""
+	revokeFilePath = ""
 }
 
 func init() {
-	removeCmd.Flags().StringVarP(&removeUsername, "user", "u", "", "username to remove access from the secret store")
-	removeCmd.Flags().StringVarP(&removeFilePath, "file", "f", "", "path to a .kanuka file to remove along with its corresponding public key")
+	revokeCmd.Flags().StringVarP(&revokeUsername, "user", "u", "", "username to revoke access from the secret store")
+	revokeCmd.Flags().StringVarP(&revokeFilePath, "file", "f", "", "path to a .kanuka file to revoke along with its corresponding public key")
 }
 
-var removeCmd = &cobra.Command{
-	Use:   "remove",
-	Short: "Removes access to the secret store",
+var revokeCmd = &cobra.Command{
+	Use:   "revoke",
+	Short: "Revokes access to the secret store",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		Logger.Infof("Starting remove command")
-		spinner, cleanup := startSpinner("Removing user access...", verbose)
+		Logger.Infof("Starting revoke command")
+		spinner, cleanup := startSpinner("Revoking user access...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Checking command flags: removeUsername=%s, removeFilePath=%s", removeUsername, removeFilePath)
-		if removeUsername == "" && removeFilePath == "" {
+		Logger.Debugf("Checking command flags: revokeUsername=%s, revokeFilePath=%s", revokeUsername, revokeFilePath)
+		if revokeUsername == "" && revokeFilePath == "" {
 			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + " or " + color.YellowString("--file") + " flag is required.\n" +
-				"Run " + color.YellowString("kanuka secrets remove --help") + " to see the available commands.\n"
+				"Run " + color.YellowString("kanuka secrets revoke --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
-		if removeUsername != "" && removeFilePath != "" {
+		if revokeUsername != "" && revokeFilePath != "" {
 			finalMessage := color.RedString("✗") + " Cannot specify both " + color.YellowString("--user") + " and " + color.YellowString("--file") + " flags.\n" +
-				"Run " + color.YellowString("kanuka secrets remove --help") + " to see the available commands.\n"
+				"Run " + color.YellowString("kanuka secrets revoke --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -72,35 +71,35 @@ var removeCmd = &cobra.Command{
 			return nil
 		}
 
-		username, filesToRemove, err := getFilesToRemove(spinner)
+		username, filesToRevoke, err := getFilesToRevoke(spinner)
 		if err != nil {
 			return err
 		}
 
-		return removeFiles(spinner, username, filesToRemove)
+		return revokeFiles(spinner, username, filesToRevoke)
 	},
 }
 
-type fileToRemove struct {
+type fileToRevoke struct {
 	Path string
 	Name string
 }
 
-func getFilesToRemove(spinner *spinner.Spinner) (string, []fileToRemove, error) {
-	if removeUsername != "" {
+func getFilesToRevoke(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
+	if revokeUsername != "" {
 		return getFilesByUsername(spinner)
 	}
 	return getFilesByPath(spinner)
 }
 
-func getFilesByUsername(spinner *spinner.Spinner) (string, []fileToRemove, error) {
+func getFilesByUsername(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 
 	Logger.Debugf("Project public key path: %s, Project secrets path: %s", projectPublicKeyPath, projectSecretsPath)
 
-	publicKeyPath := filepath.Join(projectPublicKeyPath, removeUsername+".pub")
-	kanukaKeyPath := filepath.Join(projectSecretsPath, removeUsername+".kanuka")
+	publicKeyPath := filepath.Join(projectPublicKeyPath, revokeUsername+".pub")
+	kanukaKeyPath := filepath.Join(projectSecretsPath, revokeUsername+".kanuka")
 
 	Logger.Debugf("Checking for user files: %s, %s", publicKeyPath, kanukaKeyPath)
 
@@ -128,31 +127,31 @@ func getFilesByUsername(spinner *spinner.Spinner) (string, []fileToRemove, error
 	}
 
 	if !publicKeyExists && !kanukaKeyExists {
-		Logger.Infof("User %s does not exist in the project", removeUsername)
-		finalMessage := color.RedString("✗") + " User " + color.YellowString(removeUsername) + " does not exist in this project\n" +
+		Logger.Infof("User %s does not exist in the project", revokeUsername)
+		finalMessage := color.RedString("✗") + " User " + color.YellowString(revokeUsername) + " does not exist in this project\n" +
 			color.CyanString("→") + " No files found for this user\n"
 		spinner.FinalMSG = finalMessage
 		return "", nil, nil
 	}
 
-	var files []fileToRemove
+	var files []fileToRevoke
 	if publicKeyExists {
-		files = append(files, fileToRemove{Path: publicKeyPath, Name: removeUsername + ".pub"})
+		files = append(files, fileToRevoke{Path: publicKeyPath, Name: revokeUsername + ".pub"})
 	}
 	if kanukaKeyExists {
-		files = append(files, fileToRemove{Path: kanukaKeyPath, Name: removeUsername + ".kanuka"})
+		files = append(files, fileToRevoke{Path: kanukaKeyPath, Name: revokeUsername + ".kanuka"})
 	}
 
-	return removeUsername, files, nil
+	return revokeUsername, files, nil
 }
 
-func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRemove, error) {
+func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 
 	Logger.Debugf("Project secrets path: %s, Project public key path: %s", projectSecretsPath, projectPublicKeyPath)
 
-	absFilePath, err := filepath.Abs(removeFilePath)
+	absFilePath, err := filepath.Abs(revokeFilePath)
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Failed to resolve file path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
@@ -207,12 +206,12 @@ func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRemove, error) {
 
 	Logger.Debugf("Extracted username from file: %s", username)
 
-	var files []fileToRemove
-	files = append(files, fileToRemove{Path: absFilePath, Name: baseName})
+	var files []fileToRevoke
+	files = append(files, fileToRevoke{Path: absFilePath, Name: baseName})
 
 	publicKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
 	if _, err := os.Stat(publicKeyPath); err == nil {
-		files = append(files, fileToRemove{Path: publicKeyPath, Name: username + ".pub"})
+		files = append(files, fileToRevoke{Path: publicKeyPath, Name: username + ".pub"})
 	} else if !os.IsNotExist(err) {
 		Logger.Errorf("Failed to check public key file %s: %v", publicKeyPath, err)
 		finalMessage := color.RedString("✗") + " Failed to check public key file\n" +
@@ -224,8 +223,8 @@ func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRemove, error) {
 	return username, files, nil
 }
 
-func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []fileToRemove) error {
-	if len(filesToRemove) == 0 {
+func revokeFiles(spinner *spinner.Spinner, username string, filesToRevoke []fileToRevoke) error {
+	if len(filesToRevoke) == 0 {
 		return nil
 	}
 
@@ -235,27 +234,27 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 
 	Logger.Debugf("Current user: %s, Project: %s", currentUsername, projectName)
 
-	var removedFiles []string
+	var revokedFiles []string
 	var errors []error
 
-	for _, file := range filesToRemove {
-		Logger.Debugf("Removing file: %s", file.Path)
+	for _, file := range filesToRevoke {
+		Logger.Debugf("Revoking file: %s", file.Path)
 		if err := os.Remove(file.Path); err != nil {
-			Logger.Errorf("Failed to remove file %s: %v", file.Path, err)
+			Logger.Errorf("Failed to revoke file %s: %v", file.Path, err)
 			errors = append(errors, err)
 		} else {
-			removedFiles = append(removedFiles, file.Name)
-			Logger.Infof("Successfully removed file: %s", file.Name)
+			revokedFiles = append(revokedFiles, file.Name)
+			Logger.Infof("Successfully revoked file: %s", file.Name)
 		}
 	}
 
 	if len(errors) > 0 {
-		finalMessage := color.RedString("✗") + " Failed to completely remove files for " + color.YellowString(username) + "\n"
+		finalMessage := color.RedString("✗") + " Failed to completely revoke files for " + color.YellowString(username) + "\n"
 		for _, err := range errors {
 			finalMessage += color.RedString("Error: ") + err.Error() + "\n"
 		}
-		if len(removedFiles) > 0 {
-			finalMessage += color.YellowString("Warning: ") + "Some files were removed successfully\n"
+		if len(revokedFiles) > 0 {
+			finalMessage += color.YellowString("Warning: ") + "Some files were revoked successfully\n"
 		}
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -264,7 +263,7 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 	allUsers, err := secrets.GetAllUsersInProject()
 	if err != nil {
 		Logger.Errorf("Failed to get list of users: %v", err)
-		finalMessage := color.RedString("✗") + " Files were removed but failed to rotate key: " + err.Error() + "\n"
+		finalMessage := color.RedString("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -277,14 +276,14 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			Logger.Errorf("Failed to load private key: %v", err)
-			finalMessage := color.RedString("✗") + " Files were removed but failed to rotate key: " + err.Error() + "\n"
+			finalMessage := color.RedString("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		if err := secrets.RotateSymmetricKey(currentUsername, privateKey, verbose); err != nil {
 			Logger.Errorf("Failed to rotate symmetric key: %v", err)
-			finalMessage := color.RedString("✗") + " Files were removed but failed to rotate key: " + err.Error() + "\n"
+			finalMessage := color.RedString("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -292,10 +291,10 @@ func removeFiles(spinner *spinner.Spinner, username string, filesToRemove []file
 		Logger.Infof("Symmetric key rotated successfully")
 	}
 
-	Logger.Infof("Files removal completed successfully for: %s", username)
-	finalMessage := color.GreenString("✓") + " Files for " + color.YellowString(username) + " have been removed successfully!\n" +
-		color.CyanString("→") + " Removed: "
-	for i, file := range removedFiles {
+	Logger.Infof("Files revocation completed successfully for: %s", username)
+	finalMessage := color.GreenString("✓") + " Files for " + color.YellowString(username) + " have been revoked successfully!\n" +
+		color.CyanString("→") + " Revoked: "
+	for i, file := range revokedFiles {
 		if i > 0 {
 			finalMessage += ", "
 		}

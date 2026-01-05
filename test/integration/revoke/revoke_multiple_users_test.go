@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
-func TestRemoveCommand_MultipleUsers(t *testing.T) {
+func TestRevokeCommand_MultipleUsers(t *testing.T) {
 	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
@@ -19,11 +19,11 @@ func TestRemoveCommand_MultipleUsers(t *testing.T) {
 	originalUserSettings := configs.UserKanukaSettings
 
 	t.Run("RemoveOneUserFromMultipleUsers", func(t *testing.T) {
-		testRemoveOneUserFromMultipleUsers(t, originalWd, originalUserSettings)
+		testRevokeOneUserFromMultipleUsers(t, originalWd, originalUserSettings)
 	})
 }
 
-func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -125,13 +125,13 @@ func testRemoveOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	// Let's check what files actually exist and use those for our test
 
 	// Based on the output, we can see that the register command creates files with the user's name
-	// Let's remove one of the users we registered
+	// Let's revoke one of the users we registered
 
 	// Remove the second user
 	userToRemove := users[1] // user2
 	cmd.ResetGlobalState()
 	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", userToRemove})
+	secretsCmd.SetArgs([]string{"revoke", "--user", userToRemove})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}

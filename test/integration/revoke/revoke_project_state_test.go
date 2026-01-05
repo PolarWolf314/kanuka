@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
-func TestRemoveCommand_ProjectStateRequirements(t *testing.T) {
+func TestRevokeCommand_ProjectStateRequirements(t *testing.T) {
 	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
@@ -18,15 +18,15 @@ func TestRemoveCommand_ProjectStateRequirements(t *testing.T) {
 	originalUserSettings := configs.UserKanukaSettings
 
 	t.Run("RemoveWithoutInitialization", func(t *testing.T) {
-		testRemoveWithoutInitialization(t, originalWd, originalUserSettings)
+		testRevokeWithoutInitialization(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("RemoveInNonKanukaProject", func(t *testing.T) {
-		testRemoveInNonKanukaProject(t, originalWd, originalUserSettings)
+		testRevokeInNonKanukaProject(t, originalWd, originalUserSettings)
 	})
 }
 
-func testRemoveWithoutInitialization(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeWithoutInitialization(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -60,10 +60,10 @@ func testRemoveWithoutInitialization(t *testing.T, originalWd string, originalUs
 		configs.UserKanukaSettings = originalUserSettings
 	}()
 
-	// Test remove command without initialization
+	// Test revoke command without initialization
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", "testuser2"})
+	secretsCmd.SetArgs([]string{"revoke", "--user", "testuser2"})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -71,7 +71,7 @@ func testRemoveWithoutInitialization(t *testing.T, originalWd string, originalUs
 	}
 }
 
-func testRemoveInNonKanukaProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeInNonKanukaProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -111,10 +111,10 @@ func testRemoveInNonKanukaProject(t *testing.T, originalWd string, originalUserS
 		t.Fatalf("Failed to create kanuka directory: %v", err)
 	}
 
-	// Test remove command in non-kanuka project
+	// Test revoke command in non-kanuka project
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", "testuser2"})
+	secretsCmd.SetArgs([]string{"revoke", "--user", "testuser2"})
 
 	err = secretsCmd.Execute()
 	if err != nil {
