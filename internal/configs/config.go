@@ -175,3 +175,24 @@ func (pc *ProjectConfig) GetUserUUIDByEmailAndDevice(email, deviceName string) (
 	}
 	return "", false
 }
+
+// GetDeviceNamesByEmail returns a slice of device names for a given email address.
+func (pc *ProjectConfig) GetDeviceNamesByEmail(email string) []string {
+	var names []string
+	for _, device := range pc.Devices {
+		if device.Email == email {
+			names = append(names, device.Name)
+		}
+	}
+	return names
+}
+
+// IsDeviceNameTakenByEmail checks if a device name is already used by a given email.
+func (pc *ProjectConfig) IsDeviceNameTakenByEmail(email, deviceName string) bool {
+	for _, device := range pc.Devices {
+		if device.Email == email && device.Name == deviceName {
+			return true
+		}
+	}
+	return false
+}

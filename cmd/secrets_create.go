@@ -17,19 +17,22 @@ import (
 )
 
 var (
-	force       bool
-	createEmail string
+	force         bool
+	createEmail   string
+	createDevName string
 )
 
 func init() {
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
 	createCmd.Flags().StringVarP(&createEmail, "email", "e", "", "your email address for identification")
+	createCmd.Flags().StringVar(&createDevName, "device-name", "", "custom device name (auto-generated from hostname if not specified)")
 }
 
 // resetCreateCommandState resets the create command's global state for testing.
 func resetCreateCommandState() {
 	force = false
 	createEmail = ""
+	createDevName = ""
 }
 
 // promptForEmail prompts the user for their email address.
@@ -113,7 +116,37 @@ var createCmd = &cobra.Command{
 			Logger.Infof("User email updated to: %s", userEmail)
 		}
 
-		currentUsername := configs.UserKanukaSettings.Username
+		// Load project config to check existing devices for this user
+		Logger.Debugf("Loading project config for device name validation")
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+		}
+
+		// Determine device name: use flag, or auto-generate from hostname
+		var deviceName string
+		existingDeviceNames := projectConfig.GetDeviceNamesByEmail(userEmail)
+
+		if createDevName != "" {
+			// User provided a device name - sanitize and validate uniqueness
+			deviceName = utils.SanitizeDeviceName(createDevName)
+			Logger.Debugf("Using user-provided device name: %s (sanitized from: %s)", deviceName, createDevName)
+
+			// Check if device name is already taken by this user
+			if projectConfig.IsDeviceNameTakenByEmail(userEmail, deviceName) {
+				finalMessage := color.RedString("✗") + " Device name " + color.YellowString(deviceName) + " is already in use for " + color.CyanString(userEmail) + "\n" +
+					color.CyanString("→") + " Choose a different device name with " + color.YellowString("--device-name")
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+		} else {
+			// Auto-generate device name from hostname
+			deviceName, err = utils.GenerateDeviceName(existingDeviceNames)
+			if err != nil {
+				return Logger.ErrorfAndReturn("Failed to generate device name: %v", err)
+			}
+			Logger.Debugf("Auto-generated device name: %s", deviceName)
+		}
 
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
@@ -152,18 +185,12 @@ var createCmd = &cobra.Command{
 		}
 		Logger.Infof("Public key copied to: %s", destPath)
 
-		// Update project config with user info
-		Logger.Debugf("Updating project config with user info")
-		projectConfig, err := configs.LoadProjectConfig()
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
-		}
-
 		// Add/update user in project config
+		Logger.Debugf("Updating project config with user info")
 		projectConfig.Users[userUUID] = userEmail
 		projectConfig.Devices[userUUID] = configs.DeviceConfig{
 			Email:     userEmail,
-			Name:      currentUsername, // Use system username as device name
+			Name:      deviceName,
 			CreatedAt: time.Now().UTC(),
 		}
 
@@ -194,7 +221,7 @@ var createCmd = &cobra.Command{
 		}
 
 		Logger.Infof("Create command completed successfully for user: %s (%s)", userEmail, userUUID)
-		finalMessage := color.GreenString("✓") + " Keys created for " + color.YellowString(userEmail) + " (device: " + color.CyanString(currentUsername) + ")\n" +
+		finalMessage := color.GreenString("✓") + " Keys created for " + color.YellowString(userEmail) + " (device: " + color.CyanString(deviceName) + ")\n" +
 			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+userUUID+".pub ") + color.WhiteString("file to your version control system\n") +

@@ -311,10 +311,10 @@ userKeyFile := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 ### Milestone 3.1: Email Prompt on Create
 
 **Tasks:**
-- [ ] Add email prompt to `secrets create` command in `cmd/secrets_create.go`
-- [ ] Validate email format
-- [ ] Save email to user config
-- [ ] Update project config with user mapping
+- [x] Add email prompt to `secrets create` command in `cmd/secrets_create.go`
+- [x] Validate email format
+- [x] Save email to user config
+- [x] Update project config with user mapping
 
 **User flow:**
 ```bash
@@ -331,10 +331,10 @@ Enter your email: alice@example.com
 ### Milestone 3.2: Update Register Command
 
 **Tasks:**
-- [ ] Modify `secrets register` command in `cmd/secrets_register.go`
-- [ ] Update `--user` flag to accept email instead of username
-- [ ] Add email lookup in project config
-- [ ] Map email to user UUID internally
+- [x] Modify `secrets register` command in `cmd/secrets_register.go`
+- [x] Update `--user` flag to accept email instead of username
+- [x] Add email lookup in project config
+- [x] Map email to user UUID internally
 
 **Before:**
 ```bash
@@ -354,12 +354,12 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 3.3: Update Revoke Command
 
 **Tasks:**
-- [ ] Modify `secrets revoke` command in `cmd/secrets_revoke.go`
-- [ ] Update `--user` flag to accept email
-- [ ] Add `--device` flag
-- [ ] Add `--yes` flag
-- [ ] Implement email → UUID lookup
-- [ ] Implement smart confirmation logic
+- [x] Modify `secrets revoke` command in `cmd/secrets_revoke.go`
+- [x] Update `--user` flag to accept email
+- [x] Add `--device` flag
+- [x] Add `--yes` flag
+- [x] Implement email → UUID lookup
+- [x] Implement smart confirmation logic
 
 **Confirmation rules:**
 - Always confirm if user has 2+ devices
@@ -374,9 +374,9 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 3.4: Update All Other Commands
 
 **Tasks:**
-- [ ] Update `secrets encrypt` command to use email in output
-- [ ] Update `secrets decrypt` command to use email in output
-- [ ] Update all log messages to use email instead of username
+- [x] Update `secrets encrypt` command to use email in output
+- [x] Update `secrets decrypt` command to use email in output
+- [x] Update all log messages to use email instead of username
 
 **Before:**
 ```bash
@@ -397,9 +397,9 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 4.1: Device Name Generation
 
 **Tasks:**
-- [ ] Implement `GetHostname()` function in `internal/utils/system.go`
-- [ ] Implement `GenerateDeviceName()` function
-- [ ] Add device name to project config on create
+- [x] Implement `GetHostname()` function in `internal/utils/system.go`
+- [x] Implement `GenerateDeviceName()` function
+- [x] Add device name to project config on create
 
 **Device name generation logic:**
 1. Get system hostname
@@ -414,9 +414,9 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 4.2: Device Name Management
 
 **Tasks:**
-- [ ] Add `--device-name` flag to `secrets create` command
-- [ ] Implement device name uniqueness validation (per user)
-- [ ] Save device metadata to project config
+- [x] Add `--device-name` flag to `secrets create` command
+- [x] Implement device name uniqueness validation (per user)
+- [x] Save device metadata to project config
 
 **User flow:**
 ```bash
