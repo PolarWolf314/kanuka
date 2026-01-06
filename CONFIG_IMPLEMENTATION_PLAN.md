@@ -177,7 +177,7 @@ Devices in this project:
 - [x] Implement `LoadUserConfig()` function
 - [x] Implement `SaveUserConfig()` function
 - [x] Add auto-generation of `user_uuid` on first run
-- [ ] Update `InitProjectSettings()` to use user config
+- [x] Update `InitProjectSettings()` to use user config
 
 **UserConfig struct:**
 ```go

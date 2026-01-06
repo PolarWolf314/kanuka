@@ -82,5 +82,11 @@ func InitProjectSettings() error {
 		ProjectSecretsPath:   filepath.Join(projectPath, ".kanuka", "secrets"),
 	}
 
+	userConfig, err := LoadUserConfig()
+	if err != nil {
+		return fmt.Errorf("error loading user config: %w", err)
+	}
+	GlobalUserConfig = userConfig
+
 	return nil
 }
