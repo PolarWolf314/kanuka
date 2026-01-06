@@ -196,3 +196,35 @@ func (pc *ProjectConfig) IsDeviceNameTakenByEmail(email, deviceName string) bool
 	}
 	return false
 }
+
+// RemoveDevice removes a device by UUID from the project config.
+// It removes the device from both Users and Devices maps.
+func (pc *ProjectConfig) RemoveDevice(uuid string) {
+	delete(pc.Users, uuid)
+	delete(pc.Devices, uuid)
+}
+
+// RemoveDevicesByEmail removes all devices for a given email from the project config.
+// Returns the list of UUIDs that were removed.
+func (pc *ProjectConfig) RemoveDevicesByEmail(email string) []string {
+	var removedUUIDs []string
+	for uuid, userEmail := range pc.Users {
+		if userEmail == email {
+			removedUUIDs = append(removedUUIDs, uuid)
+		}
+	}
+	for _, uuid := range removedUUIDs {
+		pc.RemoveDevice(uuid)
+	}
+	return removedUUIDs
+}
+
+// HasOtherDevicesForEmail checks if an email has other devices besides the given UUID.
+func (pc *ProjectConfig) HasOtherDevicesForEmail(email, excludeUUID string) bool {
+	for uuid, device := range pc.Devices {
+		if device.Email == email && uuid != excludeUUID {
+			return true
+		}
+	}
+	return false
+}

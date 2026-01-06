@@ -101,12 +101,16 @@ var revokeCmd = &cobra.Command{
 			return nil
 		}
 
-		displayName, filesToRevoke, err := getFilesToRevoke(spinner)
+		ctx, err := getFilesToRevoke(spinner)
 		if err != nil {
 			return err
 		}
 
-		return revokeFiles(spinner, displayName, filesToRevoke)
+		if ctx == nil || len(ctx.Files) == 0 {
+			return nil
+		}
+
+		return revokeFiles(spinner, ctx)
 	},
 }
 
@@ -115,14 +119,20 @@ type fileToRevoke struct {
 	Name string
 }
 
-func getFilesToRevoke(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
+type revokeContext struct {
+	DisplayName  string
+	Files        []fileToRevoke
+	UUIDsRevoked []string // UUIDs to remove from project config
+}
+
+func getFilesToRevoke(spinner *spinner.Spinner) (*revokeContext, error) {
 	if revokeUserEmail != "" {
 		return getFilesByUserEmail(spinner)
 	}
 	return getFilesByPath(spinner)
 }
 
-func getFilesByUserEmail(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
+func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 
@@ -131,7 +141,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (string, []fileToRevoke, erro
 	// Load project config to look up user by email
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
-		return "", nil, Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+		return nil, Logger.ErrorfAndReturn("Failed to load project config: %v", err)
 	}
 
 	// Get all devices for this email
@@ -140,7 +150,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (string, []fileToRevoke, erro
 		finalMessage := color.RedString("✗") + " User " + color.YellowString(revokeUserEmail) + " not found in this project\n" +
 			color.CyanString("→") + " No devices found for this user\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	// If --device is specified, find that specific device
@@ -153,7 +163,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (string, []fileToRevoke, erro
 				finalMessage += "    - " + color.YellowString(device.Name) + "\n"
 			}
 			spinner.FinalMSG = finalMessage
-			return "", nil, nil
+			return nil, nil
 		}
 
 		// Return files for this specific device
@@ -175,22 +185,24 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (string, []fileToRevoke, erro
 		fmt.Print("Proceed? [y/N]: ")
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			return "", nil, Logger.ErrorfAndReturn("Failed to read response: %v", err)
+			return nil, Logger.ErrorfAndReturn("Failed to read response: %v", err)
 		}
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
 			finalMessage := color.YellowString("⚠") + " Revocation cancelled\n"
 			spinner.FinalMSG = finalMessage
 			spinner.Restart()
-			return "", nil, nil
+			return nil, nil
 		}
 
 		spinner.Restart()
 	}
 
-	// Collect all files for all devices
+	// Collect all files and UUIDs for all devices
 	var allFiles []fileToRevoke
+	var allUUIDs []string
 	for userUUID := range devices {
+		allUUIDs = append(allUUIDs, userUUID)
 		publicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 		kanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 
@@ -205,13 +217,17 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (string, []fileToRevoke, erro
 	if len(allFiles) == 0 {
 		finalMessage := color.RedString("✗") + " No files found for user " + color.YellowString(revokeUserEmail) + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
-	return revokeUserEmail, allFiles, nil
+	return &revokeContext{
+		DisplayName:  revokeUserEmail,
+		Files:        allFiles,
+		UUIDsRevoked: allUUIDs,
+	}, nil
 }
 
-func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (string, []fileToRevoke, error) {
+func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (*revokeContext, error) {
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 
@@ -230,7 +246,7 @@ func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (st
 		finalMessage := color.RedString("✗") + " Failed to check user's public key file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); err == nil {
@@ -240,7 +256,7 @@ func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (st
 		finalMessage := color.RedString("✗") + " Failed to check user's kanuka key file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	if !publicKeyExists && !kanukaKeyExists {
@@ -248,7 +264,7 @@ func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (st
 		finalMessage := color.RedString("✗") + " User " + color.YellowString(displayName) + " does not exist in this project\n" +
 			color.CyanString("→") + " No files found for this user\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	var files []fileToRevoke
@@ -259,10 +275,14 @@ func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (st
 		files = append(files, fileToRevoke{Path: kanukaKeyPath, Name: userUUID + ".kanuka"})
 	}
 
-	return displayName, files, nil
+	return &revokeContext{
+		DisplayName:  displayName,
+		Files:        files,
+		UUIDsRevoked: []string{userUUID},
+	}, nil
 }
 
-func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
+func getFilesByPath(spinner *spinner.Spinner) (*revokeContext, error) {
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 
@@ -272,7 +292,7 @@ func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Failed to resolve file path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	Logger.Debugf("Absolute file path: %s", absFilePath)
@@ -283,39 +303,39 @@ func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
 			Logger.Infof("File does not exist: %s", absFilePath)
 			finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " does not exist\n"
 			spinner.FinalMSG = finalMessage
-			return "", nil, nil
+			return nil, nil
 		}
 		Logger.Errorf("Failed to check file %s: %v", absFilePath, err)
 		finalMessage := color.RedString("✗") + " Failed to check file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	if fileInfo.IsDir() {
 		finalMessage := color.RedString("✗") + " Path " + color.YellowString(absFilePath) + " is a directory, not a file\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	absProjectSecretsPath, err := filepath.Abs(projectSecretsPath)
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Failed to resolve project secrets path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	if filepath.Dir(absFilePath) != absProjectSecretsPath {
 		finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " is not in the project secrets directory\n" +
 			color.CyanString("→") + " Expected directory: " + color.YellowString(absProjectSecretsPath) + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	if filepath.Ext(absFilePath) != ".kanuka" {
 		finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " is not a .kanuka file\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
 	baseName := filepath.Base(absFilePath)
@@ -346,16 +366,23 @@ func getFilesByPath(spinner *spinner.Spinner) (string, []fileToRevoke, error) {
 		finalMessage := color.RedString("✗") + " Failed to check public key file\n" +
 			color.RedString("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
-		return "", nil, nil
+		return nil, nil
 	}
 
-	return displayName, files, nil
+	return &revokeContext{
+		DisplayName:  displayName,
+		Files:        files,
+		UUIDsRevoked: []string{userUUID},
+	}, nil
 }
 
-func revokeFiles(spinner *spinner.Spinner, displayName string, filesToRevoke []fileToRevoke) error {
-	if len(filesToRevoke) == 0 {
+func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
+	if len(ctx.Files) == 0 {
 		return nil
 	}
+
+	displayName := ctx.DisplayName
+	filesToRevoke := ctx.Files
 
 	// Load user config for current user UUID
 	userConfig, err := configs.EnsureUserConfig()
@@ -364,7 +391,7 @@ func revokeFiles(spinner *spinner.Spinner, displayName string, filesToRevoke []f
 	}
 	currentUserUUID := userConfig.User.UUID
 
-	// Load project config for project UUID
+	// Load project config for project UUID and updating
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		return Logger.ErrorfAndReturn("failed to load project config: %v", err)
@@ -376,22 +403,22 @@ func revokeFiles(spinner *spinner.Spinner, displayName string, filesToRevoke []f
 	Logger.Debugf("Current user UUID: %s, Project UUID: %s", currentUserUUID, projectUUID)
 
 	var revokedFiles []string
-	var errors []error
+	var revokeErrors []error
 
 	for _, file := range filesToRevoke {
 		Logger.Debugf("Revoking file: %s", file.Path)
 		if err := os.Remove(file.Path); err != nil {
 			Logger.Errorf("Failed to revoke file %s: %v", file.Path, err)
-			errors = append(errors, err)
+			revokeErrors = append(revokeErrors, err)
 		} else {
 			revokedFiles = append(revokedFiles, file.Name)
 			Logger.Infof("Successfully revoked file: %s", file.Name)
 		}
 	}
 
-	if len(errors) > 0 {
+	if len(revokeErrors) > 0 {
 		finalMessage := color.RedString("✗") + " Failed to completely revoke files for " + color.YellowString(displayName) + "\n"
-		for _, err := range errors {
+		for _, err := range revokeErrors {
 			finalMessage += color.RedString("Error: ") + err.Error() + "\n"
 		}
 		if len(revokedFiles) > 0 {
@@ -400,6 +427,21 @@ func revokeFiles(spinner *spinner.Spinner, displayName string, filesToRevoke []f
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
+
+	// Remove revoked UUIDs from project config
+	for _, uuid := range ctx.UUIDsRevoked {
+		Logger.Debugf("Removing UUID %s from project config", uuid)
+		projectConfig.RemoveDevice(uuid)
+	}
+
+	// Save updated project config
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		Logger.Errorf("Failed to update project config: %v", err)
+		finalMessage := color.RedString("✗") + " Files were revoked but failed to update project config: " + err.Error() + "\n"
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+	Logger.Infof("Project config updated - removed %d device(s)", len(ctx.UUIDsRevoked))
 
 	allUsers, err := secrets.GetAllUsersInProject()
 	if err != nil {

@@ -454,12 +454,12 @@ Enter your email: alice@example.com
 ### Milestone 5.1: Revoke All Devices
 
 **Tasks:**
-- [ ] Implement "revoke all devices" logic in `cmd/secrets_revoke.go`
-- [ ] Lookup all devices for user email
-- [ ] Delete all public keys and encrypted symmetric keys
-- [ ] Update project config (remove from [devices] section)
-- [ ] Rotate symmetric key for remaining users
-- [ ] Add confirmation prompt
+- [x] Implement "revoke all devices" logic in `cmd/secrets_revoke.go`
+- [x] Lookup all devices for user email
+- [x] Delete all public keys and encrypted symmetric keys
+- [x] Update project config (remove from [devices] section)
+- [x] Rotate symmetric key for remaining users
+- [x] Add confirmation prompt
 
 **Confirmation prompt:**
 ```bash
@@ -479,14 +479,14 @@ Proceed? [y/N]:
 ### Milestone 5.2: Revoke Single Device
 
 **Tasks:**
-- [ ] Implement "revoke single device" logic
-- [ ] Require both `--user` and `--device` flags
-- [ ] Validate device exists and belongs to user
-- [ ] Delete specific public key and encrypted symmetric key
-- [ ] Update project config (remove from [devices] section)
-- [ ] Keep user in [users] section (still has other devices)
-- [ ] Rotate symmetric key for remaining devices
-- [ ] No confirmation (explicitly specified)
+- [x] Implement "revoke single device" logic
+- [x] Require both `--user` and `--device` flags
+- [x] Validate device exists and belongs to user
+- [x] Delete specific public key and encrypted symmetric key
+- [x] Update project config (remove from [devices] section)
+- [x] Keep user in [users] section (still has other devices)
+- [x] Rotate symmetric key for remaining devices
+- [x] No confirmation (explicitly specified)
 
 **User flow:**
 ```bash
@@ -501,8 +501,8 @@ $ kanuka secrets revoke --user alice@example.com --device macbook
 ### Milestone 5.3: Auto-Confirm for Single Device
 
 **Tasks:**
-- [ ] Implement logic to skip confirmation if user has only 1 device
-- [ ] Same UX whether user has 1 or N devices
+- [x] Implement logic to skip confirmation if user has only 1 device
+- [x] Same UX whether user has 1 or N devices
 
 **User flow:**
 ```bash
@@ -518,9 +518,9 @@ $ kanuka secrets revoke --user alice@example.com
 ### Milestone 5.4: Non-Interactive Mode
 
 **Tasks:**
-- [ ] Add `--yes` flag to `secrets revoke` command
-- [ ] Skip all confirmation prompts when flag is present
-- [ ] Document in command help
+- [x] Add `--yes` flag to `secrets revoke` command
+- [x] Skip all confirmation prompts when flag is present
+- [x] Document in command help
 
 **User flow:**
 ```bash
