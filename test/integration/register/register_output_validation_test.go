@@ -2,6 +2,7 @@ package register
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -47,10 +48,11 @@ func testRegisterSuccessMessageFormat(t *testing.T, originalWd string, originalU
 	// Create a target user's public key
 	targetUser := "successuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -69,8 +71,8 @@ func testRegisterSuccessMessageFormat(t *testing.T, originalWd string, originalU
 	}
 
 	// Verify success message content
-	if !strings.Contains(output, "registered successfully") {
-		t.Errorf("Expected 'registered successfully' message not found in output: %s", output)
+	if !strings.Contains(output, "granted access successfully") {
+		t.Errorf("Expected 'granted access successfully' message not found in output: %s", output)
 	}
 
 	// Verify informational arrow
@@ -106,12 +108,12 @@ func testRegisterErrorMessageFormat(t *testing.T, originalWd string, originalUse
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Test error when user doesn't exist
-	nonExistentUser := "nonexistentuser"
+	// Test error when user email is invalid format
+	invalidEmail := "notanemail"
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", nonExistentUser})
+		cmd.SetArgs([]string{"secrets", "register", "--user", invalidEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -123,18 +125,18 @@ func testRegisterErrorMessageFormat(t *testing.T, originalWd string, originalUse
 		t.Errorf("Expected error symbol '✗' not found in output: %s", output)
 	}
 
-	// Verify username is mentioned
-	if !strings.Contains(output, nonExistentUser) {
-		t.Errorf("Expected username '%s' not found in output: %s", nonExistentUser, output)
+	// Verify email is mentioned
+	if !strings.Contains(output, invalidEmail) {
+		t.Errorf("Expected email '%s' not found in output: %s", invalidEmail, output)
 	}
 
-	// Verify error message content
-	if !strings.Contains(output, "not found") {
-		t.Errorf("Expected 'not found' message not found in output: %s", output)
+	// Verify error message content - now checks for invalid email format
+	if !strings.Contains(output, "Invalid email format") {
+		t.Errorf("Expected 'Invalid email format' message not found in output: %s", output)
 	}
 
 	// Verify helpful instruction
-	if !strings.Contains(output, "kanuka secrets create") {
-		t.Errorf("Expected helpful instruction 'kanuka secrets create' not found in output: %s", output)
+	if !strings.Contains(output, "valid email address") {
+		t.Errorf("Expected helpful instruction about valid email not found in output: %s", output)
 	}
 }

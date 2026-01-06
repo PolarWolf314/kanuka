@@ -71,7 +71,30 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Make secrets directory read-only
+	// Generate a test RSA key pair
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate RSA key: %v", err)
+	}
+
+	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
+	targetUserEmail := "readonlyuser@example.com"
+	targetUserUUID := "readonly-user-uuid-1234"
+
+	// Register the user in the project config with UUID→email mapping
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	if projectConfig.Users == nil {
+		projectConfig.Users = make(map[string]string)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
+	// Make secrets directory read-only AFTER setting up config
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
 	if err := os.Chmod(secretsDir, 0444); err != nil {
 		t.Fatalf("Failed to make secrets directory read-only: %v", err)
@@ -80,21 +103,12 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 		_ = os.Chmod(secretsDir, 0755) // Restore permissions for cleanup
 	}()
 
-	// Generate a test RSA key pair
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate RSA key: %v", err)
-	}
-
-	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
-	targetUser := "readonlyuser"
-
 	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -133,7 +147,30 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Make public_keys directory read-only
+	// Generate a test RSA key pair
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate RSA key: %v", err)
+	}
+
+	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
+	targetUserEmail := "readonlypubuser@example.com"
+	targetUserUUID := "readonly-pubuser-uuid-1234"
+
+	// Register the user in the project config with UUID→email mapping
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	if projectConfig.Users == nil {
+		projectConfig.Users = make(map[string]string)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
+	// Make public_keys directory read-only AFTER setting up config
 	publicKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
 	if err := os.Chmod(publicKeysDir, 0444); err != nil {
 		t.Fatalf("Failed to make public_keys directory read-only: %v", err)
@@ -142,21 +179,12 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 		_ = os.Chmod(publicKeysDir, 0755) // Restore permissions for cleanup
 	}()
 
-	// Generate a test RSA key pair
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate RSA key: %v", err)
-	}
-
-	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
-	targetUser := "readonlypubuser"
-
 	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -381,14 +409,28 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 	}
 
 	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
-	targetUser := "spaceuser"
+	targetUserEmail := "spaceuser@example.com"
+	targetUserUUID := "space-user-uuid-1234"
+
+	// Register the user in the project config with UUID→email mapping
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	if projectConfig.Users == nil {
+		projectConfig.Users = make(map[string]string)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
 
 	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -399,8 +441,8 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	// Verify the kanuka key was created
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	// Verify the kanuka key was created using the UUID (not email)
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}

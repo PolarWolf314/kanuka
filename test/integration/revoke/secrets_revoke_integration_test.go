@@ -73,29 +73,27 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Register a second user
+	// Register a second user using --file flag
 	secondUser := "seconduser"
-
-	// Generate key pair for second user
-	privateKeyPath := filepath.Join(tempUserDir, "private.key")
-	publicKeyPath := filepath.Join(tempUserDir, "public.pub")
-
-	if err := shared.GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
-		t.Fatalf("Failed to generate RSA key pair: %v", err)
-	}
-
-	// Register the second user
-	cmd.ResetGlobalState()
-	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"register", "--user", secondUser, "--file", publicKeyPath})
-	if err := secretsCmd.Execute(); err != nil {
-		t.Fatalf("Failed to register second user: %v", err)
-	}
-
-	// Verify second user files exist
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
 	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
+
+	// Generate key pair for second user, saving public key to project directory
+	privateKeyPath := filepath.Join(tempUserDir, "private.key")
+	projectPublicKeyPath := filepath.Join(publicKeysDir, secondUser+".pub")
+
+	if err := shared.GenerateRSAKeyPair(privateKeyPath, projectPublicKeyPath); err != nil {
+		t.Fatalf("Failed to generate RSA key pair: %v", err)
+	}
+
+	// Register the second user using --file flag
+	cmd.ResetGlobalState()
+	secretsCmd = cmd.GetSecretsCmd()
+	secretsCmd.SetArgs([]string{"register", "--file", projectPublicKeyPath})
+	if err := secretsCmd.Execute(); err != nil {
+		t.Fatalf("Failed to register second user: %v", err)
+	}
 
 	// List all files in the directories to debug
 	publicKeyFiles, err := os.ReadDir(publicKeysDir)
@@ -116,10 +114,8 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		t.Logf("  - %s", file.Name())
 	}
 
-	// Based on the output, the register command is creating files with these names
-	// For the integration test, we'll just check for the kanuka key file
-	// since that's what's being created with the expected name
-	registeredKanukaKeyPath := filepath.Join(secretsDir, "public.kanuka")
+	// Verify second user's kanuka file exists
+	registeredKanukaKeyPath := filepath.Join(secretsDir, secondUser+".kanuka")
 
 	var statErr error
 	if _, statErr = os.Stat(registeredKanukaKeyPath); os.IsNotExist(statErr) {
@@ -128,10 +124,11 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 
 	t.Logf("Found kanuka key file: %v", registeredKanukaKeyPath)
 
-	// Remove the user - we need to use "public" since that's the filename being used
+	// Remove the user using --file flag (use relative path)
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", secondUser+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", "public"})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}

@@ -100,10 +100,11 @@ func testRegisterWithDifferentUserDirectories(t *testing.T, originalWd string, o
 	// Create a target user's public key
 	targetUser := "nesteduser"
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -151,10 +152,11 @@ func testRegisterWithMissingUserDirectory(t *testing.T, originalWd string, origi
 	// Create a target user's public key
 	targetUser := "missingdiruser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -190,6 +192,7 @@ func testRegisterWithCorruptedUserSettings(t *testing.T, originalWd string, orig
 	// Create a target user's public key
 	targetUser := "corruptedsettingsuser"
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	// Corrupt user settings by setting invalid paths
 	configs.UserKanukaSettings.UserKeysPath = "/invalid/nonexistent/path"
@@ -199,7 +202,7 @@ func testRegisterWithCorruptedUserSettings(t *testing.T, originalWd string, orig
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	// We EXPECT the command to fail when given invalid paths
@@ -221,7 +224,7 @@ func testRegisterWithCorruptedUserSettings(t *testing.T, originalWd string, orig
 
 	output, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {

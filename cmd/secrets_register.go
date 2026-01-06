@@ -7,6 +7,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
@@ -14,22 +15,22 @@ import (
 )
 
 var (
-	username       string
-	customFilePath string
-	publicKeyText  string
+	registerUserEmail string
+	customFilePath    string
+	publicKeyText     string
 )
 
 // resetRegisterCommandState resets all register command global variables to their default values for testing.
 func resetRegisterCommandState() {
-	username = ""
+	registerUserEmail = ""
 	customFilePath = ""
 	publicKeyText = ""
 }
 
 func init() {
-	RegisterCmd.Flags().StringVarP(&username, "user", "u", "", "user UUID to register for access (from their public key filename)")
+	RegisterCmd.Flags().StringVarP(&registerUserEmail, "user", "u", "", "user email to register for access")
 	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
-	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified user UUID")
+	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified user email")
 }
 
 var RegisterCmd = &cobra.Command{
@@ -41,18 +42,26 @@ var RegisterCmd = &cobra.Command{
 		defer cleanup()
 
 		// Check for required flags
-		Logger.Debugf("Checking command flags: username=%s, customFilePath=%s, publicKeyText provided=%t", username, customFilePath, publicKeyText != "")
-		if username == "" && customFilePath == "" && publicKeyText == "" {
+		Logger.Debugf("Checking command flags: registerUserEmail=%s, customFilePath=%s, publicKeyText provided=%t", registerUserEmail, customFilePath, publicKeyText != "")
+		if registerUserEmail == "" && customFilePath == "" && publicKeyText == "" {
 			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + ", " + color.YellowString("--file") + ", or " + color.YellowString("--pubkey") + " must be specified.\n" +
 				"Run " + color.YellowString("kanuka secrets register --help") + " to see the available commands"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
-		// When using --pubkey, username is required
-		if publicKeyText != "" && username == "" {
+		// When using --pubkey, user email is required
+		if publicKeyText != "" && registerUserEmail == "" {
 			finalMessage := color.RedString("✗") + " When using " + color.YellowString("--pubkey") + ", the " + color.YellowString("--user") + " flag is required.\n" +
-				"Specify a user UUID with " + color.YellowString("--user")
+				"Specify a user email with " + color.YellowString("--user")
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
+		// Validate email format if provided
+		if registerUserEmail != "" && !utils.IsValidEmail(registerUserEmail) {
+			finalMessage := color.RedString("✗") + " Invalid email format: " + color.YellowString(registerUserEmail) + "\n" +
+				color.CyanString("→") + " Please provide a valid email address"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -76,13 +85,13 @@ var RegisterCmd = &cobra.Command{
 
 		switch {
 		case publicKeyText != "":
-			Logger.Infof("Handling public key text registration for user: %s", username)
+			Logger.Infof("Handling public key text registration for user: %s", registerUserEmail)
 			return handlePubkeyTextRegistration(spinner)
 		case customFilePath != "":
 			Logger.Infof("Handling custom file registration from: %s", customFilePath)
 			return handleCustomFileRegistration(spinner)
 		default:
-			Logger.Infof("Handling user registration for: %s", username)
+			Logger.Infof("Handling user registration for: %s", registerUserEmail)
 			return handleUserRegistration(spinner)
 		}
 	},
@@ -100,8 +109,23 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
+	// Load project config to look up user UUID by email
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+	}
+
+	// Look up user UUID by email
+	targetUserUUID, found := projectConfig.GetUserUUIDByEmail(registerUserEmail)
+	if !found {
+		finalMessage := color.RedString("✗") + " User " + color.YellowString(registerUserEmail) + " not found in project\n" +
+			"They must first run: " + color.YellowString("kanuka secrets create --email "+registerUserEmail)
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
 	// Validate and parse the public key text
-	Logger.Debugf("Parsing public key text for user: %s", username)
+	Logger.Debugf("Parsing public key text for user: %s (UUID: %s)", registerUserEmail, targetUserUUID)
 	publicKey, err := secrets.ParsePublicKeyText(publicKeyText)
 	if err != nil {
 		Logger.Errorf("Invalid public key format provided: %v", err)
@@ -111,9 +135,6 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 	Logger.Infof("Public key parsed successfully")
-
-	// username here is the user UUID
-	targetUserUUID := username
 
 	// Save the public key to a file using user UUID
 	pubKeyFilePath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
@@ -128,17 +149,17 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	Logger.Infof("Public key saved successfully")
 
 	// Now register the user with the newly saved public key
-	Logger.Debugf("Registering user %s with public key", targetUserUUID)
+	Logger.Debugf("Registering user %s (UUID: %s) with public key", registerUserEmail, targetUserUUID)
 	if err := registerUserWithPublicKey(targetUserUUID, publicKey); err != nil {
-		Logger.Errorf("Failed to register user %s with public key: %v", targetUserUUID, err)
+		Logger.Errorf("Failed to register user %s with public key: %v", registerUserEmail, err)
 		finalMessage := color.RedString("✗") + " Failed to register user with the provided public key\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
 
-	Logger.Infof("Public key registration completed successfully for user: %s", targetUserUUID)
-	finalMessage := color.GreenString("✓") + " Public key for " + color.YellowString(targetUserUUID) + " has been saved and registered successfully!\n" +
+	Logger.Infof("Public key registration completed successfully for user: %s", registerUserEmail)
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
@@ -220,7 +241,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	}
 	currentUserUUID := userConfig.User.UUID
 
-	// Load project config to get project UUID
+	// Load project config to get project UUID and look up target user
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
@@ -236,8 +257,16 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	// username here is the target user's UUID
-	targetUserUUID := username
+	// Look up user UUID by email
+	targetUserUUID, found := projectConfig.GetUserUUIDByEmail(registerUserEmail)
+	if !found {
+		finalMessage := color.RedString("✗") + " User " + color.YellowString(registerUserEmail) + " not found in project\n" +
+			"They must first run: " + color.YellowString("kanuka secrets create --email "+registerUserEmail)
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	Logger.Debugf("Found target user UUID: %s for email: %s", targetUserUUID, registerUserEmail)
 
 	// Check if target user's public key exists (using their UUID)
 	targetPubkeyPath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
@@ -246,9 +275,9 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	// TODO: In the future, differentiate between FileNotFound Error and InvalidKey Error
 	targetUserPublicKey, err := secrets.LoadPublicKey(targetPubkeyPath)
 	if err != nil {
-		Logger.Errorf("Failed to load public key for user %s from %s: %v", targetUserUUID, targetPubkeyPath, err)
-		finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(targetUserUUID) + " not found\n" +
-			"They must first run: " + color.YellowString("kanuka secrets create")
+		Logger.Errorf("Failed to load public key for user %s from %s: %v", registerUserEmail, targetPubkeyPath, err)
+		finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(registerUserEmail) + " not found\n" +
+			"They must first run: " + color.YellowString("kanuka secrets create --email "+registerUserEmail)
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -304,13 +333,13 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	}
 
 	// Save encrypted symmetric key for target user using their UUID
-	Logger.Debugf("Saving kanuka key for target user: %s", targetUserUUID)
+	Logger.Debugf("Saving kanuka key for target user: %s (UUID: %s)", registerUserEmail, targetUserUUID)
 	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
 
-	Logger.Infof("User registration completed successfully for: %s", targetUserUUID)
-	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetUserUUID+".pub") + " has been registered successfully!\n" +
+	Logger.Infof("User registration completed successfully for: %s", registerUserEmail)
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
@@ -408,13 +437,21 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// Save encrypted symmetric key for target user
 	// The target user UUID is the filename without .pub extension
 	targetUserUUID := strings.TrimSuffix(filepath.Base(customFilePath), ".pub")
+
+	// Try to find email for display purposes
+	targetEmail := projectConfig.Users[targetUserUUID]
+	displayName := targetEmail
+	if displayName == "" {
+		displayName = targetUserUUID
+	}
+
 	Logger.Debugf("Saving kanuka key for target user: %s (from custom file)", targetUserUUID)
 	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
 
-	Logger.Infof("Custom file registration completed successfully for: %s", targetUserUUID)
-	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetUserUUID+".pub") + " has been registered successfully!\n" +
+	Logger.Infof("Custom file registration completed successfully for: %s", displayName)
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(displayName) + " has been granted access successfully!\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil

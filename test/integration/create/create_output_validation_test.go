@@ -71,7 +71,7 @@ func testSuccessMessages(t *testing.T, originalWd string, originalUserSettings *
 	}
 
 	// Test success message
-	if !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "Keys created for") {
 		t.Errorf("Success message not found in output: %s", output)
 	}
 
@@ -219,7 +219,7 @@ func testProgressIndicators(t *testing.T, originalWd string, originalUserSetting
 
 	// The output should show the final result, not intermediate spinner states
 	// since we're capturing the final output after completion
-	if !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "Keys created for") {
 		t.Errorf("Final progress message not found in output: %s", output)
 	}
 }

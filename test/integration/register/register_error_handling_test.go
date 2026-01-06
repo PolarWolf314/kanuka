@@ -52,6 +52,7 @@ func testRegisterWithNetworkInterruption(t *testing.T, originalWd string, origin
 	// Create a target user's public key
 	targetUser := "networkuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	// Simulate filesystem error by making the secrets directory read-only after creating it
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
@@ -68,7 +69,7 @@ func testRegisterWithNetworkInterruption(t *testing.T, originalWd string, origin
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	// Check if command actually failed (either through error return or error symbol in output)
@@ -117,6 +118,7 @@ func testRegisterWithPermissionDenied(t *testing.T, originalWd string, originalU
 	// Create a target user's public key
 	targetUser := "permissionuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	// Make the entire .kanuka directory read-only
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
@@ -133,7 +135,7 @@ func testRegisterWithPermissionDenied(t *testing.T, originalWd string, originalU
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	// The command should fail - either through error return or error in output
@@ -183,6 +185,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 	// Create a target user's public key
 	targetUser := "recoveryuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	// First, attempt a registration that will fail due to permission issues
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
@@ -193,7 +196,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 	// Try to register (this should fail)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -223,7 +226,7 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 
 	output, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -255,10 +258,11 @@ func testRegisterRecoveryFromPartialFailure(t *testing.T, originalWd string, ori
 	// Test that we can register another user to ensure the system is fully functional
 	anotherUser := "anotheruser"
 	createTestUserKeyPair(t, tempDir, anotherUser)
+	anotherUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", anotherUser+".pub")
 
 	output, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", anotherUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", anotherUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {

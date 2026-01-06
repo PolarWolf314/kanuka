@@ -236,7 +236,7 @@ func testForceWithoutExistingKeys(t *testing.T, originalWd string, originalUserS
 	}
 
 	// Should work exactly like normal create
-	if !strings.Contains(output, "✓") || !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "✓") || !strings.Contains(output, "Keys created for") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 

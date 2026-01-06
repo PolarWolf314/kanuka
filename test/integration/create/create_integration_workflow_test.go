@@ -109,7 +109,7 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 
 	registerOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", user2UUID})
+		cmd.SetArgs([]string{"secrets", "register", "--user", "testuser2@example.com"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -339,7 +339,7 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 		shared.TestUserUUID, "testuser1", "testuser1@example.com")
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", user2UUID})
+		cmd.SetArgs([]string{"secrets", "register", "--user", "testuser2@example.com"})
 		return cmd.Execute()
 	})
 	if err != nil {

@@ -79,9 +79,10 @@ func testRevokeWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create secrets directory: %v", err)
 	}
 
-	// Create test user files - only public key
-	testUser := "testuser2"
-	publicKeyPath := filepath.Join(publicKeysDir, testUser+".pub")
+	// Create test user files - only public key (creating a .kanuka file to use --file)
+	testUserUUID := "testuser2-uuid"
+	publicKeyPath := filepath.Join(publicKeysDir, testUserUUID+".pub")
+	kanukaKeyPath := filepath.Join(secretsDir, testUserUUID+".kanuka")
 
 	// Create dummy public key file
 	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
@@ -89,15 +90,22 @@ func testRevokeWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create public key file: %v", err)
 	}
 
+	// Create dummy kanuka file to use with --file flag
+	err = os.WriteFile(kanukaKeyPath, []byte("dummy kanuka key"), 0600)
+	if err != nil {
+		t.Fatalf("Failed to create kanuka key file: %v", err)
+	}
+
 	// Verify file exists
 	if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
 		t.Fatal("Public key file should exist before removal")
 	}
 
-	// Remove the user
+	// Remove the user using --file flag (use relative path)
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -106,7 +114,7 @@ func testRevokeWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 
 	// Verify file is removed
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be revokedd")
+		t.Error("Public key file should be revoked")
 	}
 }
 
@@ -157,8 +165,8 @@ func testRevokeWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 	}
 
 	// Create test user files - only kanuka key
-	testUser := "testuser2"
-	kanukaKeyPath := filepath.Join(secretsDir, testUser+".kanuka")
+	testUserUUID := "testuser2-uuid"
+	kanukaKeyPath := filepath.Join(secretsDir, testUserUUID+".kanuka")
 
 	// Create dummy kanuka key file
 	err = os.WriteFile(kanukaKeyPath, []byte("dummy kanuka key"), 0600)
@@ -171,10 +179,11 @@ func testRevokeWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 		t.Fatal("Kanuka key file should exist before removal")
 	}
 
-	// Remove the user
+	// Remove the user using --file flag (use relative path)
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -183,7 +192,7 @@ func testRevokeWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 
 	// Verify file is removed
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be revokedd")
+		t.Error("Kanuka key file should be revoked")
 	}
 }
 
@@ -234,9 +243,9 @@ func testRevokeWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 	}
 
 	// Create test user files
-	testUser := "testuser2"
-	publicKeyPath := filepath.Join(publicKeysDir, testUser+".pub")
-	kanukaKeyPath := filepath.Join(secretsDir, testUser+".kanuka")
+	testUserUUID := "testuser2-uuid"
+	publicKeyPath := filepath.Join(publicKeysDir, testUserUUID+".pub")
+	kanukaKeyPath := filepath.Join(secretsDir, testUserUUID+".kanuka")
 
 	// Create dummy files
 	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
@@ -254,10 +263,11 @@ func testRevokeWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 		t.Fatalf("Failed to change file permissions: %v", err)
 	}
 
-	// Remove the user
+	// Remove the user using --file flag (use relative path)
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 
 	err = secretsCmd.Execute()
 	if err != nil {

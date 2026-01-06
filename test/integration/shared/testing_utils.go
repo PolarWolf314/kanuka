@@ -31,6 +31,12 @@ const TestUser2UUID = "test-user-2-uuid-5678-1234-abcdefghijkl"
 // TestProjectUUID is a fixed UUID used for testing purposes.
 const TestProjectUUID = "test-proj-uuid-1234-5678-abcdefghijkl"
 
+// TestUserEmail is a fixed email used for testing purposes.
+const TestUserEmail = "testuser@example.com"
+
+// TestUser2Email is a second fixed email used for multi-user testing purposes.
+const TestUser2Email = "testuser2@example.com"
+
 // SetupTestEnvironment sets up the test environment with temporary directories.
 func SetupTestEnvironment(t *testing.T, tempDir, tempUserDir, originalWd string, originalUserSettings *configs.UserSettings) {
 	SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir, originalWd, originalUserSettings, TestUserUUID, "testuser", "testuser@example.com")
@@ -343,18 +349,34 @@ func InitializeProjectStructureOnly(t *testing.T, tempDir, tempUserDir string) {
 	}
 }
 
-// RegisterTestUser registers a test user with the project.
-func RegisterTestUser(t *testing.T, username string) {
+// RegisterTestUser registers a test user with the project using their email.
+func RegisterTestUser(t *testing.T, email string) {
 	// Reset command state
 	cmd.ResetGlobalState()
 
 	// Create and register user
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"register", "--user", username})
+	secretsCmd.SetArgs([]string{"register", "--user", email})
 
 	err := secretsCmd.Execute()
 	if err != nil {
-		t.Fatalf("Failed to register test user %s: %v", username, err)
+		t.Fatalf("Failed to register test user %s: %v", email, err)
+	}
+}
+
+// RegisterTestUserByUUID registers a test user using the --file flag with their public key file.
+// This is useful for tests that need to register users by UUID when they don't have an email.
+func RegisterTestUserByUUID(t *testing.T, publicKeyPath string) {
+	// Reset command state
+	cmd.ResetGlobalState()
+
+	// Create and register user
+	secretsCmd := cmd.GetSecretsCmd()
+	secretsCmd.SetArgs([]string{"register", "--file", publicKeyPath})
+
+	err := secretsCmd.Execute()
+	if err != nil {
+		t.Fatalf("Failed to register test user with key %s: %v", publicKeyPath, err)
 	}
 }
 

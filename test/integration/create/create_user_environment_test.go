@@ -66,7 +66,7 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 			}
 			defer os.RemoveAll(tempUserDir)
 
-			// Setup test environment with custom username
+			// Setup test environment with custom username and email
 			if err := os.Chdir(tempDir); err != nil {
 				t.Fatalf("Failed to change to temp directory: %v", err)
 			}
@@ -82,13 +82,31 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 					ProjectPublicKeyPath: "",
 					ProjectSecretsPath:   "",
 				}
+				configs.GlobalUserConfig = nil
 			})
 
 			// Override user settings with custom username
+			userConfigsPath := filepath.Join(tempUserDir, "config")
+			if err := os.MkdirAll(userConfigsPath, 0755); err != nil {
+				t.Fatalf("Failed to create user config directory: %v", err)
+			}
+
 			configs.UserKanukaSettings = &configs.UserSettings{
 				UserKeysPath:    filepath.Join(tempUserDir, "keys"),
-				UserConfigsPath: filepath.Join(tempUserDir, "config"),
+				UserConfigsPath: userConfigsPath,
 				Username:        tc.username,
+			}
+
+			// Create user config with email to avoid email prompt
+			userConfig := &configs.UserConfig{
+				User: configs.User{
+					UUID:  shared.TestUserUUID,
+					Email: tc.username + "@example.com",
+				},
+				Projects: make(map[string]string),
+			}
+			if err := configs.SaveUserConfig(userConfig); err != nil {
+				t.Fatalf("Failed to save user config: %v", err)
 			}
 
 			// Initialize project with the custom username

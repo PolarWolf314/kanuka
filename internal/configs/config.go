@@ -130,3 +130,48 @@ func SaveProjectConfig(config *ProjectConfig) error {
 func GenerateProjectUUID() string {
 	return uuid.New().String()
 }
+
+// GetUserUUIDByEmail looks up a user UUID by their email in the project config.
+// Returns the UUID and true if found, empty string and false if not found.
+func (pc *ProjectConfig) GetUserUUIDByEmail(email string) (string, bool) {
+	for uuid, userEmail := range pc.Users {
+		if userEmail == email {
+			return uuid, true
+		}
+	}
+	return "", false
+}
+
+// GetAllUserUUIDsByEmail returns all user UUIDs that match the given email.
+// This handles the case where the same email might have multiple devices (UUIDs).
+func (pc *ProjectConfig) GetAllUserUUIDsByEmail(email string) []string {
+	var uuids []string
+	for uuid, userEmail := range pc.Users {
+		if userEmail == email {
+			uuids = append(uuids, uuid)
+		}
+	}
+	return uuids
+}
+
+// GetDevicesByEmail returns all devices for a given email address.
+func (pc *ProjectConfig) GetDevicesByEmail(email string) map[string]DeviceConfig {
+	devices := make(map[string]DeviceConfig)
+	for uuid, device := range pc.Devices {
+		if device.Email == email {
+			devices[uuid] = device
+		}
+	}
+	return devices
+}
+
+// GetUserUUIDByEmailAndDevice looks up a user UUID by email and device name.
+// Returns the UUID and true if found, empty string and false if not found.
+func (pc *ProjectConfig) GetUserUUIDByEmailAndDevice(email, deviceName string) (string, bool) {
+	for uuid, device := range pc.Devices {
+		if device.Email == email && device.Name == deviceName {
+			return uuid, true
+		}
+	}
+	return "", false
+}

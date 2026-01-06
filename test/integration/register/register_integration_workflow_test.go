@@ -91,10 +91,11 @@ func testInitCreateRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	// Step 3: Register a new user
 	targetUser := "newuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -143,10 +144,11 @@ func testMultipleUserRegistrationWorkflow(t *testing.T, originalWd string, origi
 	for _, user := range users {
 		keyPair := createTestUserKeyPair(t, tempDir, user)
 		userKeyPairs[user] = keyPair
+		userKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", user+".pub")
 
 		output, err := shared.CaptureOutput(func() error {
 			cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-			cmd.SetArgs([]string{"secrets", "register", "--user", user})
+			cmd.SetArgs([]string{"secrets", "register", "--file", userKeyFile})
 			return cmd.Execute()
 		})
 		if err != nil {
@@ -191,10 +193,11 @@ func testRegisterThenEncryptDecryptWorkflow(t *testing.T, originalWd string, ori
 	// Register a new user
 	targetUser := "encryptuser"
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -307,10 +310,11 @@ func testRegisterThenRemoveWorkflow(t *testing.T, originalWd string, originalUse
 	// Register a new user
 	targetUser := "removeuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -371,10 +375,11 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	// User A (testuser) registers User B
 	userB := "userB"
 	userBKeyPair := createTestUserKeyPair(t, tempDir, userB)
+	userBKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userB+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", userB})
+		cmd.SetArgs([]string{"secrets", "register", "--file", userBKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -389,6 +394,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	// Now simulate User B registering User C
 	userC := "userC"
 	userCKeyPair := createTestUserKeyPair(t, tempDir, userC)
+	userCKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userC+".pub")
 
 	// Set up User B's environment
 	tempUserBDir, err := os.MkdirTemp("", "kanuka-userB-*")
@@ -440,7 +446,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	// User B registers User C
 	output, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", userC})
+		cmd.SetArgs([]string{"secrets", "register", "--file", userCKeyFile})
 		return cmd.Execute()
 	})
 
@@ -493,10 +499,11 @@ func testRegisterAfterManualReset(t *testing.T, originalWd string, originalUserS
 	// Register a user initially
 	initialUser := "initialuser"
 	createTestUserKeyPair(t, tempDir, initialUser)
+	initialUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", initialUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", initialUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", initialUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {

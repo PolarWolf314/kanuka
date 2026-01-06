@@ -73,34 +73,33 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Define multiple users
+	// Define multiple users (these will be used as filenames/identifiers)
 	users := []string{"user1", "user2", "user3"}
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
+	secretsDir := filepath.Join(kanukaDir, "secrets")
 
-	// Create key pairs and register all users
+	// Create key pairs and register all users using --file flag
 	for i, user := range users {
 		// Generate key pair for user
 		privateKeyPath := filepath.Join(tempUserDir, user+".key")
-		publicKeyPath := filepath.Join(tempUserDir, user+".pub")
+		// Save directly to project's public_keys directory so filename becomes user identifier
+		projectPublicKeyPath := filepath.Join(publicKeysDir, user+".pub")
 
-		if err := shared.GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
+		if err := shared.GenerateRSAKeyPair(privateKeyPath, projectPublicKeyPath); err != nil {
 			t.Fatalf("Failed to generate RSA key pair for user %s: %v", user, err)
 		}
 
-		// Register the user
+		// Register the user using --file flag (uses filename as user identifier)
 		cmd.ResetGlobalState()
 		secretsCmd = cmd.GetSecretsCmd()
-		secretsCmd.SetArgs([]string{"register", "--user", user, "--file", publicKeyPath})
+		secretsCmd.SetArgs([]string{"register", "--file", projectPublicKeyPath})
 		if err := secretsCmd.Execute(); err != nil {
 			t.Fatalf("Failed to register user %s: %v", user, err)
 		}
 
 		t.Logf("Registered user %d: %s", i+1, user)
 	}
-
-	// Verify all users' files exist
-	kanukaDir := filepath.Join(tempDir, ".kanuka")
-	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
-	secretsDir := filepath.Join(kanukaDir, "secrets")
 
 	// List all files in the directories to debug
 	publicKeyFiles, err := os.ReadDir(publicKeysDir)
@@ -121,17 +120,12 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		t.Logf("  - %s", file.Name())
 	}
 
-	// The register command might be using a different naming convention
-	// Let's check what files actually exist and use those for our test
-
-	// Based on the output, we can see that the register command creates files with the user's name
-	// Let's revoke one of the users we registered
-
-	// Remove the second user
+	// Remove the second user using --file flag (use relative path)
 	userToRemove := users[1] // user2
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", userToRemove+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", userToRemove})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
@@ -156,7 +150,6 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	}
 
 	// Verify that the kanuka key file for the removed user is gone
-	// The public key file might not be created with the expected name, so we'll focus on the kanuka key
 	removedUserKanukaKeyPath := filepath.Join(secretsDir, userToRemove+".kanuka")
 
 	if _, err := os.Stat(removedUserKanukaKeyPath); !os.IsNotExist(err) {

@@ -75,9 +75,9 @@ func testRevokeWithFileBeingAccessed(t *testing.T, originalWd string, originalUs
 	}
 
 	// Create test user files
-	testUser := "testuser2"
-	publicKeyPath := filepath.Join(publicKeysDir, testUser+".pub")
-	kanukaKeyPath := filepath.Join(secretsDir, testUser+".kanuka")
+	testUserUUID := "testuser2-uuid"
+	publicKeyPath := filepath.Join(publicKeysDir, testUserUUID+".pub")
+	kanukaKeyPath := filepath.Join(secretsDir, testUserUUID+".kanuka")
 
 	// Create dummy files
 	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
@@ -100,11 +100,12 @@ func testRevokeWithFileBeingAccessed(t *testing.T, originalWd string, originalUs
 	// Create a channel to signal when the revoke command is done
 	done := make(chan bool)
 
-	// Run the revoke command in a goroutine
+	// Run the revoke command in a goroutine using --file flag (use relative path)
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	go func() {
 		cmd.ResetGlobalState()
 		secretsCmd := cmd.GetSecretsCmd()
-		secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+		secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 		err := secretsCmd.Execute()
 		if err != nil {
 			t.Errorf("Remove command should not return error even with concurrent access: %v", err)
@@ -125,6 +126,6 @@ func testRevokeWithFileBeingAccessed(t *testing.T, originalWd string, originalUs
 
 	// Check if the kanuka key file was removed (it should be since we only locked the public key)
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be revokedd even if public key file is locked")
+		t.Error("Kanuka key file should be revoked even if public key file is locked")
 	}
 }

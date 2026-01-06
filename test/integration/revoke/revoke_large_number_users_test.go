@@ -99,10 +99,11 @@ func testRevokeWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	// Measure time to revoke a user
 	start := time.Now()
 
-	// Remove the user
+	// Remove the user using --file flag (use relative path)
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", userToRemove+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", userToRemove})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
@@ -115,11 +116,11 @@ func testRevokeWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	kanukaKeyPath := filepath.Join(secretsDir, userToRemove+".kanuka")
 
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be revokedd")
+		t.Error("Public key file should be revoked")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be revokedd")
+		t.Error("Kanuka key file should be revoked")
 	}
 
 	// Verify other users' files still exist (check a few random ones)

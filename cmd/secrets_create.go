@@ -1,26 +1,45 @@
 package cmd
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-var force bool
+var (
+	force       bool
+	createEmail string
+)
 
 func init() {
 	createCmd.Flags().BoolVarP(&force, "force", "f", false, "force key creation")
+	createCmd.Flags().StringVarP(&createEmail, "email", "e", "", "your email address for identification")
 }
 
 // resetCreateCommandState resets the create command's global state for testing.
 func resetCreateCommandState() {
 	force = false
+	createEmail = ""
+}
+
+// promptForEmail prompts the user for their email address.
+func promptForEmail(reader *bufio.Reader) (string, error) {
+	fmt.Print("Enter your email: ")
+	email, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("failed to read email: %w", err)
+	}
+	return strings.TrimSpace(email), nil
 }
 
 var createCmd = &cobra.Command{
@@ -58,6 +77,41 @@ var createCmd = &cobra.Command{
 		}
 		userUUID := userConfig.User.UUID
 		Logger.Debugf("Current user UUID: %s", userUUID)
+
+		// Handle email: use flag, existing config, or prompt
+		userEmail := createEmail
+		if userEmail == "" {
+			userEmail = userConfig.User.Email
+		}
+
+		// If still no email, prompt for it
+		if userEmail == "" {
+			spinner.Stop()
+			reader := bufio.NewReader(os.Stdin)
+			promptedEmail, err := promptForEmail(reader)
+			if err != nil {
+				return Logger.ErrorfAndReturn("Failed to read email: %v", err)
+			}
+			userEmail = promptedEmail
+			spinner.Restart()
+		}
+
+		// Validate email format
+		if !utils.IsValidEmail(userEmail) {
+			finalMessage := color.RedString("✗") + " Invalid email format: " + color.YellowString(userEmail) + "\n" +
+				color.CyanString("→") + " Please provide a valid email address"
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
+		// Update user config with email if changed
+		if userConfig.User.Email != userEmail {
+			userConfig.User.Email = userEmail
+			if err := configs.SaveUserConfig(userConfig); err != nil {
+				return Logger.ErrorfAndReturn("Failed to save user config: %v", err)
+			}
+			Logger.Infof("User email updated to: %s", userEmail)
+		}
 
 		currentUsername := configs.UserKanukaSettings.Username
 
@@ -106,9 +160,9 @@ var createCmd = &cobra.Command{
 		}
 
 		// Add/update user in project config
-		projectConfig.Users[userUUID] = userConfig.User.Email
+		projectConfig.Users[userUUID] = userEmail
 		projectConfig.Devices[userUUID] = configs.DeviceConfig{
-			Email:     userConfig.User.Email,
+			Email:     userEmail,
 			Name:      currentUsername, // Use system username as device name
 			CreatedAt: time.Now().UTC(),
 		}
@@ -139,13 +193,13 @@ var createCmd = &cobra.Command{
 			deletedMessage = "    deleted: " + color.RedString(userKanukaKeyPath) + "\n"
 		}
 
-		Logger.Infof("Create command completed successfully for user: %s (UUID: %s)", currentUsername, userUUID)
-		finalMessage := color.GreenString("✓") + " The following changes were made:\n" +
+		Logger.Infof("Create command completed successfully for user: %s (%s)", userEmail, userUUID)
+		finalMessage := color.GreenString("✓") + " Keys created for " + color.YellowString(userEmail) + " (device: " + color.CyanString(currentUsername) + ")\n" +
 			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
 			color.CyanString("To gain access to the secrets in this project:\n") +
 			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+userUUID+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
-			"     " + color.YellowString("kanuka secrets register --user "+userConfig.User.Email)
+			"     " + color.YellowString("kanuka secrets register --user "+userEmail)
 
 		spinner.FinalMSG = finalMessage
 		return nil

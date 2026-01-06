@@ -114,7 +114,7 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 		t.Errorf("Output: %s", output)
 	}
 
-	if !strings.Contains(output, "✓") || !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "✓") || !strings.Contains(output, "Keys created for") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
@@ -227,7 +227,7 @@ func testCreateWithForceFlag(t *testing.T, originalWd string, originalUserSettin
 		t.Errorf("Output: %s", output)
 	}
 
-	if !strings.Contains(output, "✓") || !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "✓") || !strings.Contains(output, "Keys created for") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
