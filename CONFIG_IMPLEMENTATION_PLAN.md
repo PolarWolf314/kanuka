@@ -162,9 +162,9 @@ Devices in this project:
 ### Milestone 1.1: Add TOML dependency
 
 **Tasks:**
-- [ ] Add `github.com/BurntSushi/toml` to `go.mod`
-- [ ] Create `internal/configs/toml.go` for TOML parsing
-- [ ] Write unit tests for TOML parsing
+- [x] Add `github.com/BurntSushi/toml` to `go.mod`
+- [x] Create `internal/configs/toml.go` for TOML parsing
+- [x] Write unit tests for TOML parsing
 
 **Rationale:** TOML is human-readable and well-supported in Go. Needed for all configuration files.
 
@@ -173,10 +173,10 @@ Devices in this project:
 ### Milestone 1.2: User Config Structure
 
 **Tasks:**
-- [ ] Create `UserConfig` struct in `internal/configs/config.go`
-- [ ] Implement `LoadUserConfig()` function
-- [ ] Implement `SaveUserConfig()` function
-- [ ] Add auto-generation of `user_uuid` on first run
+- [x] Create `UserConfig` struct in `internal/configs/config.go`
+- [x] Implement `LoadUserConfig()` function
+- [x] Implement `SaveUserConfig()` function
+- [x] Add auto-generation of `user_uuid` on first run
 - [ ] Update `InitProjectSettings()` to use user config
 
 **UserConfig struct:**
@@ -202,10 +202,10 @@ type User struct {
 ### Milestone 1.3: Project Config Structure
 
 **Tasks:**
-- [ ] Create `ProjectConfig` struct in `internal/configs/config.go`
-- [ ] Implement `LoadProjectConfig()` function
-- [ ] Implement `SaveProjectConfig()` function
-- [ ] Implement `GenerateProjectUUID()` function
+- [x] Create `ProjectConfig` struct in `internal/configs/config.go`
+- [x] Implement `LoadProjectConfig()` function
+- [x] Implement `SaveProjectConfig()` function
+- [x] Implement `GenerateProjectUUID()` function
 
 **ProjectConfig struct:**
 ```go
