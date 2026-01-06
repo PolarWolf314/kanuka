@@ -27,9 +27,9 @@ func resetRegisterCommandState() {
 }
 
 func init() {
-	RegisterCmd.Flags().StringVarP(&username, "user", "u", "", "username to register for access")
+	RegisterCmd.Flags().StringVarP(&username, "user", "u", "", "user UUID to register for access (from their public key filename)")
 	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
-	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified username")
+	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified user UUID")
 }
 
 var RegisterCmd = &cobra.Command{
@@ -52,7 +52,7 @@ var RegisterCmd = &cobra.Command{
 		// When using --pubkey, username is required
 		if publicKeyText != "" && username == "" {
 			finalMessage := color.RedString("✗") + " When using " + color.YellowString("--pubkey") + ", the " + color.YellowString("--user") + " flag is required.\n" +
-				"Specify a username with " + color.YellowString("--user")
+				"Specify a user UUID with " + color.YellowString("--user")
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -112,8 +112,11 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	}
 	Logger.Infof("Public key parsed successfully")
 
-	// Save the public key to a file
-	pubKeyFilePath := filepath.Join(projectPublicKeyPath, username+".pub")
+	// username here is the user UUID
+	targetUserUUID := username
+
+	// Save the public key to a file using user UUID
+	pubKeyFilePath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
 	Logger.Debugf("Saving public key to: %s", pubKeyFilePath)
 	if err := secrets.SavePublicKeyToFile(publicKey, pubKeyFilePath); err != nil {
 		Logger.Errorf("Failed to save public key to %s: %v", pubKeyFilePath, err)
@@ -125,38 +128,51 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	Logger.Infof("Public key saved successfully")
 
 	// Now register the user with the newly saved public key
-	Logger.Debugf("Registering user %s with public key", username)
-	if err := registerUserWithPublicKey(username, publicKey); err != nil {
-		Logger.Errorf("Failed to register user %s with public key: %v", username, err)
+	Logger.Debugf("Registering user %s with public key", targetUserUUID)
+	if err := registerUserWithPublicKey(targetUserUUID, publicKey); err != nil {
+		Logger.Errorf("Failed to register user %s with public key: %v", targetUserUUID, err)
 		finalMessage := color.RedString("✗") + " Failed to register user with the provided public key\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
 
-	Logger.Infof("Public key registration completed successfully for user: %s", username)
-	finalMessage := color.GreenString("✓") + " Public key for " + color.YellowString(username) + " has been saved and registered successfully!\n" +
+	Logger.Infof("Public key registration completed successfully for user: %s", targetUserUUID)
+	finalMessage := color.GreenString("✓") + " Public key for " + color.YellowString(targetUserUUID) + " has been saved and registered successfully!\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
 
-func registerUserWithPublicKey(targetUsername string, targetPublicKey *rsa.PublicKey) error {
-	currentUsername := configs.UserKanukaSettings.Username
+func registerUserWithPublicKey(targetUserUUID string, targetPublicKey *rsa.PublicKey) error {
 	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
-	projectName := configs.ProjectKanukaSettings.ProjectName
-	Logger.Debugf("Registering user %s with current user %s, project %s", targetUsername, currentUsername, projectName)
 
-	// Get the current user's encrypted symmetric key
-	Logger.Debugf("Getting project kanuka key for current user: %s", currentUsername)
-	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
+	// Get current user's UUID
+	userConfig, err := configs.EnsureUserConfig()
 	if err != nil {
-		Logger.Errorf("Failed to get project kanuka key for user %s: %v", currentUsername, err)
+		return err
+	}
+	currentUserUUID := userConfig.User.UUID
+
+	// Load project config to get project UUID
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		return err
+	}
+	projectUUID := projectConfig.Project.UUID
+
+	Logger.Debugf("Registering user %s with current user %s, project %s", targetUserUUID, currentUserUUID, projectUUID)
+
+	// Get the current user's encrypted symmetric key using their UUID
+	Logger.Debugf("Getting project kanuka key for current user: %s", currentUserUUID)
+	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
+	if err != nil {
+		Logger.Errorf("Failed to get project kanuka key for user %s: %v", currentUserUUID, err)
 		return err
 	}
 
-	// Get current user's private key
-	privateKeyPath := filepath.Join(currentUserKeysPath, projectName)
+	// Get current user's private key using project UUID
+	privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
 	Logger.Debugf("Loading private key from: %s", privateKeyPath)
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 	if err != nil {
@@ -180,25 +196,38 @@ func registerUserWithPublicKey(targetUsername string, targetPublicKey *rsa.Publi
 		return err
 	}
 
-	// Save encrypted symmetric key for target user
-	Logger.Debugf("Saving kanuka key for target user: %s", targetUsername)
-	if err := secrets.SaveKanukaKeyToProject(targetUsername, targetEncryptedSymKey); err != nil {
-		Logger.Errorf("Failed to save kanuka key for target user %s: %v", targetUsername, err)
+	// Save encrypted symmetric key for target user using their UUID
+	Logger.Debugf("Saving kanuka key for target user: %s", targetUserUUID)
+	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
+		Logger.Errorf("Failed to save kanuka key for target user %s: %v", targetUserUUID, err)
 		return err
 	}
 
-	Logger.Infof("Successfully registered user %s with public key", targetUsername)
+	Logger.Infof("Successfully registered user %s with public key", targetUserUUID)
 	return nil
 }
 
 func handleUserRegistration(spinner *spinner.Spinner) error {
-	currentUsername := configs.UserKanukaSettings.Username
 	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
 
-	projectName := configs.ProjectKanukaSettings.ProjectName
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-	Logger.Debugf("Current user: %s, Project: %s, Project path: %s", currentUsername, projectName, projectPath)
+
+	// Get current user's UUID
+	userConfig, err := configs.EnsureUserConfig()
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
+	}
+	currentUserUUID := userConfig.User.UUID
+
+	// Load project config to get project UUID
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+	}
+	projectUUID := projectConfig.Project.UUID
+
+	Logger.Debugf("Current user UUID: %s, Project UUID: %s, Project path: %s", currentUserUUID, projectUUID, projectPath)
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
@@ -207,28 +236,31 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	// Check if target user's public key exists
-	targetPubkeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
+	// username here is the target user's UUID
+	targetUserUUID := username
+
+	// Check if target user's public key exists (using their UUID)
+	targetPubkeyPath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
 	Logger.Debugf("Looking for target user's public key at: %s", targetPubkeyPath)
 
 	// TODO: In the future, differentiate between FileNotFound Error and InvalidKey Error
 	targetUserPublicKey, err := secrets.LoadPublicKey(targetPubkeyPath)
 	if err != nil {
-		Logger.Errorf("Failed to load public key for user %s from %s: %v", username, targetPubkeyPath, err)
-		finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(username) + " not found\n" +
-			username + " must first run: " + color.YellowString("kanuka secrets create")
+		Logger.Errorf("Failed to load public key for user %s from %s: %v", targetUserUUID, targetPubkeyPath, err)
+		finalMessage := color.RedString("✗") + " Public key for user " + color.YellowString(targetUserUUID) + " not found\n" +
+			"They must first run: " + color.YellowString("kanuka secrets create")
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
 	Logger.Infof("Target user's public key loaded successfully")
 
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-	kanukaKeyPath := filepath.Join(projectSecretsPath, currentUsername+".kanuka")
+	kanukaKeyPath := filepath.Join(projectSecretsPath, currentUserUUID+".kanuka")
 	Logger.Debugf("Getting kanuka key from: %s", kanukaKeyPath)
 
-	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
+	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
 	if err != nil {
-		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUsername, err)
+		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUserUUID, err)
 		finalMessage := color.RedString("✗") + " Couldn't get your Kānuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
@@ -236,8 +268,8 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	// Get current user's private key
-	privateKeyPath := filepath.Join(currentUserKeysPath, projectName)
+	// Get current user's private key using project UUID
+	privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
 	Logger.Debugf("Loading private key from: %s", privateKeyPath)
 
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
@@ -271,26 +303,40 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		return Logger.ErrorfAndReturn("Failed to encrypt symmetric key for target user: %v", err)
 	}
 
-	// Save encrypted symmetric key for target user
-	Logger.Debugf("Saving kanuka key for target user: %s", username)
-	if err := secrets.SaveKanukaKeyToProject(username, targetEncryptedSymKey); err != nil {
+	// Save encrypted symmetric key for target user using their UUID
+	Logger.Debugf("Saving kanuka key for target user: %s", targetUserUUID)
+	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
 
-	Logger.Infof("User registration completed successfully for: %s", username)
-	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(username+".pub") + " has been registered successfully!\n" +
+	Logger.Infof("User registration completed successfully for: %s", targetUserUUID)
+	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetUserUUID+".pub") + " has been registered successfully!\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
 
 func handleCustomFileRegistration(spinner *spinner.Spinner) error {
-	currentUsername := configs.UserKanukaSettings.Username
 	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
 
-	projectName := configs.ProjectKanukaSettings.ProjectName
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
-	Logger.Debugf("Current user: %s, Project: %s, Custom file path: %s", currentUsername, projectName, customFilePath)
+	Logger.Debugf("Custom file path: %s", customFilePath)
+
+	// Get current user's UUID
+	userConfig, err := configs.EnsureUserConfig()
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
+	}
+	currentUserUUID := userConfig.User.UUID
+
+	// Load project config to get project UUID
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+	}
+	projectUUID := projectConfig.Project.UUID
+
+	Logger.Debugf("Current user UUID: %s, Project UUID: %s", currentUserUUID, projectUUID)
 
 	if projectPath == "" {
 		finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
@@ -318,9 +364,9 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	Logger.Infof("Public key loaded successfully from custom file")
 
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-	kanukaKeyPath := filepath.Join(projectSecretsPath, currentUsername+".kanuka")
+	kanukaKeyPath := filepath.Join(projectSecretsPath, currentUserUUID+".kanuka")
 
-	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUsername)
+	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Couldn't get your Kānuka key from " + color.YellowString(kanukaKeyPath) + "\n\n" +
 			"Are you sure you have access?\n\n" +
@@ -329,8 +375,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	// Get current user's private key
-	privateKeyPath := filepath.Join(currentUserKeysPath, projectName)
+	// Get current user's private key using project UUID
+	privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
 
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 	if err != nil {
@@ -360,14 +406,15 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	}
 
 	// Save encrypted symmetric key for target user
-	targetName := strings.TrimSuffix(filepath.Base(customFilePath), ".pub")
-	Logger.Debugf("Saving kanuka key for target user: %s (from custom file)", targetName)
-	if err := secrets.SaveKanukaKeyToProject(targetName, targetEncryptedSymKey); err != nil {
+	// The target user UUID is the filename without .pub extension
+	targetUserUUID := strings.TrimSuffix(filepath.Base(customFilePath), ".pub")
+	Logger.Debugf("Saving kanuka key for target user: %s (from custom file)", targetUserUUID)
+	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
 
-	Logger.Infof("Custom file registration completed successfully for: %s", targetName)
-	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetName+".pub") + " has been registered successfully!\n" +
+	Logger.Infof("Custom file registration completed successfully for: %s", targetUserUUID)
+	finalMessage := color.GreenString("✓") + " Public key " + color.YellowString(targetUserUUID+".pub") + " has been registered successfully!\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil

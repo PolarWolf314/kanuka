@@ -57,6 +57,9 @@ func testRSAKeyGeneration(t *testing.T, originalWd string, originalUserSettings 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Get project UUID after initialization
+	projectUUID := shared.GetProjectUUID(t)
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -65,8 +68,7 @@ func testRSAKeyGeneration(t *testing.T, originalWd string, originalUserSettings 
 		t.Errorf("Command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
 
 	// Load and validate the private key
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
@@ -119,6 +121,9 @@ func testPEMFormatValidation(t *testing.T, originalWd string, originalUserSettin
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Get project UUID after initialization
+	projectUUID := shared.GetProjectUUID(t)
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -127,9 +132,8 @@ func testPEMFormatValidation(t *testing.T, originalWd string, originalUserSettin
 		t.Errorf("Command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
 
 	// Test private key PEM format
 	privateKeyData, err := os.ReadFile(privateKeyPath)
@@ -211,6 +215,10 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Get UUIDs after initialization
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -219,9 +227,8 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 		t.Errorf("Command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
 
 	// Load both keys
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
@@ -262,9 +269,8 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 		t.Errorf("Key pair validation failed. Expected: %s, Got: %s", testMessage, decrypted)
 	}
 
-	// Also verify the project public key matches
-	username := configs.UserKanukaSettings.Username
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	// Also verify the project public key matches (using user UUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	projectPublicKey, err := secrets.LoadPublicKey(projectPublicKeyPath)
 	if err != nil {
@@ -298,6 +304,9 @@ func testKeyUniqueness(t *testing.T, originalWd string, originalUserSettings *co
 		shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 		shared.InitializeProject(t, tempDir, tempUserDir)
 
+		// Get project UUID after initialization
+		projectUUID := shared.GetProjectUUID(t)
+
 		_, err = shared.CaptureOutput(func() error {
 			cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 			return cmd.Execute()
@@ -307,9 +316,8 @@ func testKeyUniqueness(t *testing.T, originalWd string, originalUserSettings *co
 			continue
 		}
 
-		projectName := filepath.Base(tempDir)
-		privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-		publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+		privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+		publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
 
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {

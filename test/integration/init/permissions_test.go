@@ -48,7 +48,8 @@ func testInitWithReadOnlyUserDirectory(t *testing.T, originalWd string, original
 		}
 	}()
 
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	// Use the variant that doesn't try to create user config
+	shared.SetupTestEnvironmentWithoutUserConfig(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, true, false)

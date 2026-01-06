@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
@@ -49,21 +50,30 @@ var createCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("Failed ensuring user settings: %v", err)
 		}
 
+		// Ensure user config has UUID
+		Logger.Debugf("Ensuring user config with UUID")
+		userConfig, err := configs.EnsureUserConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
+		}
+		userUUID := userConfig.User.UUID
+		Logger.Debugf("Current user UUID: %s", userUUID)
+
 		currentUsername := configs.UserKanukaSettings.Username
-		Logger.Debugf("Current username: %s", currentUsername)
 
 		// If force flag is active, then ignore checking for existing symmetric key
 		if !force {
 			Logger.Debugf("Force flag not set, checking for existing public key")
 			projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-			userPublicKeyPath := filepath.Join(projectPublicKeyPath, currentUsername+".pub")
+			// Check for public key using user UUID
+			userPublicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 			Logger.Debugf("Checking for existing public key at: %s", userPublicKeyPath)
 
 			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
 			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
 
 			if userPublicKey != nil {
-				finalMessage := color.RedString("✗ ") + color.YellowString(currentUsername+".pub ") + "already exists\n" +
+				finalMessage := color.RedString("✗ ") + color.YellowString(userUUID+".pub ") + "already exists\n" +
 					"To override, run: " + color.YellowString("kanuka secrets create --force")
 				spinner.FinalMSG = finalMessage
 				return nil
@@ -88,17 +98,37 @@ var createCmd = &cobra.Command{
 		}
 		Logger.Infof("Public key copied to: %s", destPath)
 
+		// Update project config with user info
+		Logger.Debugf("Updating project config with user info")
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+		}
+
+		// Add/update user in project config
+		projectConfig.Users[userUUID] = userConfig.User.Email
+		projectConfig.Devices[userUUID] = configs.DeviceConfig{
+			Email:     userConfig.User.Email,
+			Name:      currentUsername, // Use system username as device name
+			CreatedAt: time.Now().UTC(),
+		}
+
+		if err := configs.SaveProjectConfig(projectConfig); err != nil {
+			return Logger.ErrorfAndReturn("Failed to save project config: %v", err)
+		}
+		Logger.Infof("Project config updated successfully")
+
 		didKanukaExist := true
 
-		username := configs.UserKanukaSettings.Username
 		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-		userKanukaKeyPath := filepath.Join(projectSecretsPath, username+".kanuka")
+		// Use user UUID for kanuka key path
+		userKanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 		Logger.Debugf("Attempting to remove existing kanuka key at: %s", userKanukaKeyPath)
 
 		if err := os.Remove(userKanukaKeyPath); err != nil {
 			didKanukaExist = false
 			Logger.Debugf("No existing kanuka key found (this is expected for new users)")
-			// Explicity ignore error as we want to idempotently delete the file
+			// Explicitly ignore error as we want to idempotently delete the file
 			_ = err
 		} else {
 			Logger.Infof("Removed existing kanuka key file")
@@ -109,13 +139,13 @@ var createCmd = &cobra.Command{
 			deletedMessage = "    deleted: " + color.RedString(userKanukaKeyPath) + "\n"
 		}
 
-		Logger.Infof("Create command completed successfully for user: %s", currentUsername)
+		Logger.Infof("Create command completed successfully for user: %s (UUID: %s)", currentUsername, userUUID)
 		finalMessage := color.GreenString("✓") + " The following changes were made:\n" +
 			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
 			color.CyanString("To gain access to the secrets in this project:\n") +
-			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+currentUsername+".pub ") + color.WhiteString("file to your version control system\n") +
+			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+userUUID+".pub ") + color.WhiteString("file to your version control system\n") +
 			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
-			"     " + color.YellowString("kanuka secrets add "+currentUsername)
+			"     " + color.YellowString("kanuka secrets register --user "+userConfig.User.Email)
 
 		spinner.FinalMSG = finalMessage
 		return nil

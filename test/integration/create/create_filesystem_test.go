@@ -65,9 +65,9 @@ func testKeyGenerationAndStorage(t *testing.T, originalWd string, originalUserSe
 		t.Errorf("Command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
 
 	privateKeyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {
@@ -121,11 +121,11 @@ func testPublicKeyCopying(t *testing.T, originalWd string, originalUserSettings 
 		t.Errorf("Command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	username := configs.UserKanukaSettings.Username
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
 
-	userPublicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	userPublicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	userKeyData, err := os.ReadFile(userPublicKeyPath)
 	if err != nil {
@@ -207,10 +207,10 @@ func testFilePermissions(t *testing.T, originalWd string, originalUserSettings *
 		t.Errorf("Command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	username := configs.UserKanukaSettings.Username
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
 	privateKeyInfo, err := os.Stat(privateKeyPath)
 	if err != nil {
 		t.Errorf("Failed to stat private key: %v", err)
@@ -224,7 +224,7 @@ func testFilePermissions(t *testing.T, originalWd string, originalUserSettings *
 		}
 	}
 
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 	publicKeyInfo, err := os.Stat(projectPublicKeyPath)
 	if err != nil {
 		t.Errorf("Failed to stat project public key: %v", err)
@@ -255,8 +255,8 @@ func testCleanupOperations(t *testing.T, originalWd string, originalUserSettings
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	username := configs.UserKanukaSettings.Username
-	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
+	userUUID := shared.GetUserUUID(t)
+	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 
 	if err := os.WriteFile(kanukaFilePath, []byte("existing kanuka data"), 0600); err != nil {
 		t.Fatalf("Failed to create existing kanuka file: %v", err)

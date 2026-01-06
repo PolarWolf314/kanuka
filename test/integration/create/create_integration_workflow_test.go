@@ -56,7 +56,8 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	defer os.RemoveAll(tempUserDir2)
 
 	// Step 1: User 1 initializes the project (gets admin access)
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
+	shared.SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir1, originalWd, originalUserSettings,
+		shared.TestUserUUID, "testuser1", "testuser1@example.com")
 
 	initOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
@@ -70,15 +71,16 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	// (init command may only show warnings in test output)
 	t.Logf("Init output: %s", initOutput)
 
-	user1Name := configs.UserKanukaSettings.Username
-	user1KanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", user1Name+".kanuka")
+	user1UUID := shared.TestUserUUID
+	user1KanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", user1UUID+".kanuka")
 	if _, err := os.Stat(user1KanukaFile); os.IsNotExist(err) {
 		t.Fatalf("User 1 kanuka file was not created by init command")
 	}
 
 	// Step 2: User 2 creates keys (joins project)
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir2, originalWd, originalUserSettings)
-	configs.UserKanukaSettings.Username = "testuser2" // Different username
+	// Use a different UUID for user 2
+	shared.SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir2, originalWd, originalUserSettings,
+		shared.TestUser2UUID, "testuser2", "testuser2@example.com")
 
 	createOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
@@ -93,8 +95,8 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 		t.Errorf("Create command didn't show success: %s", createOutput)
 	}
 
-	user2Name := configs.UserKanukaSettings.Username
-	user2PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user2Name+".pub")
+	user2UUID := shared.TestUser2UUID
+	user2PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user2UUID+".pub")
 
 	// Verify user 2's public key was created
 	if _, err := os.Stat(user2PublicKeyPath); os.IsNotExist(err) {
@@ -102,11 +104,12 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	}
 
 	// Step 3: User 1 (admin) grants access to User 2
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
+	shared.SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir1, originalWd, originalUserSettings,
+		shared.TestUserUUID, "testuser1", "testuser1@example.com")
 
 	registerOutput, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", user2Name})
+		cmd.SetArgs([]string{"secrets", "register", "--user", user2UUID})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -120,13 +123,13 @@ func testCreateThenRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	}
 
 	// Verify user 2's .kanuka file was created
-	user2KanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", user2Name+".kanuka")
+	user2KanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", user2UUID+".kanuka")
 	if _, err := os.Stat(user2KanukaFile); os.IsNotExist(err) {
 		t.Errorf("User 2 kanuka file was not created by register command")
 	}
 
 	// Verify the workflow instructions were shown in create output
-	if !strings.Contains(createOutput, "kanuka secrets add") {
+	if !strings.Contains(createOutput, "kanuka secrets register") {
 		t.Errorf("Create output didn't show register instructions: %s", createOutput)
 	}
 }
@@ -157,8 +160,8 @@ func testCreateThenEncryptWorkflow(t *testing.T, originalWd string, originalUser
 	}
 
 	// Verify user has access after init
-	username := configs.UserKanukaSettings.Username
-	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
+	userUUID := shared.GetUserUUID(t)
+	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	if _, err := os.Stat(kanukaFilePath); os.IsNotExist(err) {
 		t.Fatalf("Kanuka file was not created by init command")
 	}
@@ -254,7 +257,8 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 	defer os.RemoveAll(tempUserDir2)
 
 	// User 1: Initialize project (gets admin access automatically)
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
+	shared.SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir1, originalWd, originalUserSettings,
+		shared.TestUserUUID, "testuser1", "testuser1@example.com")
 
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
@@ -264,19 +268,17 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	user1Name := configs.UserKanukaSettings.Username
-	user1PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user1Name+".pub")
+	user1UUID := shared.TestUserUUID
+	user1PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user1UUID+".pub")
 
 	// Verify user 1's public key was created
 	if _, err := os.Stat(user1PublicKeyPath); os.IsNotExist(err) {
 		t.Errorf("User 1 public key was not created")
 	}
 
-	// User 2: Setup environment and create keys
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir2, originalWd, originalUserSettings)
-
-	// Override username for user 2
-	configs.UserKanukaSettings.Username = "testuser2"
+	// User 2: Setup environment with a DIFFERENT UUID and create keys
+	shared.SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir2, originalWd, originalUserSettings,
+		shared.TestUser2UUID, "testuser2", "testuser2@example.com")
 
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
@@ -286,8 +288,8 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 		t.Errorf("User 2 create failed: %v", err)
 	}
 
-	user2Name := configs.UserKanukaSettings.Username
-	user2PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user2Name+".pub")
+	user2UUID := shared.TestUser2UUID
+	user2PublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", user2UUID+".pub")
 
 	// Verify user 2's public key was created
 	if _, err := os.Stat(user2PublicKeyPath); os.IsNotExist(err) {
@@ -319,24 +321,25 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 	foundUsers := make(map[string]bool)
 	for _, entry := range entries {
 		if strings.HasSuffix(entry.Name(), ".pub") {
-			username := strings.TrimSuffix(entry.Name(), ".pub")
-			foundUsers[username] = true
+			userUUID := strings.TrimSuffix(entry.Name(), ".pub")
+			foundUsers[userUUID] = true
 		}
 	}
 
-	if !foundUsers[user1Name] {
-		t.Errorf("User 1 (%s) public key not found in project", user1Name)
+	if !foundUsers[user1UUID] {
+		t.Errorf("User 1 (%s) public key not found in project", user1UUID)
 	}
-	if !foundUsers[user2Name] {
-		t.Errorf("User 2 (%s) public key not found in project", user2Name)
+	if !foundUsers[user2UUID] {
+		t.Errorf("User 2 (%s) public key not found in project", user2UUID)
 	}
 
 	// Test that user 1 (admin) can register user 2
 	// User 1 already has access from init, so they can register user 2
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir1, originalWd, originalUserSettings)
+	shared.SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir1, originalWd, originalUserSettings,
+		shared.TestUserUUID, "testuser1", "testuser1@example.com")
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", user2Name})
+		cmd.SetArgs([]string{"secrets", "register", "--user", user2UUID})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -344,8 +347,8 @@ func testMultipleUsersWorkflow(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify both users have .kanuka files
-	user1KanukaPath := filepath.Join(tempDir, ".kanuka", "secrets", user1Name+".kanuka")
-	user2KanukaPath := filepath.Join(tempDir, ".kanuka", "secrets", user2Name+".kanuka")
+	user1KanukaPath := filepath.Join(tempDir, ".kanuka", "secrets", user1UUID+".kanuka")
+	user2KanukaPath := filepath.Join(tempDir, ".kanuka", "secrets", user2UUID+".kanuka")
 
 	if _, err := os.Stat(user1KanukaPath); os.IsNotExist(err) {
 		t.Errorf("User 1 kanuka file was not created")

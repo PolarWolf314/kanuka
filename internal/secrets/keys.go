@@ -115,15 +115,26 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 }
 
 // CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
+// It uses the project UUID from the project config to name the key files.
 func CreateAndSaveRSAKeyPair(verbose bool) error {
 	if err := configs.InitProjectSettings(); err != nil {
 		return fmt.Errorf("failed to init project settings: %w", err)
 	}
-	projectName := configs.ProjectKanukaSettings.ProjectName
 
-	// Create key paths
+	// Load project config to get project UUID
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load project config: %w", err)
+	}
+
+	projectUUID := projectConfig.Project.UUID
+	if projectUUID == "" {
+		return fmt.Errorf("project UUID not found in project config")
+	}
+
+	// Create key paths using project UUID
 	keysDir := configs.UserKanukaSettings.UserKeysPath
-	privateKeyPath := filepath.Join(keysDir, projectName)
+	privateKeyPath := filepath.Join(keysDir, projectUUID)
 	publicKeyPath := privateKeyPath + ".pub"
 
 	// Ensure key directory exists
@@ -132,30 +143,53 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 	}
 
 	if err := GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
-		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectName, err)
+		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectUUID, err)
 	}
 
 	return nil
 }
 
 // CopyUserPublicKeyToProject copies the user's public key to the project directory.
+// It uses the project UUID for the source key and user UUID for the destination.
 func CopyUserPublicKeyToProject() (string, error) {
 	if err := configs.InitProjectSettings(); err != nil {
 		return "", fmt.Errorf("failed to init project settings: %w", err)
 	}
 
-	username := configs.UserKanukaSettings.Username
-	projectName := configs.ProjectKanukaSettings.ProjectName
-	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+	// Load project config to get project UUID
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		return "", fmt.Errorf("failed to load project config: %w", err)
+	}
 
+	projectUUID := projectConfig.Project.UUID
+	if projectUUID == "" {
+		return "", fmt.Errorf("project UUID not found in project config")
+	}
+
+	// Ensure user config has UUID
+	userConfig, err := configs.EnsureUserConfig()
+	if err != nil {
+		return "", fmt.Errorf("failed to ensure user config: %w", err)
+	}
+
+	userUUID := userConfig.User.UUID
+	if userUUID == "" {
+		return "", fmt.Errorf("user UUID not found in user config")
+	}
+
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 	userKeysPath := configs.UserKanukaSettings.UserKeysPath
-	sourceKeyPath := filepath.Join(userKeysPath, projectName+".pub")
-	destKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
+
+	// Source key is named with project UUID
+	sourceKeyPath := filepath.Join(userKeysPath, projectUUID+".pub")
+	// Destination key is named with user UUID
+	destKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 
 	// Check if source key exists
 	if _, err := os.Stat(sourceKeyPath); err != nil {
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("public key for project %s not found at %s", projectName, sourceKeyPath)
+			return "", fmt.Errorf("public key for project %s not found at %s", projectUUID, sourceKeyPath)
 		}
 		return "", fmt.Errorf("failed to check for source key: %w", err)
 	}
@@ -173,7 +207,8 @@ func CopyUserPublicKeyToProject() (string, error) {
 	return destKeyPath, nil
 }
 
-func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
+// SaveKanukaKeyToProject saves an encrypted symmetric key for a user identified by their UUID.
+func SaveKanukaKeyToProject(userUUID string, kanukaKey []byte) error {
 	if err := configs.InitProjectSettings(); err != nil {
 		return fmt.Errorf("failed to init project settings: %w", err)
 	}
@@ -181,11 +216,12 @@ func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
 
-	destKeyPath := filepath.Join(projectSecretsPath, username+".kanuka")
-
 	if projectPath == "" {
 		return fmt.Errorf("failed to find project root because it doesn't exist")
 	}
+
+	// Use user UUID for the file name
+	destKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 
 	if err := os.WriteFile(destKeyPath, kanukaKey, 0600); err != nil {
 		return fmt.Errorf("failed to write key to project: %w", err)
@@ -194,8 +230,8 @@ func SaveKanukaKeyToProject(username string, kanukaKey []byte) error {
 	return nil
 }
 
-// GetUserProjectKanukaKey retrieves the encrypted symmetric key for the current user and project.
-func GetProjectKanukaKey(username string) ([]byte, error) {
+// GetProjectKanukaKey retrieves the encrypted symmetric key for a user identified by their UUID.
+func GetProjectKanukaKey(userUUID string) ([]byte, error) {
 	if err := configs.InitProjectSettings(); err != nil {
 		return nil, fmt.Errorf("failed to init project settings: %w", err)
 	}
@@ -207,7 +243,8 @@ func GetProjectKanukaKey(username string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to find project root because it doesn't exist")
 	}
 
-	userKeyFile := filepath.Join(projectSecretsPath, username+".kanuka")
+	// Use user UUID for the file name
+	userKeyFile := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 	if _, err := os.Stat(userKeyFile); os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to get user's project encrypted symmetric key: %w", err)
 	}
@@ -361,7 +398,8 @@ func SavePublicKeyToFile(publicKey *rsa.PublicKey, filePath string) error {
 	return os.WriteFile(filePath, pemBytes, 0644)
 }
 
-// GetAllUsersInProject returns a list of all users with access to the project.
+// GetAllUsersInProject returns a list of all user UUIDs with access to the project.
+// Files in the public_keys directory are named with user UUIDs.
 func GetAllUsersInProject() ([]string, error) {
 	if err := configs.InitProjectSettings(); err != nil {
 		return nil, fmt.Errorf("failed to init project settings: %w", err)
@@ -374,13 +412,14 @@ func GetAllUsersInProject() ([]string, error) {
 		return nil, fmt.Errorf("failed to read public keys directory: %w", err)
 	}
 
-	var usernames []string
+	var userUUIDs []string
 	for _, entry := range entries {
 		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".pub" {
-			username := entry.Name()[:len(entry.Name())-len(".pub")]
-			usernames = append(usernames, username)
+			// Extract UUID from filename (e.g., "uuid.pub" -> "uuid")
+			userUUID := entry.Name()[:len(entry.Name())-len(".pub")]
+			userUUIDs = append(userUUIDs, userUUID)
 		}
 	}
 
-	return usernames, nil
+	return userUUIDs, nil
 }

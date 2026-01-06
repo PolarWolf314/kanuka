@@ -242,8 +242,8 @@ func testRegisterThenEncryptDecryptWorkflow(t *testing.T, originalWd string, ori
 		t.Fatalf("Failed to create target user keys directory: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	targetUserPrivateKeyPath := filepath.Join(targetUserKeysDir, projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	targetUserPrivateKeyPath := filepath.Join(targetUserKeysDir, projectUUID)
 	if err := savePrivateKeyToFile(targetUserKeyPair.privateKey, targetUserPrivateKeyPath); err != nil {
 		t.Fatalf("Failed to save target user's private key: %v", err)
 	}
@@ -398,23 +398,44 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	defer os.RemoveAll(tempUserBDir)
 
 	userBKeysDir := filepath.Join(tempUserBDir, "keys")
+	userBConfigsDir := filepath.Join(tempUserBDir, "config")
 	if err := os.MkdirAll(userBKeysDir, 0755); err != nil {
 		t.Fatalf("Failed to create User B keys directory: %v", err)
 	}
+	if err := os.MkdirAll(userBConfigsDir, 0755); err != nil {
+		t.Fatalf("Failed to create User B config directory: %v", err)
+	}
 
-	projectName := filepath.Base(tempDir)
-	userBPrivateKeyPath := filepath.Join(userBKeysDir, projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	userBPrivateKeyPath := filepath.Join(userBKeysDir, projectUUID)
 	if err := savePrivateKeyToFile(userBKeyPair.privateKey, userBPrivateKeyPath); err != nil {
 		t.Fatalf("Failed to save User B's private key: %v", err)
 	}
 
 	// Switch to User B's settings
 	originalUserSettingsBackup := configs.UserKanukaSettings
+	originalGlobalUserConfig := configs.GlobalUserConfig
 	configs.UserKanukaSettings = &configs.UserSettings{
 		UserKeysPath:    userBKeysDir,
-		UserConfigsPath: filepath.Join(tempUserBDir, "config"),
+		UserConfigsPath: userBConfigsDir,
 		Username:        userB,
 	}
+
+	// Create User B's user config with UUID matching the filename used in register
+	// The register command created files named "userB.kanuka" and "userB.pub"
+	// so User B's UUID must be "userB" for the lookup to work
+	userBConfig := &configs.UserConfig{
+		User: configs.User{
+			UUID:  userB, // UUID matches the filename
+			Email: "userB@example.com",
+		},
+		Projects: make(map[string]string),
+	}
+	if err := configs.SaveUserConfig(userBConfig); err != nil {
+		t.Fatalf("Failed to save User B's config: %v", err)
+	}
+	// Clear the cached global user config so EnsureUserConfig loads the new one
+	configs.GlobalUserConfig = nil
 
 	// User B registers User C
 	output, err = shared.CaptureOutput(func() error {
@@ -425,6 +446,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 
 	// Restore original user settings
 	configs.UserKanukaSettings = originalUserSettingsBackup
+	configs.GlobalUserConfig = originalGlobalUserConfig
 
 	if err != nil {
 		t.Errorf("User B registering User C failed: %v", err)

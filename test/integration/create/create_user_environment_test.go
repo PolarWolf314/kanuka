@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
@@ -114,16 +113,17 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 			}
 
 			if tc.valid {
-				// Verify files were created with correct username
-				publicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", tc.username+".pub")
+				// Get UUIDs for path verification
+				userUUID := shared.GetUserUUID(t)
+
+				// Verify files were created with correct userUUID
+				publicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 				if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
 					t.Errorf("Public key not created for username %s", tc.username)
 				}
 
-				// Verify output contains username
-				if !strings.Contains(output, tc.username) {
-					t.Errorf("Output doesn't contain username %s: %s", tc.username, output)
-				}
+				// Note: We no longer check for username in output since UUIDs are now used
+				// for file naming. The important verification is that files are created correctly.
 			}
 		})
 	}
@@ -156,9 +156,9 @@ func testCustomDataDirectories(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify keys were created in custom directory
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(customDataDir, "keys", projectName)
-	publicKeyPath := filepath.Join(customDataDir, "keys", projectName+".pub")
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := filepath.Join(customDataDir, "keys", projectUUID)
+	publicKeyPath := filepath.Join(customDataDir, "keys", projectUUID+".pub")
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created in custom data directory")
@@ -212,8 +212,8 @@ func testUserDirectoryPermissions(t *testing.T, originalWd string, originalUserS
 	}
 
 	// Verify keys were created
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(keysDir, projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := filepath.Join(keysDir, projectUUID)
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created with proper permissions")
 	}

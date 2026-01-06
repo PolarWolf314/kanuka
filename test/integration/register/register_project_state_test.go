@@ -152,8 +152,8 @@ func testRegisterWhenCurrentUserPrivateKeyMissing(t *testing.T, originalWd strin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Remove the current user's private key
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
 	if err := os.Remove(privateKeyPath); err != nil {
 		t.Fatalf("Failed to remove private key: %v", err)
 	}
@@ -315,8 +315,8 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Corrupt the current user's .kanuka file
-	currentUsername := configs.UserKanukaSettings.Username
-	kanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", currentUsername+".kanuka")
+	userUUID := shared.GetUserUUID(t)
+	kanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	if err := os.WriteFile(kanukaFile, []byte("corrupted data"), 0600); err != nil {
 		t.Fatalf("Failed to corrupt .kanuka file: %v", err)
 	}
@@ -365,8 +365,8 @@ func testRegisterWithCorruptedPrivateKey(t *testing.T, originalWd string, origin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Corrupt the current user's private key
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
 	if err := os.WriteFile(privateKeyPath, []byte("corrupted private key data"), 0600); err != nil {
 		t.Fatalf("Failed to corrupt private key: %v", err)
 	}

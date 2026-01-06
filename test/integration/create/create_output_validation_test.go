@@ -81,9 +81,9 @@ func testSuccessMessages(t *testing.T, originalWd string, originalUserSettings *
 	}
 
 	// Test that actual file path is shown
-	username := configs.UserKanukaSettings.Username
-	expectedPath := filepath.Join(".kanuka", "public_keys", username+".pub")
-	if !strings.Contains(output, expectedPath) && !strings.Contains(output, username+".pub") {
+	userUUID := shared.GetUserUUID(t)
+	expectedPath := filepath.Join(".kanuka", "public_keys", userUUID+".pub")
+	if !strings.Contains(output, expectedPath) && !strings.Contains(output, userUUID+".pub") {
 		t.Errorf("Expected file path not found in output: %s", output)
 	}
 
@@ -325,16 +325,16 @@ func testInstructionsDisplay(t *testing.T, originalWd string, originalUserSettin
 		t.Errorf("Command failed: %v", err)
 	}
 
-	username := configs.UserKanukaSettings.Username
+	userUUID := shared.GetUserUUID(t)
 
 	// Test that instructions are provided
 	expectedInstructions := []string{
 		"To gain access to the secrets in this project",
 		"Commit your",
-		".kanuka/public_keys/" + username + ".pub",
+		".kanuka/public_keys/" + userUUID + ".pub",
 		"file to your version control system",
 		"Ask someone with permissions to grant you access with:",
-		"kanuka secrets add " + username,
+		"kanuka secrets register --user",
 	}
 
 	for _, instruction := range expectedInstructions {
@@ -353,12 +353,12 @@ func testInstructionsDisplay(t *testing.T, originalWd string, originalUserSettin
 	}
 
 	// Test that the command to run is highlighted/formatted
-	if !strings.Contains(output, "kanuka secrets add") {
+	if !strings.Contains(output, "kanuka secrets register") {
 		t.Errorf("Command instruction not found in output: %s", output)
 	}
 
 	// Test that file paths are clearly indicated
-	if !strings.Contains(output, username+".pub") {
+	if !strings.Contains(output, userUUID+".pub") {
 		t.Errorf("Public key filename not mentioned in instructions: %s", output)
 	}
 }

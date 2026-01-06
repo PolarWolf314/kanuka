@@ -239,9 +239,9 @@ type Device struct {
 ### Milestone 2.1: Update Key Storage
 
 **Tasks:**
-- [ ] Modify `CreateAndSaveRSAKeyPair()` in `internal/secrets/keys.go` to use project UUID
-- [ ] Update private key path to `~/.local/share/kanuka/keys/<project_uuid>`
-- [ ] Update public key path to `~/.local/share/kanuka/keys/<project_uuid>.pub`
+- [x] Modify `CreateAndSaveRSAKeyPair()` in `internal/secrets/keys.go` to use project UUID
+- [x] Update private key path to `~/.local/share/kanuka/keys/<project_uuid>`
+- [x] Update public key path to `~/.local/share/kanuka/keys/<project_uuid>.pub`
 
 **Before:**
 ```go
@@ -263,9 +263,9 @@ publicKeyPath := privateKeyPath + ".pub"
 ### Milestone 2.2: Update Public Key Storage
 
 **Tasks:**
-- [ ] Modify `CopyUserPublicKeyToProject()` in `internal/secrets/keys.go`
-- [ ] Update destination path to use user UUID
-- [ ] Update `SavePublicKeyToFile()` to use user UUID
+- [x] Modify `CopyUserPublicKeyToProject()` in `internal/secrets/keys.go`
+- [x] Update destination path to use user UUID
+- [x] Update `SavePublicKeyToFile()` to use user UUID
 
 **Before:**
 ```go
@@ -285,9 +285,9 @@ destKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 ### Milestone 2.3: Update Encrypted Symmetric Key Storage
 
 **Tasks:**
-- [ ] Modify `SaveKanukaKeyToProject()` in `internal/secrets/keys.go`
-- [ ] Modify `GetProjectKanukaKey()` in `internal/secrets/keys.go`
-- [ ] Update paths to use user UUID
+- [x] Modify `SaveKanukaKeyToProject()` in `internal/secrets/keys.go`
+- [x] Modify `GetProjectKanukaKey()` in `internal/secrets/keys.go`
+- [x] Update paths to use user UUID
 
 **Before:**
 ```go

@@ -1,6 +1,11 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
 	"github.com/fatih/color"
@@ -39,6 +44,51 @@ var initCmd = &cobra.Command{
 		}
 		Logger.Infof("Kanuka settings and folders created successfully")
 
+		// Ensure user config has UUID
+		Logger.Debugf("Ensuring user config with UUID")
+		userConfig, err := configs.EnsureUserConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
+		}
+		Logger.Infof("User config ensured with UUID: %s", userConfig.User.UUID)
+
+		// Create and save project config with UUID
+		Logger.Debugf("Creating project config with UUID")
+		wd, err := os.Getwd()
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to get working directory: %v", err)
+		}
+		projectName := filepath.Base(wd)
+		projectConfig := &configs.ProjectConfig{
+			Project: configs.Project{
+				UUID: configs.GenerateProjectUUID(),
+				Name: projectName,
+			},
+			Users:   make(map[string]string),
+			Devices: make(map[string]configs.DeviceConfig),
+		}
+
+		// Add the initializing user to the project config
+		projectConfig.Users[userConfig.User.UUID] = userConfig.User.Email
+		projectConfig.Devices[userConfig.User.UUID] = configs.DeviceConfig{
+			Email:     userConfig.User.Email,
+			Name:      configs.UserKanukaSettings.Username, // Use system username as device name for now
+			CreatedAt: time.Now().UTC(),
+		}
+
+		// Save project config - need to set ProjectPath first for SaveProjectConfig to work
+		configs.ProjectKanukaSettings.ProjectPath = wd
+		if err := configs.SaveProjectConfig(projectConfig); err != nil {
+			return Logger.ErrorfAndReturn("Failed to save project config: %v", err)
+		}
+		Logger.Infof("Project config created with UUID: %s", projectConfig.Project.UUID)
+
+		// Now initialize project settings (which loads the project config)
+		Logger.Debugf("Initializing project settings")
+		if err := configs.InitProjectSettings(); err != nil {
+			return Logger.ErrorfAndReturn("Failed to init project settings: %v", err)
+		}
+
 		Logger.Debugf("Creating and saving RSA key pair")
 		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
 			return Logger.ErrorfAndReturn("Failed to generate and save RSA key pair: %v", err)
@@ -47,7 +97,7 @@ var initCmd = &cobra.Command{
 
 		Logger.Debugf("Copying user public key to project")
 		destPath, err := secrets.CopyUserPublicKeyToProject()
-		_ = destPath // explicity ignore destPath for now
+		_ = destPath // explicitly ignore destPath for now
 		if err != nil {
 			return Logger.ErrorfAndReturn("Failed to copy public key to project: %v", err)
 		}

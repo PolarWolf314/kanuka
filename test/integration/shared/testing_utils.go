@@ -22,11 +22,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TestUserUUID is a fixed UUID used for testing purposes.
+const TestUserUUID = "test-user-uuid-1234-5678-abcdefghijkl"
+
+// TestUser2UUID is a second fixed UUID used for multi-user testing purposes.
+const TestUser2UUID = "test-user-2-uuid-5678-1234-abcdefghijkl"
+
+// TestProjectUUID is a fixed UUID used for testing purposes.
+const TestProjectUUID = "test-proj-uuid-1234-5678-abcdefghijkl"
+
 // SetupTestEnvironment sets up the test environment with temporary directories.
 func SetupTestEnvironment(t *testing.T, tempDir, tempUserDir, originalWd string, originalUserSettings *configs.UserSettings) {
+	SetupTestEnvironmentWithUUID(t, tempDir, tempUserDir, originalWd, originalUserSettings, TestUserUUID, "testuser", "testuser@example.com")
+}
+
+// SetupTestEnvironmentWithUUID sets up the test environment with a specific user UUID.
+// This is useful for multi-user tests where each user needs a different UUID.
+func SetupTestEnvironmentWithUUID(t *testing.T, tempDir, tempUserDir, originalWd string, originalUserSettings *configs.UserSettings, userUUID, username, email string) {
 	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
+	}
+
+	// Create user config directory and set up user config with UUID
+	userConfigsPath := filepath.Join(tempUserDir, "config")
+	if err := os.MkdirAll(userConfigsPath, 0755); err != nil {
+		t.Fatalf("Failed to create user config directory: %v", err)
 	}
 
 	// Cleanup function to restore original state
@@ -41,12 +62,60 @@ func SetupTestEnvironment(t *testing.T, tempDir, tempUserDir, originalWd string,
 			ProjectPublicKeyPath: "",
 			ProjectSecretsPath:   "",
 		}
+		configs.GlobalUserConfig = nil
+		configs.GlobalProjectConfig = nil
 	})
 
 	// Override user settings to use temp directory
 	configs.UserKanukaSettings = &configs.UserSettings{
 		UserKeysPath:    filepath.Join(tempUserDir, "keys"),
-		UserConfigsPath: filepath.Join(tempUserDir, "config"),
+		UserConfigsPath: userConfigsPath,
+		Username:        username,
+	}
+
+	// Create user config with the specified UUID
+	userConfig := &configs.UserConfig{
+		User: configs.User{
+			UUID:  userUUID,
+			Email: email,
+		},
+		Projects: make(map[string]string),
+	}
+	if err := configs.SaveUserConfig(userConfig); err != nil {
+		t.Fatalf("Failed to save user config: %v", err)
+	}
+}
+
+// SetupTestEnvironmentWithoutUserConfig sets up the test environment without creating user config.
+// This is useful for permission tests where the user directory may be read-only.
+func SetupTestEnvironmentWithoutUserConfig(t *testing.T, tempDir, tempUserDir, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Change to temp directory
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to change to temp directory: %v", err)
+	}
+
+	userConfigsPath := filepath.Join(tempUserDir, "config")
+
+	// Cleanup function to restore original state
+	t.Cleanup(func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to change to original directory: %v", err)
+		}
+		configs.UserKanukaSettings = originalUserSettings
+		configs.ProjectKanukaSettings = &configs.ProjectSettings{
+			ProjectName:          "",
+			ProjectPath:          "",
+			ProjectPublicKeyPath: "",
+			ProjectSecretsPath:   "",
+		}
+		configs.GlobalUserConfig = nil
+		configs.GlobalProjectConfig = nil
+	})
+
+	// Override user settings to use temp directory
+	configs.UserKanukaSettings = &configs.UserSettings{
+		UserKeysPath:    filepath.Join(tempUserDir, "keys"),
+		UserConfigsPath: userConfigsPath,
 		Username:        "testuser",
 	}
 }
@@ -182,15 +251,15 @@ func VerifyProjectStructure(t *testing.T, tempDir string) {
 		t.Errorf(".kanuka/secrets directory was not created")
 	}
 
-	// Check that public key was copied to project
-	publicKeyFile := filepath.Join(publicKeysDir, "testuser.pub")
+	// Check that public key was copied to project (using test user UUID)
+	publicKeyFile := filepath.Join(publicKeysDir, TestUserUUID+".pub")
 	if _, err := os.Stat(publicKeyFile); os.IsNotExist(err) {
 		t.Errorf("Public key file was not created at %s", publicKeyFile)
 	}
 
 	// Check that encrypted symmetric key was created (only for init command, not create)
 	// The create command only creates user keys, not the project symmetric key
-	secretKeyFile := filepath.Join(secretsDir, "testuser.kanuka")
+	secretKeyFile := filepath.Join(secretsDir, TestUserUUID+".kanuka")
 	if _, err := os.Stat(secretKeyFile); os.IsNotExist(err) {
 		// This is expected for create command - only init creates the symmetric key
 		t.Logf("Encrypted symmetric key file was not created at %s", secretKeyFile)
@@ -200,22 +269,25 @@ func VerifyProjectStructure(t *testing.T, tempDir string) {
 func VerifyUserKeys(t *testing.T, tempUserDir string) {
 	keysDir := filepath.Join(tempUserDir, "keys")
 
-	// The project name should be the basename of the temp directory
-	// Since we're in the temp directory, we need to get its name
-	wd, err := os.Getwd()
+	// Load project config to get the project UUID
+	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
-		t.Fatalf("Failed to get working directory: %v", err)
+		t.Fatalf("Failed to load project config: %v", err)
 	}
-	projectName := filepath.Base(wd)
+	projectUUID := projectConfig.Project.UUID
+	if projectUUID == "" {
+		// Fallback to test project UUID if not set
+		projectUUID = TestProjectUUID
+	}
 
-	// Check private key exists
-	privateKeyFile := filepath.Join(keysDir, projectName)
+	// Check private key exists (named by project UUID)
+	privateKeyFile := filepath.Join(keysDir, projectUUID)
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		t.Errorf("Private key file was not created at %s", privateKeyFile)
 	}
 
-	// Check public key exists
-	publicKeyFile := filepath.Join(keysDir, projectName+".pub")
+	// Check public key exists (named by project UUID)
+	publicKeyFile := filepath.Join(keysDir, projectUUID+".pub")
 	if _, err := os.Stat(publicKeyFile); os.IsNotExist(err) {
 		t.Errorf("Public key file was not created at %s", publicKeyFile)
 	}
@@ -236,6 +308,7 @@ func InitializeProject(t *testing.T, tempDir, tempUserDir string) {
 }
 
 // InitializeProjectStructureOnly initializes just the project structure without creating user keys.
+// This creates the .kanuka directory, subdirectories, and a project config with a test UUID.
 func InitializeProjectStructureOnly(t *testing.T, tempDir, tempUserDir string) {
 	// Create .kanuka directory structure manually
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
@@ -247,6 +320,26 @@ func InitializeProjectStructureOnly(t *testing.T, tempDir, tempUserDir string) {
 	}
 	if err := os.MkdirAll(secretsDir, 0755); err != nil {
 		t.Fatalf("Failed to create secrets directory: %v", err)
+	}
+
+	// Create project config with test UUID so create command can find project UUID
+	projectConfig := &configs.ProjectConfig{
+		Project: configs.Project{
+			UUID: TestProjectUUID,
+			Name: filepath.Base(tempDir),
+		},
+	}
+
+	// Set the project settings so SaveProjectConfig knows where to save
+	configs.ProjectKanukaSettings = &configs.ProjectSettings{
+		ProjectName:          filepath.Base(tempDir),
+		ProjectPath:          tempDir,
+		ProjectPublicKeyPath: publicKeysDir,
+		ProjectSecretsPath:   secretsDir,
+	}
+
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
 	}
 }
 
@@ -272,6 +365,32 @@ func GetFileMode(path string) (os.FileMode, error) {
 		return 0, err
 	}
 	return info.Mode(), nil
+}
+
+// GetProjectUUID returns the project UUID from the project config.
+// This is useful for tests that need to verify files are created with the correct UUID-based names.
+func GetProjectUUID(t *testing.T) string {
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	if projectConfig.Project.UUID == "" {
+		t.Fatalf("Project UUID not found in project config")
+	}
+	return projectConfig.Project.UUID
+}
+
+// GetUserUUID returns the user UUID from the user config.
+// This is useful for tests that need to verify files are created with the correct UUID-based names.
+func GetUserUUID(t *testing.T) string {
+	userConfig, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config: %v", err)
+	}
+	if userConfig.User.UUID == "" {
+		return TestUserUUID
+	}
+	return userConfig.User.UUID
 }
 
 // GenerateRSAKeyPair creates a new RSA key pair and saves them to disk.
