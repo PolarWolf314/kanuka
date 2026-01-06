@@ -58,6 +58,7 @@ name = "my-awesome-project"
 ## File Naming Changes
 
 ### Before (Current)
+
 ```
 .kanuka/
   public_keys/
@@ -73,6 +74,7 @@ name = "my-awesome-project"
 ```
 
 ### After (New)
+
 ```
 .kanuka/
   config.toml
@@ -92,15 +94,16 @@ name = "my-awesome-project"
 
 ### Revoke Command
 
-| Command | Meaning | Confirmation |
-|---------|----------|--------------|
-| `kanuka secrets revoke --user alice@example.com` | Revoke ALL devices for alice@example.com | Yes if 2+ devices, No if 1 device |
-| `kanuka secrets revoke --user alice@example.com --device macbook` | Revoke only alice@example.com's macbook | No (explicitly specified) |
-| `kanuka secrets revoke --user alice@example.com --yes` | Revoke ALL devices (skip confirmation) | Never (for scripts) |
+| Command                                                           | Meaning                                  | Confirmation                      |
+| ----------------------------------------------------------------- | ---------------------------------------- | --------------------------------- |
+| `kanuka secrets revoke --user alice@example.com`                  | Revoke ALL devices for alice@example.com | Yes if 2+ devices, No if 1 device |
+| `kanuka secrets revoke --user alice@example.com --device macbook` | Revoke only alice@example.com's macbook  | No (explicitly specified)         |
+| `kanuka secrets revoke --user alice@example.com --yes`            | Revoke ALL devices (skip confirmation)   | Never (for scripts)               |
 
 ### Examples
 
 **User leaves team (common):**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com
 ⚠ Warning: alice@example.com has 2 devices:
@@ -113,12 +116,14 @@ Proceed? [y/N]: y
 ```
 
 **Device compromised (less common):**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com --device macbook
 ✓ Device 'macbook' (alice@example.com) has been revoked successfully!
 ```
 
 **CI/CD automation:**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com --yes
 ✓ All devices for alice@example.com have been revoked successfully!
@@ -127,6 +132,7 @@ $ kanuka secrets revoke --user alice@example.com --yes
 ### Create Command
 
 **Auto-generate device name from hostname:**
+
 ```bash
 $ kanuka secrets create
 Enter your email: alice@example.com
@@ -135,6 +141,7 @@ Enter your email: alice@example.com
 ```
 
 **Custom device name:**
+
 ```bash
 $ kanuka secrets create --device-name "workstation"
 Enter your email: alice@example.com
@@ -162,6 +169,7 @@ Devices in this project:
 ### Milestone 1.1: Add TOML dependency
 
 **Tasks:**
+
 - [x] Add `github.com/BurntSushi/toml` to `go.mod`
 - [x] Create `internal/configs/toml.go` for TOML parsing
 - [x] Write unit tests for TOML parsing
@@ -173,6 +181,7 @@ Devices in this project:
 ### Milestone 1.2: User Config Structure
 
 **Tasks:**
+
 - [x] Create `UserConfig` struct in `internal/configs/config.go`
 - [x] Implement `LoadUserConfig()` function
 - [x] Implement `SaveUserConfig()` function
@@ -180,6 +189,7 @@ Devices in this project:
 - [x] Update `InitProjectSettings()` to use user config
 
 **UserConfig struct:**
+
 ```go
 type UserConfig struct {
     User struct {
@@ -202,12 +212,14 @@ type User struct {
 ### Milestone 1.3: Project Config Structure
 
 **Tasks:**
+
 - [x] Create `ProjectConfig` struct in `internal/configs/config.go`
 - [x] Implement `LoadProjectConfig()` function
 - [x] Implement `SaveProjectConfig()` function
 - [x] Implement `GenerateProjectUUID()` function
 
 **ProjectConfig struct:**
+
 ```go
 type ProjectConfig struct {
     Project struct {
@@ -239,17 +251,20 @@ type Device struct {
 ### Milestone 2.1: Update Key Storage
 
 **Tasks:**
+
 - [x] Modify `CreateAndSaveRSAKeyPair()` in `internal/secrets/keys.go` to use project UUID
 - [x] Update private key path to `~/.local/share/kanuka/keys/<project_uuid>`
 - [x] Update public key path to `~/.local/share/kanuka/keys/<project_uuid>.pub`
 
 **Before:**
+
 ```go
 privateKeyPath := filepath.Join(keysDir, projectName)
 publicKeyPath := privateKeyPath + ".pub"
 ```
 
 **After:**
+
 ```go
 projectUUID := configs.ProjectKanukaSettings.ProjectUUID
 privateKeyPath := filepath.Join(keysDir, projectUUID)
@@ -263,16 +278,19 @@ publicKeyPath := privateKeyPath + ".pub"
 ### Milestone 2.2: Update Public Key Storage
 
 **Tasks:**
+
 - [x] Modify `CopyUserPublicKeyToProject()` in `internal/secrets/keys.go`
 - [x] Update destination path to use user UUID
 - [x] Update `SavePublicKeyToFile()` to use user UUID
 
 **Before:**
+
 ```go
 destKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
 ```
 
 **After:**
+
 ```go
 userUUID := configs.UserKanukaSettings.UserUUID
 destKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
@@ -285,17 +303,20 @@ destKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 ### Milestone 2.3: Update Encrypted Symmetric Key Storage
 
 **Tasks:**
+
 - [x] Modify `SaveKanukaKeyToProject()` in `internal/secrets/keys.go`
 - [x] Modify `GetProjectKanukaKey()` in `internal/secrets/keys.go`
 - [x] Update paths to use user UUID
 
 **Before:**
+
 ```go
 destKeyPath := filepath.Join(projectSecretsPath, username+".kanuka")
 userKeyFile := filepath.Join(projectSecretsPath, username+".kanuka")
 ```
 
 **After:**
+
 ```go
 userUUID := configs.UserKanukaSettings.UserUUID
 destKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
@@ -311,12 +332,14 @@ userKeyFile := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 ### Milestone 3.1: Email Prompt on Create
 
 **Tasks:**
+
 - [x] Add email prompt to `secrets create` command in `cmd/secrets_create.go`
 - [x] Validate email format
 - [x] Save email to user config
 - [x] Update project config with user mapping
 
 **User flow:**
+
 ```bash
 $ kanuka secrets create
 Enter your email: alice@example.com
@@ -331,17 +354,20 @@ Enter your email: alice@example.com
 ### Milestone 3.2: Update Register Command
 
 **Tasks:**
+
 - [x] Modify `secrets register` command in `cmd/secrets_register.go`
 - [x] Update `--user` flag to accept email instead of username
 - [x] Add email lookup in project config
 - [x] Map email to user UUID internally
 
 **Before:**
+
 ```bash
 $ kanuka secrets register --user alice
 ```
 
 **After:**
+
 ```bash
 $ kanuka secrets register --user alice@example.com
 ✓ alice@example.com has been granted access
@@ -354,6 +380,7 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 3.3: Update Revoke Command
 
 **Tasks:**
+
 - [x] Modify `secrets revoke` command in `cmd/secrets_revoke.go`
 - [x] Update `--user` flag to accept email
 - [x] Add `--device` flag
@@ -362,6 +389,7 @@ $ kanuka secrets register --user alice@example.com
 - [x] Implement smart confirmation logic
 
 **Confirmation rules:**
+
 - Always confirm if user has 2+ devices
 - Skip confirmation if user has 1 device (unambiguous)
 - Never confirm if `--yes` flag is present
@@ -374,16 +402,19 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 3.4: Update All Other Commands
 
 **Tasks:**
+
 - [x] Update `secrets encrypt` command to use email in output
 - [x] Update `secrets decrypt` command to use email in output
 - [x] Update all log messages to use email instead of username
 
 **Before:**
+
 ```bash
 ✓ Files for alice have been revoked successfully!
 ```
 
 **After:**
+
 ```bash
 ✓ Files for alice@example.com have been revoked successfully!
 ```
@@ -397,11 +428,13 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 4.1: Device Name Generation
 
 **Tasks:**
+
 - [x] Implement `GetHostname()` function in `internal/utils/system.go`
 - [x] Implement `GenerateDeviceName()` function
 - [x] Add device name to project config on create
 
 **Device name generation logic:**
+
 1. Get system hostname
 2. Sanitize (remove special chars, convert spaces to hyphens)
 3. Check for conflicts with existing devices for this user
@@ -414,11 +447,13 @@ $ kanuka secrets register --user alice@example.com
 ### Milestone 4.2: Device Name Management
 
 **Tasks:**
+
 - [x] Add `--device-name` flag to `secrets create` command
 - [x] Implement device name uniqueness validation (per user)
 - [x] Save device metadata to project config
 
 **User flow:**
+
 ```bash
 $ kanuka secrets create --device-name "workstation"
 Enter your email: alice@example.com
@@ -454,6 +489,7 @@ Enter your email: alice@example.com
 ### Milestone 5.1: Revoke All Devices
 
 **Tasks:**
+
 - [x] Implement "revoke all devices" logic in `cmd/secrets_revoke.go`
 - [x] Lookup all devices for user email
 - [x] Delete all public keys and encrypted symmetric keys
@@ -462,6 +498,7 @@ Enter your email: alice@example.com
 - [x] Add confirmation prompt
 
 **Confirmation prompt:**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com
 ⚠ Warning: alice@example.com has 2 devices:
@@ -479,6 +516,7 @@ Proceed? [y/N]:
 ### Milestone 5.2: Revoke Single Device
 
 **Tasks:**
+
 - [x] Implement "revoke single device" logic
 - [x] Require both `--user` and `--device` flags
 - [x] Validate device exists and belongs to user
@@ -489,6 +527,7 @@ Proceed? [y/N]:
 - [x] No confirmation (explicitly specified)
 
 **User flow:**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com --device macbook
 ✓ Device 'macbook' (alice@example.com) has been revoked successfully!
@@ -501,10 +540,12 @@ $ kanuka secrets revoke --user alice@example.com --device macbook
 ### Milestone 5.3: Auto-Confirm for Single Device
 
 **Tasks:**
+
 - [x] Implement logic to skip confirmation if user has only 1 device
 - [x] Same UX whether user has 1 or N devices
 
 **User flow:**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com
 ✓ Device 'macbook' (alice@example.com) has been revoked successfully!
@@ -518,11 +559,13 @@ $ kanuka secrets revoke --user alice@example.com
 ### Milestone 5.4: Non-Interactive Mode
 
 **Tasks:**
+
 - [x] Add `--yes` flag to `secrets revoke` command
 - [x] Skip all confirmation prompts when flag is present
 - [x] Document in command help
 
 **User flow:**
+
 ```bash
 $ kanuka secrets revoke --user alice@example.com --yes
 ✓ All devices for alice@example.com have been revoked successfully!
@@ -537,12 +580,14 @@ $ kanuka secrets revoke --user alice@example.com --yes
 ### Milestone 6.1: Generate Project UUID
 
 **Tasks:**
+
 - [x] Implement project UUID generation in `secrets init` command
 - [x] Create `.kanuka/config.toml` on init
 - [x] Save project UUID to config
 - [x] Save project name (optional)
 
 **Project config on init:**
+
 ```toml
 [project]
 project_uuid = "550e8400-e29b-41d4-a716-446655440000"
@@ -559,11 +604,13 @@ name = "my-awesome-project"
 ### Milestone 6.2: First Device Registration
 
 **Tasks:**
+
 - [x] Create device entry for first user in project config
 - [x] Auto-generate device name from hostname
 - [x] Save device metadata
 
 **Project config after first create:**
+
 ```toml
 [project]
 project_uuid = "550e8400-e29b-41d4-a716-446655440000"
@@ -588,12 +635,14 @@ project_uuid = "550e8400-e29b-41d4-a716-446655440000"
 ### Milestone 7.1: Detect Legacy Projects
 
 **Tasks:**
-- [ ] Implement `IsLegacyProject()` function
-- [ ] Check for absence of `.kanuka/config.toml`
-- [ ] Check for old-style file naming (username-based)
-- [ ] Add deprecation warning on first run
+
+- [x] Implement `IsLegacyProject()` function
+- [x] Check for absence of `.kanuka/config.toml`
+- [x] Check for old-style file naming (username-based)
+- [x] Add deprecation warning on first run
 
 **Detection logic:**
+
 ```go
 func IsLegacyProject(projectPath string) bool {
     configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
@@ -621,10 +670,11 @@ func IsLegacyProject(projectPath string) bool {
 ### Milestone 7.2: Generate Project UUID
 
 **Tasks:**
-- [ ] Implement `MigrateProjectUUID()` function
-- [ ] Generate UUID for legacy project
-- [ ] Create `.kanuka/config.toml`
-- [ ] Update project settings to use UUID
+
+- [x] Implement `MigrateProjectUUID()` function
+- [x] Generate UUID for legacy project
+- [x] Create `.kanuka/config.toml`
+- [x] Update project settings to use UUID
 
 **Rationale:** Enables new file naming format.
 
@@ -633,15 +683,17 @@ func IsLegacyProject(projectPath string) bool {
 ### Milestone 7.3: Migrate User Files
 
 **Tasks:**
-- [ ] Implement `MigrateUserFiles()` function
-- [ ] Scan existing `.kanuka/public_keys/` directory
-- [ ] Scan existing `.kanuka/secrets/` directory
-- [ ] For each user, generate user UUID
-- [ ] Rename files from `<username>.pub` to `<user_uuid>.pub`
-- [ ] Rename files from `<username>.kanuka` to `<user_uuid>.kanuka`
-- [ ] Update project config with user mappings
+
+- [x] Implement `MigrateUserFiles()` function
+- [x] Scan existing `.kanuka/public_keys/` directory
+- [x] Scan existing `.kanuka/secrets/` directory
+- [x] For each user, generate user UUID
+- [x] Rename files from `<username>.pub` to `<user_uuid>.pub`
+- [x] Rename files from `<username>.kanuka` to `<user_uuid>.kanuka`
+- [x] Update project config with user mappings
 
 **Migration example:**
+
 ```
 Before:
 .kanuka/public_keys/alice.pub
@@ -662,13 +714,15 @@ After:
 ### Milestone 7.4: Migrate User Keys
 
 **Tasks:**
-- [ ] Implement `MigrateUserKeys()` function
-- [ ] Scan `~/.local/share/kanuka/keys/` directory
-- [ ] For each project, generate project UUID
-- [ ] Rename keys from `<project_name>` to `<project_uuid>`
-- [ ] Rename keys from `<project_name>.pub` to `<project_uuid>.pub`
+
+- [x] Implement `MigrateUserKeys()` function
+- [x] Scan `~/.local/share/kanuka/keys/` directory
+- [x] For each project, generate project UUID
+- [x] Rename keys from `<project_name>` to `<project_uuid>`
+- [x] Rename keys from `<project_name>.pub` to `<project_uuid>.pub`
 
 **Migration example:**
+
 ```
 Before:
 ~/.local/share/kanuka/keys/my-project
@@ -686,12 +740,14 @@ After:
 ### Milestone 7.5: Auto-Migration on First Run
 
 **Tasks:**
-- [ ] Add migration check to `InitProjectSettings()`
-- [ ] Run migration if legacy project detected
-- [ ] Show migration progress and success message
-- [ ] Create backup before migration
+
+- [x] Add migration check to `InitProjectSettings()`
+- [x] Run migration if legacy project detected
+- [x] Show migration progress and success message
+- [x] Create backup before migration
 
 **User flow:**
+
 ```bash
 $ kanuka secrets encrypt
 ⚠ Legacy project detected. Migrating to new format...
@@ -711,6 +767,7 @@ $ kanuka secrets encrypt
 ### Milestone 8.1: Unit Tests
 
 **Tasks:**
+
 - [ ] Test user config generation and parsing
 - [ ] Test project config generation and parsing
 - [ ] Test UUID generation
@@ -720,6 +777,7 @@ $ kanuka secrets encrypt
 - [ ] Test config migration logic
 
 **Test files:**
+
 - `internal/configs/config_test.go`
 - `internal/utils/system_test.go`
 
@@ -730,6 +788,7 @@ $ kanuka secrets encrypt
 ### Milestone 8.2: Integration Tests
 
 **Tasks:**
+
 - [ ] Test `secrets init` with new config format
 - [ ] Test `secrets create` with email prompt
 - [ ] Test `secrets create` with custom device name
@@ -745,6 +804,7 @@ $ kanuka secrets encrypt
 - [ ] Test email collision scenarios
 
 **Test files:**
+
 - `test/integration/config/`
 - `test/integration/migration/`
 
@@ -755,6 +815,7 @@ $ kanuka secrets encrypt
 ### Milestone 8.3: Edge Case Tests
 
 **Tasks:**
+
 - [ ] Test two users with same email on same project (should use different UUIDs)
 - [ ] Test same user on multiple devices
 - [ ] Test device name collision (per user)
@@ -774,6 +835,7 @@ $ kanuka secrets encrypt
 ### Milestone 9.1: Update Command Help
 
 **Tasks:**
+
 - [ ] Update `secrets create` help text
 - [ ] Update `secrets register` help text
 - [ ] Update `secrets revoke` help text
@@ -783,6 +845,7 @@ $ kanuka secrets encrypt
 - [ ] Add deprecation warning to `secrets list-devices`
 
 **Example:**
+
 ```bash
 $ kanuka secrets revoke --help
 Revoke access to the secret store
@@ -810,21 +873,10 @@ Examples:
 
 ---
 
-### Milestone 9.2: Migration Guide
-
-**Tasks:**
-- [ ] Create migration guide document
-- [ ] Add pre-migration checklist
-- [ ] Add troubleshooting section
-- [ ] Add rollback instructions (if needed)
-
-**Rationale:** Users understand what to expect.
-
----
-
 ### Milestone 9.3: User FAQ
 
 **Tasks:**
+
 - [ ] Add FAQ entry for "Why do I need to provide my email?"
 - [ ] Add FAQ entry for "What if I have multiple devices?"
 - [ ] Add FAQ entry for "How do I revoke a compromised device?"
@@ -839,12 +891,14 @@ Examples:
 ### Milestone 10.1: Config Command Infrastructure
 
 **Tasks:**
+
 - [ ] Create `cmd/config.go` with top-level `ConfigCmd`
 - [ ] Add `ConfigCmd` to root command in `main.go`
 - [ ] Set up persistent flags (verbose, debug) matching `SecretsCmd`
 - [ ] Add `GetConfigCmd()` and `ResetConfigState()` helper functions for testing
 
 **Implementation:**
+
 ```go
 var ConfigCmd = &cobra.Command{
     Use:   "config",
@@ -862,6 +916,7 @@ var ConfigCmd = &cobra.Command{
 ```
 
 **User flow:**
+
 ```bash
 $ kanuka config --help
 Manage Kānuka configuration
@@ -882,6 +937,7 @@ Available Commands:
 ### Milestone 10.2: Set Device Name Command (User Config)
 
 **Tasks:**
+
 - [ ] Create `cmd/config_set_device_name.go`
 - [ ] Add `--device-name` flag for the new device name
 - [ ] Add optional `--project-uuid` flag (defaults to current project)
@@ -890,18 +946,21 @@ Available Commands:
 - [ ] Add confirmation if device name already exists for project
 
 **User flow (with project UUID):**
+
 ```bash
 $ kanuka config set-device-name --project-uuid 550e84... --device-name "workstation"
 ✓ Device name for project 550e84... set to 'workstation'
 ```
 
 **User flow (in project directory):**
+
 ```bash
 $ kanuka config set-device-name "workstation"
 ✓ Device name for project my-awesome-project set to 'workstation'
 ```
 
 **User config update:**
+
 ```toml
 [projects]
 "550e8400-e29b-41d4-a716-446655440000" = "workstation"
@@ -914,6 +973,7 @@ $ kanuka config set-device-name "workstation"
 ### Milestone 10.3: Rename Device Command (Project Config)
 
 **Tasks:**
+
 - [ ] Create `cmd/config_rename_device.go`
 - [ ] Add `--user` flag (required, accepts email)
 - [ ] Add `--new-name` flag (required)
@@ -925,18 +985,21 @@ $ kanuka config set-device-name "workstation"
 - [ ] Rotate symmetric key and re-encrypt (device name change doesn't affect access)
 
 **User flow (single device):**
+
 ```bash
 $ kanuka config rename-device --user alice@example.com "personal-macbook"
 ✓ Device 'macbook' renamed to 'personal-macbook' for alice@example.com
 ```
 
 **User flow (multiple devices, explicit old name):**
+
 ```bash
 $ kanuka config rename-device --user alice@example.com --old-name macbook "personal-macbook"
 ✓ Device 'macbook' renamed to 'personal-macbook' for alice@example.com
 ```
 
 **Project config update:**
+
 ```toml
 [devices]
 "6ba7b810-9dad-11d1-80b4-00c04fd430c8" = {
@@ -953,6 +1016,7 @@ $ kanuka config rename-device --user alice@example.com --old-name macbook "perso
 ### Milestone 10.4: Move List Devices to Config
 
 **Tasks:**
+
 - [ ] Create `cmd/config_list_devices.go` (move from `secrets list-devices`)
 - [ ] Keep existing functionality (read from project config)
 - [ ] Maintain `--user` flag for filtering
@@ -960,6 +1024,7 @@ $ kanuka config rename-device --user alice@example.com --old-name macbook "perso
 - [ ] Add deprecation warning to `secrets list-devices` (keep for backward compatibility)
 
 **User flow:**
+
 ```bash
 $ kanuka config list-devices
 Devices in this project:
@@ -971,6 +1036,7 @@ Devices in this project:
 ```
 
 **Deprecation warning:**
+
 ```bash
 $ kanuka secrets list-devices
 ⚠ Warning: 'secrets list-devices' is deprecated and will be removed in a future version.
@@ -987,6 +1053,7 @@ Devices in this project:
 ### Milestone 10.5: Update Documentation
 
 **Tasks:**
+
 - [ ] Create `docs/src/content/docs/guides/config.md` with config command overview
 - [ ] Update `docs/src/content/docs/configuration/configuration.mdx` with config commands
 - [ ] Add guide for setting device names
@@ -996,7 +1063,8 @@ Devices in this project:
 - [ ] Update main README with config command examples
 
 **Example documentation:**
-```markdown
+
+````markdown
 ## Setting Device Names
 
 You can set your preferred device name for a project using:
@@ -1004,6 +1072,7 @@ You can set your preferred device name for a project using:
 ```bash
 kanuka config set-device-name "workstation"
 ```
+````
 
 This sets your device name in your local user config. Other users will still see your device name in the project config, which they can update with the rename-device command.
 
@@ -1020,7 +1089,8 @@ kanuka config rename-device --user alice@example.com --old-name macbook "persona
 ```
 
 This updates the project config and is visible to all team members.
-```
+
+````
 
 **Rationale:** Ensures users understand the difference between user config preferences and project config settings.
 
@@ -1078,11 +1148,13 @@ This updates the project config and is visible to all team members.
 
 ### Week 6: Config Commands
 - Complete Phase 10 (Config command structure)
-```
+````
 
 **Updated Success Criteria:**
+
 ```markdown
 ### Functional Requirements
+
 - [ ] Users can set custom email
 - [ ] Projects have unique UUIDs
 - [ ] Files named with UUIDs (no collisions)
@@ -1131,24 +1203,30 @@ internal/
 ## Rollout Plan
 
 ### Week 1: Configuration Foundation
+
 - Complete Phases 1-2 (TOML, UUIDs)
 - No breaking changes yet
 
 ### Week 2: Email Identity
+
 - Complete Phase 3 (Email-based identity)
 - Update all commands
 
 ### Week 3: Device Layer
+
 - Complete Phase 4-5 (Device identity, revoke refinement)
   - Note: `secrets list-devices` and `secrets rename-device` moved to Phase 10
 
 ### Week 4: Init & Migration
+
 - Complete Phase 6-7 (Init, migration)
 
 ### Week 5: Testing & Docs
+
 - Complete Phase 8-9 (Testing, documentation)
 
 ### Week 6: Config Commands
+
 - Complete Phase 10 (Config command structure)
   - Implement `kanuka config` top-level command
   - Implement `config set-device-name` (user preferences)
@@ -1161,6 +1239,7 @@ internal/
 ## Success Criteria
 
 ### Functional Requirements
+
 - [ ] Users can set custom email
 - [ ] Projects have unique UUIDs
 - [ ] Files named with UUIDs (no collisions)
@@ -1172,6 +1251,7 @@ internal/
 - [ ] Device names are managed via `kanuka config` commands
 
 ### Non-Functional Requirements
+
 - [ ] All existing tests pass
 - [ ] New tests cover edge cases
 - [ ] Documentation is clear and complete
@@ -1183,21 +1263,27 @@ internal/
 ## Risks and Mitigations
 
 ### Risk: Migration Failures
+
 **Mitigation:**
+
 - Create backups before migration
 - Implement rollback capability
 - Add verbose logging during migration
 - Test migration thoroughly in staging
 
 ### Risk: User Confusion
+
 **Mitigation:**
+
 - Clear deprecation warnings
 - Comprehensive migration guide
 - FAQ for common questions
 - Detailed command help
 
 ### Risk: Breaking Existing Workflows
+
 **Mitigation:**
+
 - Support both old and new formats temporarily
 - Gradual migration (not forced)
 - Clear upgrade instructions
@@ -1208,16 +1294,20 @@ internal/
 ## Notes
 
 ### Device Names Are Per-User
+
 Device names only need to be unique **per user**, not globally. Alice's "macbook" is different from Bob's "macbook".
 
 ### Always Require `--user` with `--device`
+
 The `--device` flag REQUIRES the `--user` flag. This prevents ambiguity when multiple users have the same device name.
 
 ### Smart Confirmation Logic
+
 - Always confirm if revoking 2+ devices
 - Skip confirmation if revoking 1 device
 - Never confirm if using `--device` (explicit)
 - Never confirm if using `--yes` (automation)
 
 ### Email is User Identifier
+
 Email addresses are the user-facing identifier. UUIDs are internal only. Users never see UUIDs in normal operations.
