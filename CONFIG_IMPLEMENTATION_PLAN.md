@@ -838,13 +838,13 @@ $ kanuka secrets encrypt
 
 **Tasks:**
 
-- [ ] Update `secrets create` help text
-- [ ] Update `secrets register` help text
-- [ ] Update `secrets revoke` help text
-- [ ] Add `config list-devices` help text
-- [ ] Add `config rename-device` help text
-- [ ] Add `config set-device-name` help text
-- [ ] Add deprecation warning to `secrets list-devices`
+- [x] Update `secrets create` help text
+- [x] Update `secrets register` help text
+- [x] Update `secrets revoke` help text
+- [ ] Add `config list-devices` help text (Phase 10)
+- [ ] Add `config rename-device` help text (Phase 10)
+- [ ] Add `config set-device-name` help text (Phase 10)
+- [ ] Add deprecation warning to `secrets list-devices` (Phase 10)
 
 **Example:**
 
@@ -879,10 +879,10 @@ Examples:
 
 **Tasks:**
 
-- [ ] Add FAQ entry for "Why do I need to provide my email?"
-- [ ] Add FAQ entry for "What if I have multiple devices?"
-- [ ] Add FAQ entry for "How do I revoke a compromised device?"
-- [ ] Add FAQ entry for "Can I have multiple emails?"
+- [x] Add FAQ entry for "Why do I need to provide my email?"
+- [x] Add FAQ entry for "What if I have multiple devices?"
+- [x] Add FAQ entry for "How do I revoke a compromised device?"
+- [x] Add FAQ entry for "Can I have multiple emails?"
 
 **Rationale:** Address common questions proactively.
 

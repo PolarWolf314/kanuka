@@ -48,6 +48,32 @@ func promptForEmail(reader *bufio.Reader) (string, error) {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates and adds your public key, and gives instructions on how to gain access",
+	Long: `Creates a new RSA key pair for accessing the project's encrypted secrets.
+
+This command generates a unique cryptographic identity for you on this device,
+identified by your email address. Each device you use gets its own key pair.
+
+The command will:
+  1. Generate an RSA key pair (stored locally in ~/.local/share/kanuka/keys/)
+  2. Copy your public key to the project's .kanuka/public_keys/ directory
+  3. Register your device in the project configuration
+
+After running this command, you need to:
+  1. Commit the new .kanuka/public_keys/<uuid>.pub file
+  2. Ask someone with access to run: kanuka secrets register --user <your-email>
+
+Examples:
+  # Create keys with email prompt
+  kanuka secrets create
+
+  # Create keys with email specified
+  kanuka secrets create --email alice@example.com
+
+  # Create keys with custom device name
+  kanuka secrets create --email alice@example.com --device-name macbook-pro
+
+  # Force recreate keys (overwrites existing)
+  kanuka secrets create --force`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting create command")
 		spinner, cleanup := startSpinner("Creating Kānuka file...", verbose)

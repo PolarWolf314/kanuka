@@ -39,6 +39,37 @@ func init() {
 var revokeCmd = &cobra.Command{
 	Use:   "revoke",
 	Short: "Revokes access to the secret store",
+	Long: `Revokes a user's access to the project's encrypted secrets.
+
+This command removes the user's encrypted symmetric key and public key,
+preventing them from decrypting secrets. It also automatically rotates the
+symmetric key for all remaining users to ensure the revoked user cannot
+decrypt any future secrets.
+
+You can revoke access by:
+  1. User email: --user <email> (revokes all devices for that user)
+  2. Specific device: --user <email> --device <device-name>
+  3. File path: --file <path-to-.kanuka-file>
+
+When revoking a user with multiple devices, you will be prompted to confirm
+unless --yes is specified. Use --device to revoke only a specific device.
+
+Warning: After revocation, the revoked user may still have access to old
+secret values from their local git history. Consider rotating your actual
+secret values after this revocation if the user was compromised.
+
+Examples:
+  # Revoke all devices for a user (prompts for confirmation if multiple)
+  kanuka secrets revoke --user alice@example.com
+
+  # Revoke a specific device
+  kanuka secrets revoke --user alice@example.com --device macbook-pro
+
+  # Revoke without confirmation (for CI/CD automation)
+  kanuka secrets revoke --user alice@example.com --yes
+
+  # Revoke by file path
+  kanuka secrets revoke --file .kanuka/secrets/abc123.kanuka`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting revoke command")
 		spinner, cleanup := startSpinner("Revoking user access...", verbose)

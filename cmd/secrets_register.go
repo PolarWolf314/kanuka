@@ -36,6 +36,29 @@ func init() {
 var RegisterCmd = &cobra.Command{
 	Use:   "register",
 	Short: "Registers a new user to be given access to the repository's secrets",
+	Long: `Grants a user access to the project's encrypted secrets.
+
+This command encrypts the project's symmetric key with the target user's
+public key, allowing them to decrypt secrets. You must have access to the
+project's secrets yourself before you can grant access to others.
+
+Methods to register a user:
+  1. By email: --user <email> (user must have run 'secrets create' first)
+  2. By public key file: --file <path-to-.pub-file>
+  3. By public key text: --pubkey <key-content> --user <email>
+
+After running this command, the user will immediately have access to decrypt
+secrets once they pull the latest changes from the repository.
+
+Examples:
+  # Register a user by their email address
+  kanuka secrets register --user alice@example.com
+
+  # Register a user with a public key file
+  kanuka secrets register --file ./alice-key.pub
+
+  # Register a user with public key text (useful for automation)
+  kanuka secrets register --user alice@example.com --pubkey "ssh-rsa AAAA..."`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting register command")
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
