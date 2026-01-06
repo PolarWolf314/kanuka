@@ -1,18 +1,19 @@
-package remove
+package revoke
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
-func TestRemoveCommand_PermissionDenied(t *testing.T) {
-	// Skip on Windows as permissions work differently
-	if os.Getenv("SKIP_PERMISSION_TESTS") == "true" {
-		t.Skip("Skipping permission tests")
+func TestRevokeCommand_ConcurrentAccess(t *testing.T) {
+	// Skip on Windows as file locking works differently
+	if os.Getenv("SKIP_CONCURRENT_TESTS") == "true" {
+		t.Skip("Skipping concurrent access tests")
 	}
 
 	// Save original state
@@ -22,12 +23,12 @@ func TestRemoveCommand_PermissionDenied(t *testing.T) {
 	}
 	originalUserSettings := configs.UserKanukaSettings
 
-	t.Run("RemoveWithNoWritePermissionOnDirectory", func(t *testing.T) {
-		testRemoveWithNoWritePermissionOnDirectory(t, originalWd, originalUserSettings)
+	t.Run("RemoveWithFileBeingAccessed", func(t *testing.T) {
+		testRevokeWithFileBeingAccessed(t, originalWd, originalUserSettings)
 	})
 }
 
-func testRemoveWithNoWritePermissionOnDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeWithFileBeingAccessed(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -89,40 +90,41 @@ func testRemoveWithNoWritePermissionOnDirectory(t *testing.T, originalWd string,
 		t.Fatalf("Failed to create kanuka key file: %v", err)
 	}
 
-	// Make directories read-only
-	if err := os.Chmod(publicKeysDir, 0555); err != nil {
-		t.Fatalf("Failed to change directory permissions: %v", err)
+	// Open the file to simulate it being accessed by another process
+	file, err := os.Open(publicKeyPath)
+	if err != nil {
+		t.Fatalf("Failed to open file: %v", err)
 	}
-	if err := os.Chmod(secretsDir, 0555); err != nil {
-		t.Fatalf("Failed to change directory permissions: %v", err)
-	}
+	defer file.Close()
 
-	// Ensure permissions are restored for cleanup
-	defer func() {
-		if err := os.Chmod(publicKeysDir, 0755); err != nil {
-			t.Logf("Warning: Failed to restore permissions on public keys directory: %v", err)
+	// Create a channel to signal when the revoke command is done
+	done := make(chan bool)
+
+	// Run the revoke command in a goroutine
+	go func() {
+		cmd.ResetGlobalState()
+		secretsCmd := cmd.GetSecretsCmd()
+		secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+		err := secretsCmd.Execute()
+		if err != nil {
+			t.Errorf("Remove command should not return error even with concurrent access: %v", err)
 		}
-		if err := os.Chmod(secretsDir, 0755); err != nil {
-			t.Logf("Warning: Failed to restore permissions on secrets directory: %v", err)
-		}
+		done <- true
 	}()
 
-	// Remove the user
-	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", testUser})
-
-	err = secretsCmd.Execute()
-	if err != nil {
-		t.Errorf("Remove command should not return error even with permission issues: %v", err)
+	// Wait for the command to complete or timeout
+	select {
+	case <-done:
+		// Command completed
+	case <-time.After(5 * time.Second):
+		t.Fatal("Remove command timed out")
 	}
 
-	// Verify files still exist (removal should have failed due to permissions)
-	if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
-		t.Error("Public key file should still exist due to permission issues")
-	}
+	// Close the file to allow cleanup
+	file.Close()
 
-	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
-		t.Error("Kanuka key file should still exist due to permission issues")
+	// Check if the kanuka key file was removed (it should be since we only locked the public key)
+	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
+		t.Error("Kanuka key file should be revokedd even if public key file is locked")
 	}
 }

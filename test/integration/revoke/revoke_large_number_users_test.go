@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
-func TestRemoveCommand_LargeNumberOfUsers(t *testing.T) {
+func TestRevokeCommand_LargeNumberOfUsers(t *testing.T) {
 	// Skip this test in CI environments or when running quick tests
 	if os.Getenv("SKIP_PERFORMANCE_TESTS") == "true" {
 		t.Skip("Skipping performance test for large number of users")
@@ -25,11 +25,11 @@ func TestRemoveCommand_LargeNumberOfUsers(t *testing.T) {
 	originalUserSettings := configs.UserKanukaSettings
 
 	t.Run("RemoveWithLargeNumberOfUsers", func(t *testing.T) {
-		testRemoveWithLargeNumberOfUsers(t, originalWd, originalUserSettings)
+		testRevokeWithLargeNumberOfUsers(t, originalWd, originalUserSettings)
 	})
 }
 
-func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeWithLargeNumberOfUsers(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -96,13 +96,13 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 		}
 	}
 
-	// Measure time to remove a user
+	// Measure time to revoke a user
 	start := time.Now()
 
 	// Remove the user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", userToRemove})
+	secretsCmd.SetArgs([]string{"revoke", "--user", userToRemove})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
@@ -115,11 +115,11 @@ func testRemoveWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	kanukaKeyPath := filepath.Join(secretsDir, userToRemove+".kanuka")
 
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be removed")
+		t.Error("Public key file should be revokedd")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 
 	// Verify other users' files still exist (check a few random ones)

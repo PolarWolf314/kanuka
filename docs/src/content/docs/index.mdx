@@ -3,7 +3,7 @@ title: Welcome to Kānuka
 description: Unified development environments and secrets management
 template: splash
 hero:
-  tagline: Fast, resilient development environments and secure secrets management in one powerful CLI tool.
+  tagline: Secure secrets management in one powerful CLI tool.
   image:
     {
       light: "/public/assets/kanuka-light-circular.png",
@@ -23,28 +23,28 @@ hero:
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
 <CardGrid stagger>
-  <Card title="Reproducible Development Environments" icon="laptop">
-    Create isolated, reproducible development environments using the Nix ecosystem. 
-    Never worry about "it works on my machine" again.
+  <Card title="End-to-End Encryption" icon="seti:lock">
+    Encrypt .env files with industry-standard encryption. 
+    Safely commit secrets to version control without exposing sensitive data.
   </Card>
-  <Card title="Secure Secrets Management" icon="approve-check">
-    Share team secrets securely using industry-standard encryption. 
-    No more sending API keys over Slack or maintaining `.env.example` files.
+  <Card title="Team Access Management" icon="approve-check">
+    Grant and revoke access to secrets using public key encryption. 
+    Only authorized team members can decrypt your project's secrets.
   </Card>
-  <Card title="Container-Ready" icon="puzzle">
-    Build OCI containers directly from your development environment. 
-    Deploy the exact same environment you develop in.
+  <Card title="Seamless Decryption" icon="pencil">
+    Decrypt encrypted secrets with a single command. 
+    Get back your original .env files instantly when you need them.
   </Card>
-  <Card title="AWS Integration" icon="setting">
-    Built-in AWS SSO authentication with automatic credential management. 
-    Seamlessly work with AWS services in your development shell.
+  <Card title="Git-Friendly Secrets" icon="seti:git">
+    Commit encrypted .kanuka files to your repository. 
+    Share secrets securely without risking accidental exposure.
   </Card>
-  <Card title="Powered by Go" icon="rocket">
-    Cross-platform native performance on Linux, macOS, and Windows. 
-    Single binary with no external dependencies.
+  <Card title="Secure by Default" icon="information">
+    Only users with registered keys can access your secrets. 
+    Automatic key management ensures secrets stay protected.
   </Card>
-  <Card title="Unified Workflow" icon="open-book">
-    One tool for development environments, package management, containers, and secrets. 
-    Streamline your entire development workflow.
+  <Card title="Simple Workflow" icon="heart">
+    Encrypt, register, and decrypt with minimal commands. 
+    No complex configuration required for secrets management.
   </Card>
 </CardGrid>

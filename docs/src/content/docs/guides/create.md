@@ -21,7 +21,7 @@ store them securely.
 :::tip
 Kānuka names the public key based on the system username. If you need to create
 your public key again, just add a `--force` flag. **This will override the
-existing public key and remove access for that user**.
+existing public key and revoke access for that user**.
 
 ```bash
 kanuka secrets create --force

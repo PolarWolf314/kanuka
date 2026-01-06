@@ -69,7 +69,7 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 	}
 
 	// Save private key
-	privFile, err := os.Create(privatePath)
+	privFile, err := os.OpenFile(privatePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to create private key file at %s: %w", privatePath, err)
 	}
@@ -89,7 +89,7 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 	}
 
 	// Save public key
-	pubFile, err := os.Create(publicPath)
+	pubFile, err := os.OpenFile(publicPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create public key file at %s: %w", publicPath, err)
 	}
@@ -359,4 +359,28 @@ func SavePublicKeyToFile(publicKey *rsa.PublicKey, filePath string) error {
 
 	// #nosec G306 -- This is a pubkey
 	return os.WriteFile(filePath, pemBytes, 0644)
+}
+
+// GetAllUsersInProject returns a list of all users with access to the project.
+func GetAllUsersInProject() ([]string, error) {
+	if err := configs.InitProjectSettings(); err != nil {
+		return nil, fmt.Errorf("failed to init project settings: %w", err)
+	}
+
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+
+	entries, err := os.ReadDir(projectPublicKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read public keys directory: %w", err)
+	}
+
+	var usernames []string
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".pub" {
+			username := entry.Name()[:len(entry.Name())-len(".pub")]
+			usernames = append(usernames, username)
+		}
+	}
+
+	return usernames, nil
 }

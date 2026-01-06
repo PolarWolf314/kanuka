@@ -14,7 +14,7 @@ var (
 	SecretsCmd = &cobra.Command{
 		Use:   "secrets",
 		Short: "Manage secrets stored in the repository",
-		Long:  `Provides encryption, decryption, registration, removal, initialization, and purging of secrets.`,
+		Long:  `	Provides encryption, decryption, registration, revocation, and initialization of secrets.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			Logger = logger.Logger{
 				Verbose: verbose,
@@ -33,9 +33,8 @@ func init() {
 	SecretsCmd.AddCommand(decryptCmd)
 	SecretsCmd.AddCommand(createCmd)
 	SecretsCmd.AddCommand(RegisterCmd)
-	SecretsCmd.AddCommand(removeCmd)
+	SecretsCmd.AddCommand(revokeCmd)
 	SecretsCmd.AddCommand(initCmd)
-	SecretsCmd.AddCommand(purgeCmd)
 }
 
 // Helper functions for testing
@@ -53,8 +52,8 @@ func ResetGlobalState() {
 	resetCreateCommandState()
 	// Reset the register command flags
 	resetRegisterCommandState()
-	// Reset the remove command flags
-	resetRemoveCommandState()
+	// Reset the revoke command flags
+	resetRevokeCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -68,9 +67,9 @@ func resetCobraFlagState() {
 		})
 	}
 
-	// Reset the remove command flags specifically
-	if removeCmd != nil && removeCmd.Flags() != nil {
-		removeCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+	// Reset the revoke command flags specifically
+	if revokeCmd != nil && revokeCmd.Flags() != nil {
+		revokeCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}

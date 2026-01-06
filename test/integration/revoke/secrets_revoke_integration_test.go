@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"os"
@@ -131,13 +131,13 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 	// Remove the user - we need to use "public" since that's the filename being used
 	cmd.ResetGlobalState()
 	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", "public"})
+	secretsCmd.SetArgs([]string{"revoke", "--user", "public"})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
 
-	// Verify kanuka key file is removed
+	// Verify kanuka key file is revoked
 	if _, statErr = os.Stat(registeredKanukaKeyPath); !os.IsNotExist(statErr) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revoked")
 	}
 }

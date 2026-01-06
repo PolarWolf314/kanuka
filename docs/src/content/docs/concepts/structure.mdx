@@ -32,39 +32,11 @@ import { FileTree } from '@astrojs/starlight/components';
 
 </FileTree>
 
-## Grove Development Environment Files
-
-When you use Grove for development environments, Kānuka creates additional files:
-
-<FileTree>
-
-- astro.config.mjs
-- package.json
-- devenv.nix environment definition
-- devenv.yaml devenv configuration
-- kanuka.toml Grove configuration
-- .devenv/ generated files (not committed)
-  - profile/
-  - state/
-- .kanuka secrets management (if using secrets)
-  - public_keys/
-  - secrets/
-
-</FileTree>
-
-### Grove Files Explained
-
-- **devenv.nix**: The main environment definition written in Nix language.
-- **devenv.yaml**: Configuration for devenv, including package sources.
-- **kanuka.toml**: Kānuka's own configuration tracking what Grove has added.
-- **.devenv/**: Generated environment files (automatically excluded from git).
-
 ## What Gets Committed
 
 All files created by Kānuka are safe to commit to version control, except:
 
 - Private keys (stored in your user directory).
-- Generated environment files (`.devenv/` directory).
 
 A core concept to understand is that each user has _their own_ version of a
 symmetric key, but everyone has the _same_ symmetric key. To read more about

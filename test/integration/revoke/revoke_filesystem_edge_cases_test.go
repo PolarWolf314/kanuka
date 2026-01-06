@@ -1,4 +1,4 @@
-package remove
+package revoke
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
 
-func TestRemoveCommand_FilesystemEdgeCases(t *testing.T) {
+func TestRevokeCommand_FilesystemEdgeCases(t *testing.T) {
 	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
@@ -18,22 +18,22 @@ func TestRemoveCommand_FilesystemEdgeCases(t *testing.T) {
 	originalUserSettings := configs.UserKanukaSettings
 
 	t.Run("RemoveWithOnlyPublicKeyFile", func(t *testing.T) {
-		testRemoveWithOnlyPublicKeyFile(t, originalWd, originalUserSettings)
+		testRevokeWithOnlyPublicKeyFile(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("RemoveWithOnlyKanukaKeyFile", func(t *testing.T) {
-		testRemoveWithOnlyKanukaKeyFile(t, originalWd, originalUserSettings)
+		testRevokeWithOnlyKanukaKeyFile(t, originalWd, originalUserSettings)
 	})
 
 	// Skip permission tests on Windows as they work differently
 	if os.Getenv("SKIP_PERMISSION_TESTS") != "true" {
 		t.Run("RemoveWithReadOnlyPublicKeyFile", func(t *testing.T) {
-			testRemoveWithReadOnlyPublicKeyFile(t, originalWd, originalUserSettings)
+			testRevokeWithReadOnlyPublicKeyFile(t, originalWd, originalUserSettings)
 		})
 	}
 }
 
-func testRemoveWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -97,7 +97,7 @@ func testRemoveWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 	// Remove the user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -106,11 +106,11 @@ func testRemoveWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 
 	// Verify file is removed
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be removed")
+		t.Error("Public key file should be revokedd")
 	}
 }
 
-func testRemoveWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -174,7 +174,7 @@ func testRemoveWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 	// Remove the user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -183,11 +183,11 @@ func testRemoveWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 
 	// Verify file is removed
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be removed")
+		t.Error("Kanuka key file should be revokedd")
 	}
 }
 
-func testRemoveWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+func testRevokeWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
@@ -257,7 +257,7 @@ func testRemoveWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 	// Remove the user
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"remove", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
 
 	err = secretsCmd.Execute()
 	if err != nil {
