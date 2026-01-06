@@ -72,4 +72,8 @@ By simply deleting a user's encrypted AES key and their public key, that user
 will no longer have access to the secrets, and no other user can accidentally
 give them access again.
 
-Continue reading to see how purging works with Kānuka.
+As an extra level of protection, Kānuka will also automatically rotate the AES
+key for everyone else so that from that revoke onwards, the revoked user cannot
+access the new `.env` file, even if they restored their old public key.
+
+Continue reading to find out more about configuration within Kānuka.

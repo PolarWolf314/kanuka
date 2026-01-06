@@ -40,7 +40,6 @@ export default defineConfig({
             "guides/create",
             "guides/register",
             "guides/revoke",
-            "guides/purge",
           ],
         },
         {
@@ -49,7 +48,6 @@ export default defineConfig({
             "concepts/structure",
             "concepts/encryption",
             "concepts/registration",
-            "concepts/purge",
           ],
         },
         {

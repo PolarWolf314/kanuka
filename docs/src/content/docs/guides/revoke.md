@@ -21,6 +21,3 @@ changes to version control.
 ## Next steps
 
 To learn more about `kanuka secrets revoke`, see the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
-
-Or, continue reading to learn how to purge all access to a project's secrets in
-the case of a security breach.

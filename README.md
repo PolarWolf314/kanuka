@@ -57,27 +57,27 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 
 1. **Initialize Secrets Store**:
 
-    ```bash
-    kanuka secrets init
-    ```
+   ```bash
+   kanuka secrets init
+   ```
 
 2. **Create Your Encryption Keys**:
 
-    ```bash
-    kanuka secrets create
-    ```
+   ```bash
+   kanuka secrets create
+   ```
 
 3. **Encrypt Your Secrets**:
 
-    ```bash
-    kanuka secrets encrypt
-    ```
+   ```bash
+   kanuka secrets encrypt
+   ```
 
 4. **Register a Team Member**:
 
-    ```bash
-    kanuka secrets register --user username
-    ```
+   ```bash
+   kanuka secrets register --user username
+   ```
 
 ## Commands
 
@@ -87,7 +87,6 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 - `kanuka secrets decrypt`: Decrypt .kanuka files
 - `kanuka secrets register --user <username>`: Register a new user
 - `kanuka secrets revoke --user <username>`: Revoke a user
-- `kanuka secrets purge`: Purge all secrets
 
 ### General Commands
 

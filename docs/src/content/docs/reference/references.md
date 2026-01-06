@@ -45,7 +45,7 @@ Flags:
 
 ## Secrets Management
 
-Provides encryption, decryption, registration, revocation, initialization, and purging of secrets.
+Provides encryption, decryption, registration, revocation, and initialization of secrets.
 
 ### `kanuka secrets`
 
@@ -53,12 +53,11 @@ Provides encryption, decryption, registration, revocation, initialization, and p
 Usage:
   kanuka secrets [command]
 
-Available Commands:
+  Available Commands:
   create      Creates and adds your public key, and gives instructions on how to gain access
   decrypt     Decrypts the .env.kanuka file back into .env using your Kānuka key
   encrypt     Encrypts the .env file into .env.kanuka using your Kānuka key
   init        Initializes the secrets store
-  purge       Purges all secrets, including from the git history
   register    Registers a new user to be given access to the repository's secrets
   revoke      Revokes access to the secret store
 
@@ -117,18 +116,6 @@ Usage:
 Flags:
   -h, --help      help for init
   -v, --verbose   enable verbose output
-```
-
-### `kanuka secrets purge`
-
-Purges all secrets, including from the git history.
-
-```
-Usage:
-  kanuka secrets purge [flags]
-
-Flags:
-  -h, --help   help for purge
 ```
 
 ### `kanuka secrets register`
