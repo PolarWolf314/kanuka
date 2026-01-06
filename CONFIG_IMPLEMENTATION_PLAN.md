@@ -768,17 +768,19 @@ $ kanuka secrets encrypt
 
 **Tasks:**
 
-- [ ] Test user config generation and parsing
-- [ ] Test project config generation and parsing
-- [ ] Test UUID generation
-- [ ] Test email validation
-- [ ] Test device name generation
-- [ ] Test email → UUID lookup
-- [ ] Test config migration logic
+- [x] Test user config generation and parsing
+- [x] Test project config generation and parsing
+- [x] Test UUID generation
+- [x] Test email validation
+- [x] Test device name generation
+- [x] Test email → UUID lookup
+- [x] Test config migration logic
 
 **Test files:**
 
 - `internal/configs/config_test.go`
+- `internal/configs/migration_test.go`
+- `internal/configs/edge_cases_test.go`
 - `internal/utils/system_test.go`
 
 **Rationale:** Ensure core functionality works correctly.
@@ -789,19 +791,19 @@ $ kanuka secrets encrypt
 
 **Tasks:**
 
-- [ ] Test `secrets init` with new config format
-- [ ] Test `secrets create` with email prompt
-- [ ] Test `secrets create` with custom device name
-- [ ] Test `secrets register` with email
-- [ ] Test `secrets revoke --user` (all devices)
-- [ ] Test `secrets revoke --user --device` (single device)
-- [ ] Test `secrets revoke --user --yes` (non-interactive)
+- [x] Test `secrets init` with new config format
+- [x] Test `secrets create` with email prompt
+- [x] Test `secrets create` with custom device name
+- [x] Test `secrets register` with email
+- [x] Test `secrets revoke --user` (all devices)
+- [x] Test `secrets revoke --user --device` (single device)
+- [x] Test `secrets revoke --user --yes` (non-interactive)
 - [ ] Test `config list-devices` (moved from secrets)
 - [ ] Test `config rename-device` (moved from secrets)
 - [ ] Test `config set-device-name` (new command)
-- [ ] Test migration from legacy format
-- [ ] Test multi-device scenarios
-- [ ] Test email collision scenarios
+- [x] Test migration from legacy format
+- [x] Test multi-device scenarios
+- [x] Test email collision scenarios
 
 **Test files:**
 
@@ -816,15 +818,15 @@ $ kanuka secrets encrypt
 
 **Tasks:**
 
-- [ ] Test two users with same email on same project (should use different UUIDs)
-- [ ] Test same user on multiple devices
-- [ ] Test device name collision (per user)
-- [ ] Test project name collision
+- [x] Test two users with same email on same project (should use different UUIDs)
+- [x] Test same user on multiple devices
+- [x] Test device name collision (per user)
+- [x] Test project name collision
 - [ ] Test invalid email format
 - [ ] Test non-existent user
 - [ ] Test non-existent device
-- [ ] Test malformed config files
-- [ ] Test migration with no existing keys
+- [x] Test malformed config files
+- [x] Test migration with no existing keys
 
 **Rationale:** Ensure robustness.
 
