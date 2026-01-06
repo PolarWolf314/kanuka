@@ -7,6 +7,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -69,10 +70,17 @@ var initCmd = &cobra.Command{
 		}
 
 		// Add the initializing user to the project config
+		// Generate device name from hostname (no existing devices for this user in new project)
+		deviceName, err := utils.GenerateDeviceName([]string{})
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to generate device name: %v", err)
+		}
+		Logger.Debugf("Generated device name: %s", deviceName)
+
 		projectConfig.Users[userConfig.User.UUID] = userConfig.User.Email
 		projectConfig.Devices[userConfig.User.UUID] = configs.DeviceConfig{
 			Email:     userConfig.User.Email,
-			Name:      configs.UserKanukaSettings.Username, // Use system username as device name for now
+			Name:      deviceName,
 			CreatedAt: time.Now().UTC(),
 		}
 

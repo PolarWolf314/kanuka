@@ -537,10 +537,10 @@ $ kanuka secrets revoke --user alice@example.com --yes
 ### Milestone 6.1: Generate Project UUID
 
 **Tasks:**
-- [ ] Implement project UUID generation in `secrets init` command
-- [ ] Create `.kanuka/config.toml` on init
-- [ ] Save project UUID to config
-- [ ] Save project name (optional)
+- [x] Implement project UUID generation in `secrets init` command
+- [x] Create `.kanuka/config.toml` on init
+- [x] Save project UUID to config
+- [x] Save project name (optional)
 
 **Project config on init:**
 ```toml
@@ -559,9 +559,9 @@ name = "my-awesome-project"
 ### Milestone 6.2: First Device Registration
 
 **Tasks:**
-- [ ] Create device entry for first user in project config
-- [ ] Auto-generate device name from hostname
-- [ ] Save device metadata
+- [x] Create device entry for first user in project config
+- [x] Auto-generate device name from hostname
+- [x] Save device metadata
 
 **Project config after first create:**
 ```toml
