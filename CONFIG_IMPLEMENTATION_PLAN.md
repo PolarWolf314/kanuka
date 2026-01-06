@@ -841,10 +841,10 @@ $ kanuka secrets encrypt
 - [x] Update `secrets create` help text
 - [x] Update `secrets register` help text
 - [x] Update `secrets revoke` help text
-- [ ] Add `config list-devices` help text (Phase 10)
-- [ ] Add `config rename-device` help text (Phase 10)
-- [ ] Add `config set-device-name` help text (Phase 10)
-- [ ] Add deprecation warning to `secrets list-devices` (Phase 10)
+- [x] Add `config list-devices` help text (Phase 10)
+- [x] Add `config rename-device` help text (Phase 10)
+- [x] Add `config set-device-name` help text (Phase 10)
+- [ ] Add deprecation warning to `secrets list-devices` (Phase 10) - N/A: no existing command
 
 **Example:**
 
@@ -894,10 +894,10 @@ Examples:
 
 **Tasks:**
 
-- [ ] Create `cmd/config.go` with top-level `ConfigCmd`
-- [ ] Add `ConfigCmd` to root command in `main.go`
-- [ ] Set up persistent flags (verbose, debug) matching `SecretsCmd`
-- [ ] Add `GetConfigCmd()` and `ResetConfigState()` helper functions for testing
+- [x] Create `cmd/config.go` with top-level `ConfigCmd`
+- [x] Add `ConfigCmd` to root command in `main.go`
+- [x] Set up persistent flags (verbose, debug) matching `SecretsCmd`
+- [x] Add `GetConfigCmd()` and `ResetConfigState()` helper functions for testing
 
 **Implementation:**
 
@@ -940,12 +940,12 @@ Available Commands:
 
 **Tasks:**
 
-- [ ] Create `cmd/config_set_device_name.go`
-- [ ] Add `--device-name` flag for the new device name
-- [ ] Add optional `--project-uuid` flag (defaults to current project)
-- [ ] Validate device name format (alphanumeric, hyphens, underscores)
-- [ ] Save to user config's `[projects]` section
-- [ ] Add confirmation if device name already exists for project
+- [x] Create `cmd/config_set_device_name.go`
+- [x] Add `--device-name` flag for the new device name
+- [x] Add optional `--project-uuid` flag (defaults to current project)
+- [x] Validate device name format (alphanumeric, hyphens, underscores)
+- [x] Save to user config's `[projects]` section
+- [x] Add confirmation if device name already exists for project
 
 **User flow (with project UUID):**
 
@@ -976,15 +976,15 @@ $ kanuka config set-device-name "workstation"
 
 **Tasks:**
 
-- [ ] Create `cmd/config_rename_device.go`
-- [ ] Add `--user` flag (required, accepts email)
-- [ ] Add `--new-name` flag (required)
-- [ ] Add optional `--old-name` flag (if user has 1 device, auto-infer)
-- [ ] Look up user UUID from project config
-- [ ] Validate device exists and belongs to user
-- [ ] Validate new device name is unique for this user
-- [ ] Update project config's `[devices]` section
-- [ ] Rotate symmetric key and re-encrypt (device name change doesn't affect access)
+- [x] Create `cmd/config_rename_device.go`
+- [x] Add `--user` flag (required, accepts email)
+- [x] Add `--new-name` flag (required)
+- [x] Add optional `--old-name` flag (if user has 1 device, auto-infer)
+- [x] Look up user UUID from project config
+- [x] Validate device exists and belongs to user
+- [x] Validate new device name is unique for this user
+- [x] Update project config's `[devices]` section
+- [x] Rotate symmetric key and re-encrypt (device name change doesn't affect access)
 
 **User flow (single device):**
 
@@ -1019,11 +1019,11 @@ $ kanuka config rename-device --user alice@example.com --old-name macbook "perso
 
 **Tasks:**
 
-- [ ] Create `cmd/config_list_devices.go` (move from `secrets list-devices`)
-- [ ] Keep existing functionality (read from project config)
-- [ ] Maintain `--user` flag for filtering
-- [ ] Update all documentation references from `secrets list-devices` to `config list-devices`
-- [ ] Add deprecation warning to `secrets list-devices` (keep for backward compatibility)
+- [x] Create `cmd/config_list_devices.go` (move from `secrets list-devices`)
+- [x] Keep existing functionality (read from project config)
+- [x] Maintain `--user` flag for filtering
+- [x] Update all documentation references from `secrets list-devices` to `config list-devices`
+- [ ] Add deprecation warning to `secrets list-devices` (keep for backward compatibility) - N/A: no existing secrets list-devices command
 
 **User flow:**
 
@@ -1056,13 +1056,13 @@ Devices in this project:
 
 **Tasks:**
 
-- [ ] Create `docs/src/content/docs/guides/config.md` with config command overview
-- [ ] Update `docs/src/content/docs/configuration/configuration.mdx` with config commands
-- [ ] Add guide for setting device names
-- [ ] Add guide for renaming devices
-- [ ] Update all references from `secrets rename-device` to `config rename-device`
-- [ ] Update all references from `secrets list-devices` to `config list-devices`
-- [ ] Update main README with config command examples
+- [x] Create `docs/src/content/docs/guides/config.md` with config command overview
+- [ ] Update `docs/src/content/docs/configuration/configuration.mdx` with config commands (file doesn't exist)
+- [x] Add guide for setting device names
+- [x] Add guide for renaming devices
+- [ ] Update all references from `secrets rename-device` to `config rename-device` (no existing references)
+- [ ] Update all references from `secrets list-devices` to `config list-devices` (no existing references)
+- [x] Update main README with config command examples
 
 **Example documentation:**
 

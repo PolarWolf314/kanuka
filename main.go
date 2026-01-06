@@ -27,6 +27,7 @@ Features:
 
 func main() {
 	rootCmd.AddCommand(cmd.SecretsCmd)
+	rootCmd.AddCommand(cmd.ConfigCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
