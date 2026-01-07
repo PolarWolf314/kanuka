@@ -54,6 +54,14 @@ func TestConfigRenameDevice(t *testing.T) {
 	t.Run("RenameDeviceOutsideProject", func(t *testing.T) {
 		testRenameDeviceOutsideProject(t, originalWd, originalUserSettings)
 	})
+
+	t.Run("RenameOwnDeviceUpdatesUserConfig", func(t *testing.T) {
+		testRenameOwnDeviceUpdatesUserConfig(t, originalWd, originalUserSettings)
+	})
+
+	t.Run("RenameOtherUserDeviceDoesNotUpdateUserConfig", func(t *testing.T) {
+		testRenameOtherUserDeviceDoesNotUpdateUserConfig(t, originalWd, originalUserSettings)
+	})
 }
 
 // Tests rename-device with single device (auto-infer old name).
@@ -566,5 +574,188 @@ func testRenameDeviceOutsideProject(t *testing.T, originalWd string, originalUse
 	// Should indicate not in a project directory.
 	if !strings.Contains(output, "Not in a Kānuka project") && !strings.Contains(output, "Failed to initialize") {
 		t.Errorf("Expected error message about not being in a project directory, got: %s", output)
+	}
+}
+
+// Tests that renaming your own device also updates the user config's [projects] section.
+func testRenameOwnDeviceUpdatesUserConfig(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-rename-own-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProjectStructureOnly(t, tempDir, tempUserDir)
+
+	// Get project UUID for verification.
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectUUID := projectConfig.Project.UUID
+
+	// Add the current user's device (matching TestUserUUID from user config).
+	projectConfig.Users = map[string]string{
+		shared.TestUserUUID: shared.TestUserEmail,
+	}
+	projectConfig.Devices = map[string]configs.DeviceConfig{
+		shared.TestUserUUID: {
+			Email:     shared.TestUserEmail,
+			Name:      "old-device-name",
+			CreatedAt: time.Now(),
+		},
+	}
+
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
+	// Set up user config with the project entry.
+	userConfig, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config: %v", err)
+	}
+	userConfig.Projects[projectUUID] = "old-device-name"
+	if err := configs.SaveUserConfig(userConfig); err != nil {
+		t.Fatalf("Failed to save user config: %v", err)
+	}
+
+	// Rename the device.
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateConfigTestCLI("rename-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "rename-device", "--user", shared.TestUserEmail, "new-device-name"})
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Errorf("Command failed unexpectedly: %v", err)
+	}
+
+	if !strings.Contains(output, "renamed to") {
+		t.Errorf("Expected 'renamed to' message not found in output: %s", output)
+	}
+
+	// Verify project config was updated.
+	projectConfig, err = configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to reload project config: %v", err)
+	}
+	device := projectConfig.Devices[shared.TestUserUUID]
+	if device.Name != "new-device-name" {
+		t.Errorf("Expected project config device name 'new-device-name', got '%s'", device.Name)
+	}
+
+	// Verify user config was also updated.
+	userConfig, err = configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to reload user config: %v", err)
+	}
+	deviceName, exists := userConfig.Projects[projectUUID]
+	if !exists {
+		t.Errorf("Expected project entry in user config, but not found")
+	}
+	if deviceName != "new-device-name" {
+		t.Errorf("Expected user config device name 'new-device-name', got '%s'", deviceName)
+	}
+}
+
+// Tests that renaming another user's device does NOT update the current user's config.
+func testRenameOtherUserDeviceDoesNotUpdateUserConfig(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-rename-other-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+	shared.InitializeProjectStructureOnly(t, tempDir, tempUserDir)
+
+	// Get project UUID for verification.
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectUUID := projectConfig.Project.UUID
+
+	// Add another user's device (different UUID from TestUserUUID).
+	otherUserUUID := shared.TestUser2UUID
+	projectConfig.Users = map[string]string{
+		shared.TestUserUUID: shared.TestUserEmail,
+		otherUserUUID:       shared.TestUser2Email,
+	}
+	projectConfig.Devices = map[string]configs.DeviceConfig{
+		shared.TestUserUUID: {
+			Email:     shared.TestUserEmail,
+			Name:      "my-device",
+			CreatedAt: time.Now(),
+		},
+		otherUserUUID: {
+			Email:     shared.TestUser2Email,
+			Name:      "other-old-device",
+			CreatedAt: time.Now(),
+		},
+	}
+
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
+	// Set up user config with the current user's project entry.
+	userConfig, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config: %v", err)
+	}
+	userConfig.Projects[projectUUID] = "my-device"
+	if err := configs.SaveUserConfig(userConfig); err != nil {
+		t.Fatalf("Failed to save user config: %v", err)
+	}
+
+	// Rename the OTHER user's device.
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateConfigTestCLI("rename-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "rename-device", "--user", shared.TestUser2Email, "other-new-device"})
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Errorf("Command failed unexpectedly: %v", err)
+	}
+
+	if !strings.Contains(output, "renamed to") {
+		t.Errorf("Expected 'renamed to' message not found in output: %s", output)
+	}
+
+	// Verify project config was updated for the other user.
+	projectConfig, err = configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to reload project config: %v", err)
+	}
+	otherDevice := projectConfig.Devices[otherUserUUID]
+	if otherDevice.Name != "other-new-device" {
+		t.Errorf("Expected project config device name 'other-new-device', got '%s'", otherDevice.Name)
+	}
+
+	// Verify user config was NOT changed (should still be "my-device").
+	userConfig, err = configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to reload user config: %v", err)
+	}
+	deviceName, exists := userConfig.Projects[projectUUID]
+	if !exists {
+		t.Errorf("Expected project entry in user config, but not found")
+	}
+	if deviceName != "my-device" {
+		t.Errorf("Expected user config device name to remain 'my-device', got '%s'", deviceName)
 	}
 }

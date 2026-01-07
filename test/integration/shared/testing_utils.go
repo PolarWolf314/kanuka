@@ -482,6 +482,11 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 
 // CreateConfigTestCLI creates a CLI instance for testing config commands.
 func CreateConfigTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
+	return CreateConfigTestCLIWithArgs(subcommand, []string{}, stdout, stderr, verboseFlag, debugFlag)
+}
+
+// CreateConfigTestCLIWithArgs creates a CLI instance for testing config commands with extra args.
+func CreateConfigTestCLIWithArgs(subcommand string, extraArgs []string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
 	// Reset config command state
 	cmd.ResetConfigState()
 
@@ -510,8 +515,10 @@ func CreateConfigTestCLI(subcommand string, stdout, stderr io.Writer, verboseFla
 		}
 	}
 
-	// Set args to run the specified subcommand
-	rootCmd.SetArgs([]string{"config", subcommand})
+	// Build args: config <subcommand> [extraArgs...]
+	args := []string{"config", subcommand}
+	args = append(args, extraArgs...)
+	rootCmd.SetArgs(args)
 
 	// Set the flags on the config command
 	if err := cmd.GetConfigCmd().PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {

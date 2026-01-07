@@ -170,6 +170,23 @@ Examples:
 			return ConfigLogger.ErrorfAndReturn("Failed to save project config: %v", err)
 		}
 
+		// If the device being renamed belongs to the current user, also update their user config.
+		userConfig, err := configs.LoadUserConfig()
+		if err != nil {
+			ConfigLogger.Debugf("Could not load user config to check if device is owned by current user: %v", err)
+		} else if userConfig.User.UUID == targetUUID {
+			// This is the current user's device, update their [projects] section.
+			projectUUID := projectConfig.Project.UUID
+			if projectUUID != "" && userConfig.Projects != nil {
+				userConfig.Projects[projectUUID] = newName
+				if err := configs.SaveUserConfig(userConfig); err != nil {
+					ConfigLogger.Debugf("Could not update user config with new device name: %v", err)
+				} else {
+					ConfigLogger.Infof("Updated user config [projects] with new device name")
+				}
+			}
+		}
+
 		ConfigLogger.Infof("Device renamed successfully from %s to %s", oldDeviceName, newName)
 		finalMessage := color.GreenString("✓") + " Device " + color.YellowString(oldDeviceName) + " renamed to " + color.CyanString(newName) + " for " + color.YellowString(renameDeviceUserEmail) + "\n"
 		spinner.FinalMSG = finalMessage

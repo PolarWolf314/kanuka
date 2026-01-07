@@ -60,6 +60,7 @@ func ResetConfigState() {
 	configVerbose = false
 	configDebug = false
 	resetConfigInitState()
+	resetConfigShowState()
 	resetSetDeviceNameState()
 	resetRenameDeviceState()
 	resetListDevicesState()

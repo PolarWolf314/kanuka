@@ -273,7 +273,8 @@ The user config's `[projects]` section exists specifically to track which projec
 **Priority:** Low  
 **Type:** Enhancement  
 **Estimated Effort:** Small  
-**Dependencies:** None
+**Dependencies:** None  
+**Status:** ✅ COMPLETED
 
 ### Problem Statement
 
@@ -318,7 +319,8 @@ Keeping user config in sync when renaming your own device prevents confusion. Bu
 **Priority:** Medium  
 **Type:** New Feature  
 **Estimated Effort:** Small  
-**Dependencies:** Ticket 1 (for complete user config structure)
+**Dependencies:** Ticket 1 (for complete user config structure)  
+**Status:** ✅ COMPLETED
 
 ### Problem Statement
 
