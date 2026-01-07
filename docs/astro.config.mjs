@@ -25,11 +25,15 @@ export default defineConfig({
           autogenerate: { directory: "introduction" },
         },
         {
-          label: "Getting started",
+          label: "Getting Started",
           items: [
             "getting-started/installation",
             "getting-started/first-steps",
           ],
+        },
+        {
+          label: "Setup",
+          items: ["setup/user-setup", "guides/config"],
         },
         {
           label: "Secrets Management",
@@ -48,15 +52,18 @@ export default defineConfig({
             "concepts/structure",
             "concepts/encryption",
             "concepts/registration",
+            "concepts/user-configuration",
+            "concepts/project-configuration",
+            "concepts/configuration",
           ],
         },
         {
-          label: "Configuration",
+          label: "Tool Configuration",
           autogenerate: { directory: "configuration" },
         },
         {
           label: "Reference",
-          items: ["reference/references", "reference/credits"],
+          items: ["reference/references", "reference/faq", "reference/credits"],
         },
       ],
     }),

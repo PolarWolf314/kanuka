@@ -1,56 +1,111 @@
 ---
 title: Creating Secrets for Access
-description: A guide to gaining access to a repo's secrets using Kānuka.
+description: A guide to gaining access to a repo's secrets using Kanuka.
 ---
 
-Kānuka uses a combination of RSA key pairs and symmetric keys to encrypt and
-decrypt files. If you aren't the person who ran `kanuka secrets init`, you
-won't have access. You may wish to gain access to a project's secrets.
+Kanuka uses a combination of RSA key pairs and symmetric keys to encrypt and
+decrypt files. If you weren't the person who ran `kanuka secrets init`, you
+won't have access to decrypt secrets. This guide shows you how to request access.
 
 ## Creating your keys
 
-Creating your public key is very easy with Kānuka. You just need to run:
+When you join a project that uses Kanuka, you need to create your encryption keys:
 
 ```bash
 kanuka secrets create
 ```
 
-That's it! Kānuka will create your public/private key pair automatically, and
-store them securely.
+This command:
+1. Generates a public/private RSA key pair for you
+2. Stores your private key securely in your user data directory
+3. Adds your public key to the project (named with your UUID)
+4. Records your device in the project configuration
 
-:::tip
-Kānuka names the public key based on the system username. If you need to create
-your public key again, just add a `--force` flag. **This will override the
-existing public key and revoke access for that user**.
+### First-time users
+
+If this is your first time using Kanuka, you'll be prompted to set up your identity:
+
+```bash
+$ kanuka secrets create
+Welcome to Kanuka! Let's set up your identity.
+
+Enter your email: alice@example.com
+Enter your name: Alice Smith
+Enter a device name [alice-macbook]: 
+```
+
+Your identity is stored in your [user configuration](/concepts/user-configuration/)
+and reused across all projects.
+
+### Key naming
+
+Keys are named using your unique device UUID (e.g., `a1b2c3d4-5678-90ab-cdef-1234567890ab.pub`).
+This allows you to have multiple devices registered to the same email without conflicts.
+
+### Recreating keys
+
+If you need to create new keys (e.g., when switching devices or if keys are compromised):
 
 ```bash
 kanuka secrets create --force
 ```
 
+:::caution
+Using `--force` will:
+- Generate a completely new key pair
+- Override your existing public key in the project
+- Require re-registration by someone with access
 :::
+
+### Custom device names
+
+You can specify a custom device name during creation:
+
+```bash
+kanuka secrets create --device-name work-laptop
+```
 
 ## Requesting access
 
-Only people with access to the secrets can grant that privilege to others.
-Someone with access will need to run:
+After creating your keys, someone with existing access needs to register you:
 
 ```bash
-kanuka secrets register --user {your_username}
+# They run this command with your email
+kanuka secrets register --user alice@example.com
 ```
 
-For more information about granting secrets to others, feel free to read the
-[guide on registering secrets](/guides/register), or read the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
+The registering user will:
+1. Look up your public key in the project by your email
+2. Encrypt the symmetric key with your public key
+3. Create your `.kanuka` file in the secrets directory
 
-:::caution[Note]
-We are aware of some rough edges around UX. For example, what if two people
-have the same username? Kānuka is still under heavy development, so these
-features will come soon. In the meantime, if you have some good ideas, please
-[create a GitHub issue](https://github.com/PolarWolf314/kanuka/issues)!
-:::
+For more information about granting access, see the [registration guide](/guides/register/)
+or the [registration concepts](/concepts/registration/).
+
+## How it works
+
+When you run `kanuka secrets create`:
+
+1. **Key generation**: A 4096-bit RSA key pair is generated
+2. **Private key storage**: Stored at `~/.local/share/kanuka/keys/<project-uuid>/privkey`
+3. **Public key storage**: Placed in `.kanuka/public_keys/<your-uuid>.pub`
+4. **Config update**: Your device is recorded in `.kanuka/config.toml`
+
+The project's `config.toml` tracks all registered users and their devices:
+
+```toml
+[users]
+"a1b2c3d4-..." = "alice@example.com"
+"e5f6g7h8-..." = "bob@example.com"
+
+[devices."a1b2c3d4-..."]
+name = "alice-macbook"
+created_at = 2024-01-15T10:30:00Z
+```
 
 ## Next steps
 
-To learn more about `kanuka secrets create`, see the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
-
-Or, continue reading to learn how to give access to a project's secrets which
-are managed by Kānuka.
+- **[Registration guide](/guides/register/)** - Learn how to grant access to others
+- **[Registration concepts](/concepts/registration/)** - Understand the key exchange process
+- **[Project configuration](/concepts/project-configuration/)** - How users are tracked
+- **[CLI reference](/reference/references/)** - Full command documentation

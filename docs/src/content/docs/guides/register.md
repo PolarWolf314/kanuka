@@ -1,75 +1,115 @@
 ---
 title: Registering Other Users
-description: A guide to giving access to a repo's secrets using Kānuka.
+description: A guide to giving access to a repo's secrets using Kanuka.
 ---
 
-Kānuka uses a symmetric key to encrypt and decrypt files, and uses an RSA key
-pair to encrypt the symmetric key. Any user who can decrypt the symmetric key
-is able to grant access to others. You may wish to do such a thing.
+Kanuka uses a symmetric key to encrypt and decrypt files, and uses RSA key
+pairs to encrypt the symmetric key. Any user who can decrypt the symmetric key
+can grant access to others.
 
-## Granting access to others
+## Granting access to team members
 
-Granting other users access is very easy with Kānuka. Provided they have
-committed their public key, you just need to run:
+Once a team member has created their keys with `kanuka secrets create`, you can
+register them using their email address:
 
 ```bash
-kanuka secrets register --user {their_username}
+kanuka secrets register --user alice@example.com
 ```
 
-That's it! Kānuka will create their encrypted symmetric key. Commit this to
-version control and they will have access.
+This command:
+1. Looks up the user's public key in `.kanuka/public_keys/` by their email
+2. Encrypts the project's symmetric key with their public key
+3. Creates their encrypted key file in `.kanuka/secrets/`
+
+Commit these changes and they'll have access after pulling.
+
+### Multiple devices
+
+Users can have multiple devices registered under the same email. When you register
+a user by email, Kanuka registers all of their devices that have public keys in
+the project:
+
+```bash
+# Alice has two devices: macbook and desktop
+kanuka secrets register --user alice@example.com
+# Both devices are now registered
+```
 
 ## Using a custom public key
 
-If you wish to directly pass in a public key, there are two ways.
+You can register users who haven't yet created keys in the project by providing
+their public key directly.
 
 :::tip
-Kānuka accepts both OpenSSH and PEM formats for RSA key pairs. Future work
-includes having custom key types.
+Kanuka accepts both OpenSSH and PEM formats for RSA public keys.
 :::
 
-### Passing in the path to a key
+### Passing a key file path
 
-You are able to pass in the path to any public key, and Kānuka will handle
-adding it and giving access.
+Register a user by providing the path to their public key file:
 
 ```bash
-kanuka secrets register --file path/to/pubkey
+kanuka secrets register --file path/to/their-key.pub
 ```
 
-### Passing in the contents of a key
+Kanuka will:
+1. Copy the public key to `.kanuka/public_keys/`
+2. Create their encrypted symmetric key
+3. Add them to the project configuration
 
-You are also able to pass in the contents of any public key, and Kānuka will
-handle it.
+### Passing key contents directly
+
+You can also pass the public key contents as a string. This requires specifying
+a name for identification:
 
 ```bash
-# Pasting in the contents of an OpenSSH format public key
-kanuka secrets register --pubkey "ssh-rsa AAAAB3NzaC1..." --user {username}
+# Paste the contents of an OpenSSH format public key
+kanuka secrets register --pubkey "ssh-rsa AAAAB3NzaC1..." --user teammate@example.com
 
-# You can also pass in the key dynamically
-kanuka secrets register --pubkey "$(cat path/to/pubkey)" --user {username}
-
-# Or you could use shell variables
-PUBKEY_CONTENT=$(cat path/to/pubkey)
-kanuka secrets register --pubkey "$PUBKEY_CONTENT" --user {username}
+# Or pass the key dynamically
+kanuka secrets register --pubkey "$(cat path/to/pubkey)" --user teammate@example.com
 ```
 
 :::tip
-Because passing in the contents of the file inherently provides no information
-about the name of the file, the `--user` flag is required so Kānuka knows what
-to name the public key.
+The `--user` flag is required with `--pubkey` because the key contents don't
+include any identifying information.
 :::
 
-:::caution[Note]
-We are aware of some rough edges around UX. For example, what if two people
-have the same username? Kānuka is still under heavy development, so these
-features will come soon. In the meantime, if you have some good ideas, please
-[create a GitHub issue](https://github.com/PolarWolf314/kanuka/issues)!
-:::
+## Viewing registered users
+
+The project's registered users are tracked in `.kanuka/config.toml`:
+
+```toml
+[users]
+"a1b2c3d4-5678-90ab-cdef-1234567890ab" = "alice@example.com"
+"e5f6g7h8-1234-56cd-efgh-9876543210ab" = "bob@example.com"
+
+[devices."a1b2c3d4-5678-90ab-cdef-1234567890ab"]
+name = "alice-macbook"
+created_at = 2024-01-15T10:30:00Z
+```
+
+You can also see registered users by listing the public keys directory:
+
+```bash
+ls .kanuka/public_keys/
+# a1b2c3d4-5678-90ab-cdef-1234567890ab.pub
+# e5f6g7h8-1234-56cd-efgh-9876543210ab.pub
+```
+
+## Registration workflow
+
+Here's the typical workflow for adding a new team member:
+
+1. **New member joins**: They clone the repository
+2. **Create keys**: They run `kanuka secrets create`
+3. **Commit public key**: They commit and push `.kanuka/public_keys/<uuid>.pub`
+4. **Register**: You pull their changes and run `kanuka secrets register --user their@email.com`
+5. **Grant access**: You commit and push the changes
+6. **Decrypt**: They pull and can now run `kanuka secrets decrypt`
 
 ## Next steps
 
-To learn more about `kanuka secrets register`, see the [registration concepts](/concepts/registration) and the [command reference](/reference/references).
-
-Or, continue reading to learn how to revoke someone's access to a project's
-secrets.
+- **[Registration concepts](/concepts/registration/)** - Understand the key exchange process
+- **[Revoking access](/guides/revoke/)** - Remove a user's access
+- **[CLI reference](/reference/references/)** - Full command documentation
