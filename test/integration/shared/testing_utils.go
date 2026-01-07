@@ -466,3 +466,47 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 
 	return nil
 }
+
+// CreateConfigTestCLI creates a CLI instance for testing config commands.
+func CreateConfigTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
+	// Reset config command state
+	cmd.ResetConfigState()
+
+	// Create a fresh root command for this test
+	rootCmd := &cobra.Command{
+		Use:   "kanuka",
+		Short: "Kanuka - A CLI for package management, cloud provisioning, and secrets management.",
+	}
+
+	// Add the config command
+	rootCmd.AddCommand(cmd.GetConfigCmd())
+
+	// Set output streams
+	if stdout != nil {
+		rootCmd.SetOut(stdout)
+		cmd.GetConfigCmd().SetOut(stdout)
+		for _, subcmd := range cmd.GetConfigCmd().Commands() {
+			subcmd.SetOut(stdout)
+		}
+	}
+	if stderr != nil {
+		rootCmd.SetErr(stderr)
+		cmd.GetConfigCmd().SetErr(stderr)
+		for _, subcmd := range cmd.GetConfigCmd().Commands() {
+			subcmd.SetErr(stderr)
+		}
+	}
+
+	// Set args to run the specified subcommand
+	rootCmd.SetArgs([]string{"config", subcommand})
+
+	// Set the flags on the config command
+	if err := cmd.GetConfigCmd().PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {
+		log.Fatalf("Failed to set verbose flag for testing: %s", err)
+	}
+	if err := cmd.GetConfigCmd().PersistentFlags().Set("debug", fmt.Sprintf("%t", debugFlag)); err != nil {
+		log.Fatalf("Failed to set debug flag for testing: %s", err)
+	}
+
+	return rootCmd
+}

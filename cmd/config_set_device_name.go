@@ -44,7 +44,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ConfigLogger.Infof("Starting set-device-name command")
-		spinner, cleanup := startSpinner("Setting device name...", configVerbose)
+		spinner, cleanup := startSpinnerWithFlags("Setting device name...", configVerbose, configDebug)
 		defer cleanup()
 
 		deviceName := args[0]

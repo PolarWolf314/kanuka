@@ -48,7 +48,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ConfigLogger.Infof("Starting rename-device command")
-		spinner, cleanup := startSpinner("Renaming device...", configVerbose)
+		spinner, cleanup := startSpinnerWithFlags("Renaming device...", configVerbose, configDebug)
 		defer cleanup()
 
 		newName := args[0]

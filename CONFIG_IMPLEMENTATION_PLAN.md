@@ -798,9 +798,9 @@ $ kanuka secrets encrypt
 - [x] Test `secrets revoke --user` (all devices)
 - [x] Test `secrets revoke --user --device` (single device)
 - [x] Test `secrets revoke --user --yes` (non-interactive)
-- [ ] Test `config list-devices` (moved from secrets)
-- [ ] Test `config rename-device` (moved from secrets)
-- [ ] Test `config set-device-name` (new command)
+- [x] Test `config list-devices` (moved from secrets)
+- [x] Test `config rename-device` (moved from secrets)
+- [x] Test `config set-device-name` (new command)
 - [x] Test migration from legacy format
 - [x] Test multi-device scenarios
 - [x] Test email collision scenarios
@@ -1101,21 +1101,21 @@ This updates the project config and is visible to all team members.
 ### Milestone 10.6: Integration Tests for Config Commands
 
 **Tasks:**
-- [ ] Test `config set-device-name` with project UUID
-- [ ] Test `config set-device-name` in project directory
-- [ ] Test `config set-device-name` validation (invalid names)
-- [ ] Test `config rename-device` (single device, auto-infer old name)
-- [ ] Test `config rename-device` (multiple devices, explicit old name)
-- [ ] Test `config rename-device` validation (non-existent user, wrong device ownership)
-- [ ] Test `config rename-device` name uniqueness (per user)
-- [ ] Test `config list-devices` with and without `--user` filter
-- [ ] Test deprecation warning for `secrets list-devices`
-- [ ] Test that device name changes don't break encryption/decryption
+- [x] Test `config set-device-name` with project UUID
+- [x] Test `config set-device-name` in project directory
+- [x] Test `config set-device-name` validation (invalid names)
+- [x] Test `config rename-device` (single device, auto-infer old name)
+- [x] Test `config rename-device` (multiple devices, explicit old name)
+- [x] Test `config rename-device` validation (non-existent user, wrong device ownership)
+- [x] Test `config rename-device` name uniqueness (per user)
+- [x] Test `config list-devices` with and without `--user` filter
+- [ ] Test deprecation warning for `secrets list-devices` - N/A: no existing command
+- [x] Test that device name changes don't break encryption/decryption
 
 **Test files:**
-- `test/integration/config_set_device_name_test.go`
-- `test/integration/config_rename_device_test.go`
-- `test/integration/config_list_devices_test.go`
+- `test/integration/config/config_set_device_name_test.go`
+- `test/integration/config/config_rename_device_test.go`
+- `test/integration/config/config_list_devices_test.go`
 
 **Rationale:** Ensures config commands work correctly across various scenarios.
 
@@ -1124,10 +1124,10 @@ This updates the project config and is visible to all team members.
 ### Milestone 10.7: Update Rollout Plan
 
 **Tasks:**
-- [ ] Update Phase 4 (Device Identity Layer) to remove Milestone 4.4 (Rename Device Command)
-- [ ] Update Phase 4 to remove `secrets rename-device` from list-devices command
-- [ ] Update Rollout Plan to include Phase 10
-- [ ] Update Success Criteria to include config command structure
+- [x] Update Phase 4 (Device Identity Layer) to remove Milestone 4.4 (Rename Device Command)
+- [x] Update Phase 4 to remove `secrets rename-device` from list-devices command
+- [x] Update Rollout Plan to include Phase 10
+- [x] Update Success Criteria to include config command structure
 
 **Updated Rollout Plan:**
 ```markdown
@@ -1242,23 +1242,23 @@ internal/
 
 ### Functional Requirements
 
-- [ ] Users can set custom email
-- [ ] Projects have unique UUIDs
-- [ ] Files named with UUIDs (no collisions)
-- [ ] Users can manage multiple devices
-- [ ] Revoke works correctly (all devices, one device)
-- [ ] Legacy projects migrate automatically
-- [ ] Users can set device name preferences (config set-device-name)
-- [ ] Project maintainers can rename devices (config rename-device)
-- [ ] Device names are managed via `kanuka config` commands
+- [x] Users can set custom email
+- [x] Projects have unique UUIDs
+- [x] Files named with UUIDs (no collisions)
+- [x] Users can manage multiple devices
+- [x] Revoke works correctly (all devices, one device)
+- [x] Legacy projects migrate automatically
+- [x] Users can set device name preferences (config set-device-name)
+- [x] Project maintainers can rename devices (config rename-device)
+- [x] Device names are managed via `kanuka config` commands
 
 ### Non-Functional Requirements
 
-- [ ] All existing tests pass
-- [ ] New tests cover edge cases
-- [ ] Documentation is clear and complete
-- [ ] Migration is transparent to users
-- [ ] No breaking changes for existing workflows
+- [x] All existing tests pass
+- [x] New tests cover edge cases
+- [x] Documentation is clear and complete
+- [x] Migration is transparent to users
+- [x] No breaking changes for existing workflows
 
 ---
 
