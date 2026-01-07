@@ -44,6 +44,13 @@ type DeviceConfig struct {
 	CreatedAt time.Time `toml:"created_at"`
 }
 
+// KeyMetadata stores metadata about a project's keys in the user's key directory.
+type KeyMetadata struct {
+	ProjectName string    `toml:"project_name"`
+	ProjectPath string    `toml:"project_path"`
+	CreatedAt   time.Time `toml:"created_at"`
+}
+
 var (
 	GlobalUserConfig    *UserConfig
 	GlobalProjectConfig *ProjectConfig
@@ -137,6 +144,54 @@ func SaveProjectConfig(config *ProjectConfig) error {
 // GenerateProjectUUID generates a new UUID for the project.
 func GenerateProjectUUID() string {
 	return uuid.New().String()
+}
+
+// GetKeyDirPath returns the path to the key directory for a given project UUID.
+func GetKeyDirPath(projectUUID string) string {
+	return filepath.Join(UserKanukaSettings.UserKeysPath, projectUUID)
+}
+
+// GetPrivateKeyPath returns the path to the private key for a given project UUID.
+func GetPrivateKeyPath(projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(projectUUID), "privkey")
+}
+
+// GetPublicKeyPath returns the path to the public key for a given project UUID.
+func GetPublicKeyPath(projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(projectUUID), "pubkey.pub")
+}
+
+// GetKeyMetadataPath returns the path to the metadata file for a given project UUID.
+func GetKeyMetadataPath(projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(projectUUID), "metadata.toml")
+}
+
+// SaveKeyMetadata saves the key metadata to the project's key directory.
+func SaveKeyMetadata(projectUUID string, metadata *KeyMetadata) error {
+	metadataPath := GetKeyMetadataPath(projectUUID)
+
+	if err := SaveTOML(metadataPath, metadata); err != nil {
+		return fmt.Errorf("failed to save key metadata: %w", err)
+	}
+
+	return nil
+}
+
+// LoadKeyMetadata loads the key metadata from the project's key directory.
+func LoadKeyMetadata(projectUUID string) (*KeyMetadata, error) {
+	metadataPath := GetKeyMetadataPath(projectUUID)
+
+	metadata := &KeyMetadata{}
+
+	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("key metadata not found for project %s", projectUUID)
+	}
+
+	if err := LoadTOML(metadataPath, metadata); err != nil {
+		return nil, fmt.Errorf("failed to load key metadata: %w", err)
+	}
+
+	return metadata, nil
 }
 
 // GetUserUUIDByEmail looks up a user UUID by their email in the project config.

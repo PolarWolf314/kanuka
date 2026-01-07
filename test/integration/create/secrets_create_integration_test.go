@@ -97,12 +97,14 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 	// Verify no user keys exist yet
 	projectUUID := shared.GetProjectUUID(t)
 	userUUID := shared.GetUserUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	// Remove any existing keys from init (if any)
-	os.Remove(privateKeyPath)
-	os.Remove(privateKeyPath + ".pub")
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 
 	output, err := shared.CaptureOutput(func() error {
@@ -130,7 +132,6 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 		t.Errorf("Private key was not created at %s", privateKeyPath)
 	}
 
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
 	if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
 		t.Errorf("Public key was not created at %s", publicKeyPath)
 	}
@@ -210,7 +211,7 @@ func testCreateWithForceFlag(t *testing.T, originalWd string, originalUserSettin
 	}
 
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	originalKeyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {

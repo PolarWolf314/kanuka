@@ -72,8 +72,9 @@ func testMultipleProjectSupport(t *testing.T, originalWd string, originalUserSet
 	}
 
 	project1UUID := shared.GetProjectUUID(t)
-	project1PrivateKey := filepath.Join(tempUserDir, "keys", project1UUID)
-	project1PublicKey := filepath.Join(tempUserDir, "keys", project1UUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	project1PrivateKey := shared.GetPrivateKeyPath(keysDir, project1UUID)
+	project1PublicKey := shared.GetPublicKeyPath(keysDir, project1UUID)
 
 	// Verify first project keys exist
 	if _, err := os.Stat(project1PrivateKey); os.IsNotExist(err) {
@@ -97,8 +98,8 @@ func testMultipleProjectSupport(t *testing.T, originalWd string, originalUserSet
 	}
 
 	project2UUID := shared.GetProjectUUID(t)
-	project2PrivateKey := filepath.Join(tempUserDir, "keys", project2UUID)
-	project2PublicKey := filepath.Join(tempUserDir, "keys", project2UUID+".pub")
+	project2PrivateKey := shared.GetPrivateKeyPath(keysDir, project2UUID)
+	project2PublicKey := shared.GetPublicKeyPath(keysDir, project2UUID)
 
 	// Verify second project keys exist
 	if _, err := os.Stat(project2PrivateKey); os.IsNotExist(err) {
@@ -167,7 +168,7 @@ func testProjectNameHandling(t *testing.T, originalWd string, originalUserSettin
 
 			if tc.shouldWork {
 				projectUUID := shared.GetProjectUUID(t)
-				privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+				privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 				if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 					t.Errorf("Private key not created for project %s", tc.name)
 				}

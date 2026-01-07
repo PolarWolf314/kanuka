@@ -429,8 +429,6 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 	projectUUID := projectConfig.Project.UUID
 
-	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
-
 	Logger.Debugf("Current user UUID: %s, Project UUID: %s", currentUserUUID, projectUUID)
 
 	var revokedFiles []string
@@ -486,7 +484,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 		spinner.Suffix = " Rotating symmetric key for remaining users..."
 		Logger.Infof("Rotating symmetric key for %d remaining users", len(allUsers))
 
-		privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
+		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			Logger.Errorf("Failed to load private key: %v", err)

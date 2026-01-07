@@ -213,9 +213,10 @@ func testEncryptWithoutAccess(t *testing.T, originalWd string, originalUserSetti
 
 	// Remove the user's private key to simulate no access
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	if err := os.Remove(privateKeyPath); err != nil {
-		t.Fatalf("Failed to remove private key: %v", err)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	if err := os.RemoveAll(keyDir); err != nil {
+		t.Fatalf("Failed to remove key directory: %v", err)
 	}
 
 	output, err := shared.CaptureOutput(func() error {

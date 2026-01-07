@@ -175,8 +175,9 @@ func testCustomDataDirectories(t *testing.T, originalWd string, originalUserSett
 
 	// Verify keys were created in custom directory
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(customDataDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(customDataDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(customDataDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created in custom data directory")
@@ -186,7 +187,6 @@ func testCustomDataDirectories(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify directory structure was created
-	keysDir := filepath.Join(customDataDir, "keys")
 	configDir := filepath.Join(customDataDir, "config")
 
 	if _, err := os.Stat(keysDir); os.IsNotExist(err) {
@@ -231,7 +231,7 @@ func testUserDirectoryPermissions(t *testing.T, originalWd string, originalUserS
 
 	// Verify keys were created
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created with proper permissions")
 	}

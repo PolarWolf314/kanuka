@@ -72,12 +72,12 @@ func testReadOnlyProjectDirectory(t *testing.T, originalWd string, originalUserS
 	defer func() { _ = os.Chmod(tempDir, 0755) }() // Restore permissions for cleanup
 
 	// Clean up any existing keys first to test actual permission behavior
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 
 	// Try to create keys - should fail gracefully due to read-only project directory
@@ -145,12 +145,11 @@ func testReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSett
 	userUUID := shared.GetUserUUID(t)
 
 	// Clean up any existing keys first to test actual permission behavior
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 
 	// Try to create keys - should fail gracefully due to read-only user directory

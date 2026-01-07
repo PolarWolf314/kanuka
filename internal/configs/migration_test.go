@@ -219,7 +219,7 @@ func TestMigrateProject(t *testing.T) {
 }
 
 func TestMigrateUserKeys(t *testing.T) {
-	t.Run("MigratesLegacyKeys", func(t *testing.T) {
+	t.Run("MigratesLegacyProjectNameKeys", func(t *testing.T) {
 		tempDir := t.TempDir()
 		oldKeysPath := UserKanukaSettings.UserKeysPath
 		UserKanukaSettings.UserKeysPath = tempDir
@@ -230,7 +230,7 @@ func TestMigrateUserKeys(t *testing.T) {
 		projectName := "my-project"
 		projectUUID := "550e8400-e29b-41d4-a716-446655440000"
 
-		// Create legacy key files.
+		// Create legacy project-name based key files.
 		if err := os.WriteFile(filepath.Join(tempDir, projectName), []byte("private-key"), 0600); err != nil {
 			t.Fatalf("Failed to create private key: %v", err)
 		}
@@ -243,24 +243,74 @@ func TestMigrateUserKeys(t *testing.T) {
 			t.Fatalf("MigrateUserKeys failed: %v", err)
 		}
 
-		// Verify old files were renamed.
+		// Verify old files were removed.
 		if _, err := os.Stat(filepath.Join(tempDir, projectName)); !os.IsNotExist(err) {
-			t.Fatal("Old private key should have been renamed")
+			t.Fatal("Old private key should have been removed")
 		}
 		if _, err := os.Stat(filepath.Join(tempDir, projectName+".pub")); !os.IsNotExist(err) {
-			t.Fatal("Old public key should have been renamed")
+			t.Fatal("Old public key should have been removed")
 		}
 
-		// Verify new files exist.
-		if _, err := os.Stat(filepath.Join(tempDir, projectUUID)); os.IsNotExist(err) {
+		// Verify new directory structure exists.
+		keyDir := filepath.Join(tempDir, projectUUID)
+		if _, err := os.Stat(keyDir); os.IsNotExist(err) {
+			t.Fatal("New key directory was not created")
+		}
+		if _, err := os.Stat(filepath.Join(keyDir, "privkey")); os.IsNotExist(err) {
 			t.Fatal("New private key was not created")
 		}
-		if _, err := os.Stat(filepath.Join(tempDir, projectUUID+".pub")); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(keyDir, "pubkey.pub")); os.IsNotExist(err) {
 			t.Fatal("New public key was not created")
 		}
 	})
 
-	t.Run("DoesNotOverwriteExistingKeys", func(t *testing.T) {
+	t.Run("MigratesUUIDFlatFilesToDirectory", func(t *testing.T) {
+		tempDir := t.TempDir()
+		oldKeysPath := UserKanukaSettings.UserKeysPath
+		UserKanukaSettings.UserKeysPath = tempDir
+		defer func() {
+			UserKanukaSettings.UserKeysPath = oldKeysPath
+		}()
+
+		projectName := "my-project"
+		projectUUID := "550e8400-e29b-41d4-a716-446655440000"
+
+		// Create UUID-based flat key files (intermediate migration state).
+		if err := os.WriteFile(filepath.Join(tempDir, projectUUID), []byte("private-key"), 0600); err != nil {
+			t.Fatalf("Failed to create private key: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(tempDir, projectUUID+".pub"), []byte("public-key"), 0600); err != nil {
+			t.Fatalf("Failed to create public key: %v", err)
+		}
+
+		err := MigrateUserKeys(projectName, projectUUID)
+		if err != nil {
+			t.Fatalf("MigrateUserKeys failed: %v", err)
+		}
+
+		// Verify old flat public key file was removed.
+		if _, err := os.Stat(filepath.Join(tempDir, projectUUID+".pub")); !os.IsNotExist(err) {
+			t.Fatal("Old flat public key should have been removed")
+		}
+
+		// Verify the path is now a directory (not a flat file).
+		keyDir := filepath.Join(tempDir, projectUUID)
+		info, err := os.Stat(keyDir)
+		if err != nil {
+			t.Fatalf("Failed to stat key directory: %v", err)
+		}
+		if !info.IsDir() {
+			t.Fatal("Expected path to be a directory after migration")
+		}
+		if _, err := os.Stat(filepath.Join(keyDir, "privkey")); os.IsNotExist(err) {
+			t.Fatal("New private key was not created")
+		}
+		if _, err := os.Stat(filepath.Join(keyDir, "pubkey.pub")); os.IsNotExist(err) {
+			t.Fatal("New public key was not created")
+		}
+	})
+
+	t.Run("DoesNotOverwriteExistingDirectoryKeys", func(t *testing.T) {
 		tempDir := t.TempDir()
 		oldKeysPath := UserKanukaSettings.UserKeysPath
 		UserKanukaSettings.UserKeysPath = tempDir
@@ -273,11 +323,15 @@ func TestMigrateUserKeys(t *testing.T) {
 
 		// Create legacy key files.
 		if err := os.WriteFile(filepath.Join(tempDir, projectName), []byte("old-private"), 0600); err != nil {
-			t.Fatalf("Failed to create private key: %v", err)
+			t.Fatalf("Failed to create legacy private key: %v", err)
 		}
 
-		// Create new key files that should NOT be overwritten.
-		if err := os.WriteFile(filepath.Join(tempDir, projectUUID), []byte("new-private"), 0600); err != nil {
+		// Create new directory structure that should NOT be overwritten.
+		keyDir := filepath.Join(tempDir, projectUUID)
+		if err := os.MkdirAll(keyDir, 0700); err != nil {
+			t.Fatalf("Failed to create key directory: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(keyDir, "privkey"), []byte("new-private"), 0600); err != nil {
 			t.Fatalf("Failed to create new private key: %v", err)
 		}
 
@@ -287,7 +341,7 @@ func TestMigrateUserKeys(t *testing.T) {
 		}
 
 		// Verify new key was NOT overwritten.
-		content, err := os.ReadFile(filepath.Join(tempDir, projectUUID))
+		content, err := os.ReadFile(filepath.Join(keyDir, "privkey"))
 		if err != nil {
 			t.Fatalf("Failed to read new private key: %v", err)
 		}

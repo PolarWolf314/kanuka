@@ -189,8 +189,6 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 }
 
 func registerUserWithPublicKey(targetUserUUID string, targetPublicKey *rsa.PublicKey) error {
-	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
-
 	// Get current user's UUID
 	userConfig, err := configs.EnsureUserConfig()
 	if err != nil {
@@ -216,7 +214,7 @@ func registerUserWithPublicKey(targetUserUUID string, targetPublicKey *rsa.Publi
 	}
 
 	// Get current user's private key using project UUID
-	privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 	Logger.Debugf("Loading private key from: %s", privateKeyPath)
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 	if err != nil {
@@ -252,8 +250,6 @@ func registerUserWithPublicKey(targetUserUUID string, targetPublicKey *rsa.Publi
 }
 
 func handleUserRegistration(spinner *spinner.Spinner) error {
-	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
-
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 
@@ -321,7 +317,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	}
 
 	// Get current user's private key using project UUID
-	privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 	Logger.Debugf("Loading private key from: %s", privateKeyPath)
 
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
@@ -369,8 +365,6 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 }
 
 func handleCustomFileRegistration(spinner *spinner.Spinner) error {
-	currentUserKeysPath := configs.UserKanukaSettings.UserKeysPath
-
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	Logger.Debugf("Custom file path: %s", customFilePath)
 
@@ -428,7 +422,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	}
 
 	// Get current user's private key using project UUID
-	privateKeyPath := filepath.Join(currentUserKeysPath, projectUUID)
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 	if err != nil {

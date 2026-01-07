@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
@@ -67,8 +66,7 @@ var encryptCmd = &cobra.Command{
 		}
 		projectUUID := projectConfig.Project.UUID
 
-		userKeysPath := configs.UserKanukaSettings.UserKeysPath
-		Logger.Debugf("User UUID: %s, User keys path: %s", userUUID, userKeysPath)
+		Logger.Debugf("User UUID: %s", userUUID)
 
 		Logger.Debugf("Getting project kanuka key for user: %s", userUUID)
 		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
@@ -81,7 +79,7 @@ var encryptCmd = &cobra.Command{
 			return nil
 		}
 
-		privateKeyPath := filepath.Join(userKeysPath, projectUUID)
+		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 		Logger.Debugf("Loading private key from: %s", privateKeyPath)
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {

@@ -299,16 +299,28 @@ func VerifyUserKeys(t *testing.T, tempUserDir string) {
 		projectUUID = TestProjectUUID
 	}
 
-	// Check private key exists (named by project UUID)
-	privateKeyFile := filepath.Join(keysDir, projectUUID)
+	// Check key directory exists (named by project UUID)
+	keyDir := filepath.Join(keysDir, projectUUID)
+	if _, err := os.Stat(keyDir); os.IsNotExist(err) {
+		t.Errorf("Key directory was not created at %s", keyDir)
+	}
+
+	// Check private key exists inside key directory
+	privateKeyFile := filepath.Join(keyDir, "privkey")
 	if _, err := os.Stat(privateKeyFile); os.IsNotExist(err) {
 		t.Errorf("Private key file was not created at %s", privateKeyFile)
 	}
 
-	// Check public key exists (named by project UUID)
-	publicKeyFile := filepath.Join(keysDir, projectUUID+".pub")
+	// Check public key exists inside key directory
+	publicKeyFile := filepath.Join(keyDir, "pubkey.pub")
 	if _, err := os.Stat(publicKeyFile); os.IsNotExist(err) {
 		t.Errorf("Public key file was not created at %s", publicKeyFile)
+	}
+
+	// Check metadata.toml exists inside key directory
+	metadataFile := filepath.Join(keyDir, "metadata.toml")
+	if _, err := os.Stat(metadataFile); os.IsNotExist(err) {
+		t.Errorf("Metadata file was not created at %s", metadataFile)
 	}
 }
 
@@ -529,4 +541,28 @@ func CreateConfigTestCLIWithArgs(subcommand string, extraArgs []string, stdout, 
 	}
 
 	return rootCmd
+}
+
+// GetKeyDirPath returns the path to the key directory for a given project UUID.
+// This follows the new directory structure: {keysDir}/{projectUUID}/.
+func GetKeyDirPath(keysDir, projectUUID string) string {
+	return filepath.Join(keysDir, projectUUID)
+}
+
+// GetPrivateKeyPath returns the path to the private key for a given project UUID.
+// This follows the new directory structure: {keysDir}/{projectUUID}/privkey.
+func GetPrivateKeyPath(keysDir, projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(keysDir, projectUUID), "privkey")
+}
+
+// GetPublicKeyPath returns the path to the public key for a given project UUID.
+// This follows the new directory structure: {keysDir}/{projectUUID}/pubkey.pub.
+func GetPublicKeyPath(keysDir, projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(keysDir, projectUUID), "pubkey.pub")
+}
+
+// GetMetadataPath returns the path to the metadata file for a given project UUID.
+// This follows the new directory structure: {keysDir}/{projectUUID}/metadata.toml.
+func GetMetadataPath(keysDir, projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(keysDir, projectUUID), "metadata.toml")
 }

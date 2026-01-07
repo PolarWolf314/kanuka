@@ -413,7 +413,11 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	}
 
 	projectUUID := shared.GetProjectUUID(t)
-	userBPrivateKeyPath := filepath.Join(userBKeysDir, projectUUID)
+	userBKeyDir := shared.GetKeyDirPath(userBKeysDir, projectUUID)
+	if err := os.MkdirAll(userBKeyDir, 0700); err != nil {
+		t.Fatalf("Failed to create User B's key directory: %v", err)
+	}
+	userBPrivateKeyPath := shared.GetPrivateKeyPath(userBKeysDir, projectUUID)
 	if err := savePrivateKeyToFile(userBKeyPair.privateKey, userBPrivateKeyPath); err != nil {
 		t.Fatalf("Failed to save User B's private key: %v", err)
 	}

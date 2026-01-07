@@ -71,8 +71,9 @@ func testWindowsPathHandling(t *testing.T, originalWd string, originalUserSettin
 	}
 
 	// Verify keys were created with Windows path separators (using project UUID)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created on Windows")
@@ -121,8 +122,9 @@ func testUnixPathHandling(t *testing.T, originalWd string, originalUserSettings 
 	}
 
 	// Verify keys were created (using project UUID, not project name)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created on Unix")
@@ -144,7 +146,6 @@ func testUnixPathHandling(t *testing.T, originalWd string, originalUserSettings 
 		}
 	}
 
-	keysDir := filepath.Join(tempUserDir, "keys")
 	keysDirInfo, err := os.Stat(keysDir)
 	if err != nil {
 		t.Errorf("Failed to stat keys directory: %v", err)
@@ -187,7 +188,7 @@ func testPathSeparatorHandling(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify that filepath.Join was used correctly by checking the created paths
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	// The path should exist regardless of platform
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
@@ -258,8 +259,9 @@ func testSpecialCharactersInPaths(t *testing.T, originalWd string, originalUserS
 
 			if tc.shouldWork {
 				// Verify keys were created despite special characters (using project UUID)
-				privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-				publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+				keysDir := filepath.Join(tempUserDir, "keys")
+				privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+				publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 				if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 					t.Errorf("Private key not created for path with special characters: %s", tc.name)

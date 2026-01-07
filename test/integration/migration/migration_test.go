@@ -380,19 +380,23 @@ func TestMigrateUserKeys(t *testing.T) {
 			t.Fatalf("MigrateUserKeys failed: %v", err)
 		}
 
-		// Verify old files were renamed.
+		// Verify old files were removed.
 		if _, err := os.Stat(filepath.Join(tempDir, projectName)); !os.IsNotExist(err) {
-			t.Fatal("Old private key should have been renamed")
+			t.Fatal("Old private key should have been removed")
 		}
 		if _, err := os.Stat(filepath.Join(tempDir, projectName+".pub")); !os.IsNotExist(err) {
-			t.Fatal("Old public key should have been renamed")
+			t.Fatal("Old public key should have been removed")
 		}
 
-		// Verify new files exist.
-		if _, err := os.Stat(filepath.Join(tempDir, projectUUID)); os.IsNotExist(err) {
+		// Verify new directory structure exists.
+		keyDir := filepath.Join(tempDir, projectUUID)
+		if _, err := os.Stat(keyDir); os.IsNotExist(err) {
+			t.Fatal("New key directory was not created")
+		}
+		if _, err := os.Stat(filepath.Join(keyDir, "privkey")); os.IsNotExist(err) {
 			t.Fatal("New private key was not created")
 		}
-		if _, err := os.Stat(filepath.Join(tempDir, projectUUID+".pub")); os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(keyDir, "pubkey.pub")); os.IsNotExist(err) {
 			t.Fatal("New public key was not created")
 		}
 	})
@@ -411,8 +415,12 @@ func TestMigrateUserKeys(t *testing.T) {
 			t.Fatalf("Failed to create private key: %v", err)
 		}
 
-		// Create existing UUID key that should NOT be overwritten.
-		if err := os.WriteFile(filepath.Join(tempDir, projectUUID), []byte("new-private"), 0600); err != nil {
+		// Create existing directory structure that should NOT be overwritten.
+		keyDir := filepath.Join(tempDir, projectUUID)
+		if err := os.MkdirAll(keyDir, 0700); err != nil {
+			t.Fatalf("Failed to create key directory: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(keyDir, "privkey"), []byte("new-private"), 0600); err != nil {
 			t.Fatalf("Failed to create new private key: %v", err)
 		}
 
@@ -422,7 +430,7 @@ func TestMigrateUserKeys(t *testing.T) {
 		}
 
 		// Verify new key was NOT overwritten.
-		content, err := os.ReadFile(filepath.Join(tempDir, projectUUID))
+		content, err := os.ReadFile(filepath.Join(keyDir, "privkey"))
 		if err != nil {
 			t.Fatalf("Failed to read new private key: %v", err)
 		}

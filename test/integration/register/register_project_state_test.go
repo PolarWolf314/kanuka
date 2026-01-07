@@ -162,9 +162,10 @@ func testRegisterWhenCurrentUserPrivateKeyMissing(t *testing.T, originalWd strin
 
 	// Remove the current user's private key
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	if err := os.Remove(privateKeyPath); err != nil {
-		t.Fatalf("Failed to remove private key: %v", err)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	if err := os.RemoveAll(keyDir); err != nil {
+		t.Fatalf("Failed to remove key directory: %v", err)
 	}
 
 	// Create target user's public key
@@ -379,7 +380,8 @@ func testRegisterWithCorruptedPrivateKey(t *testing.T, originalWd string, origin
 
 	// Corrupt the current user's private key
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
 	if err := os.WriteFile(privateKeyPath, []byte("corrupted private key data"), 0600); err != nil {
 		t.Fatalf("Failed to corrupt private key: %v", err)
 	}

@@ -66,8 +66,9 @@ func testKeyGenerationAndStorage(t *testing.T, originalWd string, originalUserSe
 	}
 
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	privateKeyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {
@@ -124,7 +125,7 @@ func testPublicKeyCopying(t *testing.T, originalWd string, originalUserSettings 
 	projectUUID := shared.GetProjectUUID(t)
 	userUUID := shared.GetUserUUID(t)
 
-	userPublicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	userPublicKeyPath := shared.GetPublicKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	userKeyData, err := os.ReadFile(userPublicKeyPath)
@@ -210,7 +211,7 @@ func testFilePermissions(t *testing.T, originalWd string, originalUserSettings *
 	projectUUID := shared.GetProjectUUID(t)
 	userUUID := shared.GetUserUUID(t)
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	privateKeyInfo, err := os.Stat(privateKeyPath)
 	if err != nil {
 		t.Errorf("Failed to stat private key: %v", err)

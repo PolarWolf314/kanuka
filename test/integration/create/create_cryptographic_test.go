@@ -68,7 +68,7 @@ func testRSAKeyGeneration(t *testing.T, originalWd string, originalUserSettings 
 		t.Errorf("Command failed: %v", err)
 	}
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	// Load and validate the private key
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
@@ -132,8 +132,8 @@ func testPEMFormatValidation(t *testing.T, originalWd string, originalUserSettin
 		t.Errorf("Command failed: %v", err)
 	}
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	// Test private key PEM format
 	privateKeyData, err := os.ReadFile(privateKeyPath)
@@ -227,8 +227,8 @@ func testKeyPairMatching(t *testing.T, originalWd string, originalUserSettings *
 		t.Errorf("Command failed: %v", err)
 	}
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	// Load both keys
 	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
@@ -316,8 +316,8 @@ func testKeyUniqueness(t *testing.T, originalWd string, originalUserSettings *co
 			continue
 		}
 
-		privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-		publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+		privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
+		publicKeyPath := shared.GetPublicKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {

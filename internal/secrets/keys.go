@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
@@ -115,13 +116,14 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 }
 
 // CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
-// It uses the project UUID from the project config to name the key files.
+// It uses the project UUID from the project config to create a subdirectory for the key files.
+// The new structure is: ~/.local/share/kanuka/keys/{project_uuid}/privkey, pubkey.pub, metadata.toml.
 func CreateAndSaveRSAKeyPair(verbose bool) error {
 	if err := configs.InitProjectSettings(); err != nil {
 		return fmt.Errorf("failed to init project settings: %w", err)
 	}
 
-	// Load project config to get project UUID
+	// Load project config to get project UUID and name
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load project config: %w", err)
@@ -132,18 +134,29 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 		return fmt.Errorf("project UUID not found in project config")
 	}
 
-	// Create key paths using project UUID
-	keysDir := configs.UserKanukaSettings.UserKeysPath
-	privateKeyPath := filepath.Join(keysDir, projectUUID)
-	publicKeyPath := privateKeyPath + ".pub"
-
-	// Ensure key directory exists
-	if err := os.MkdirAll(keysDir, 0700); err != nil {
-		return fmt.Errorf("failed to create keys directory at %s: %w", keysDir, err)
+	// Create key directory for this project
+	keyDir := configs.GetKeyDirPath(projectUUID)
+	if err := os.MkdirAll(keyDir, 0700); err != nil {
+		return fmt.Errorf("failed to create key directory at %s: %w", keyDir, err)
 	}
+
+	// Create key paths using new structure
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
+	publicKeyPath := configs.GetPublicKeyPath(projectUUID)
 
 	if err := GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
 		return fmt.Errorf("failed to generate or save RSA key pair for project %s: %w", projectUUID, err)
+	}
+
+	// Create metadata.toml with project information
+	metadata := &configs.KeyMetadata{
+		ProjectName: projectConfig.Project.Name,
+		ProjectPath: configs.ProjectKanukaSettings.ProjectPath,
+		CreatedAt:   time.Now(),
+	}
+
+	if err := configs.SaveKeyMetadata(projectUUID, metadata); err != nil {
+		return fmt.Errorf("failed to save key metadata for project %s: %w", projectUUID, err)
 	}
 
 	return nil
@@ -179,10 +192,9 @@ func CopyUserPublicKeyToProject() (string, error) {
 	}
 
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-	userKeysPath := configs.UserKanukaSettings.UserKeysPath
 
-	// Source key is named with project UUID
-	sourceKeyPath := filepath.Join(userKeysPath, projectUUID+".pub")
+	// Source key is in the project's key directory
+	sourceKeyPath := configs.GetPublicKeyPath(projectUUID)
 	// Destination key is named with user UUID
 	destKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 

@@ -246,38 +246,87 @@ func migrateUserFiles(projectPath string, projectConfig *ProjectConfig) ([]Migra
 	return migratedUsers, nil
 }
 
-// MigrateUserKeys migrates the user's local private keys from project-name to project-UUID naming.
+// MigrateUserKeys migrates the user's local private keys from legacy formats to the new directory structure.
+// Supported migrations:
+// 1. From project-name based files: {keysDir}/{projectName}, {keysDir}/{projectName}.pub
+// 2. From UUID-based flat files: {keysDir}/{projectUUID}, {keysDir}/{projectUUID}.pub
+// To new structure: {keysDir}/{projectUUID}/privkey, {keysDir}/{projectUUID}/pubkey.pub.
 func MigrateUserKeys(projectName, projectUUID string) error {
 	keysDir := UserKanukaSettings.UserKeysPath
 
-	// Check if legacy key exists.
+	// Check if already migrated to new directory structure.
+	newKeyDir := GetKeyDirPath(projectUUID)
+	newPrivateKeyPath := GetPrivateKeyPath(projectUUID)
+	newPublicKeyPath := GetPublicKeyPath(projectUUID)
+
+	if _, err := os.Stat(newPrivateKeyPath); err == nil {
+		// New key already exists in directory structure, migration complete.
+		return nil
+	}
+
+	// Try legacy project-name based keys first.
 	oldPrivateKeyPath := filepath.Join(keysDir, projectName)
 	oldPublicKeyPath := filepath.Join(keysDir, projectName+".pub")
 
-	newPrivateKeyPath := filepath.Join(keysDir, projectUUID)
-	newPublicKeyPath := filepath.Join(keysDir, projectUUID+".pub")
+	// Check if UUID-based flat files exist (intermediate migration state).
+	uuidPrivateKeyPath := filepath.Join(keysDir, projectUUID)
+	uuidPublicKeyPath := filepath.Join(keysDir, projectUUID+".pub")
 
-	// Rename private key if it exists.
+	var sourcePrivateKey, sourcePublicKey string
+	var isUUIDFlatFile bool
+
+	// Determine source paths.
 	if _, err := os.Stat(oldPrivateKeyPath); err == nil {
-		// Check if new key already exists.
-		if _, err := os.Stat(newPrivateKeyPath); err == nil {
-			// New key already exists, don't overwrite.
-			return nil
+		sourcePrivateKey = oldPrivateKeyPath
+		sourcePublicKey = oldPublicKeyPath
+	} else if info, err := os.Stat(uuidPrivateKeyPath); err == nil && !info.IsDir() {
+		// UUID-based flat file exists (not a directory).
+		sourcePrivateKey = uuidPrivateKeyPath
+		sourcePublicKey = uuidPublicKeyPath
+		isUUIDFlatFile = true
+	} else {
+		// No legacy keys to migrate.
+		return nil
+	}
+
+	// For UUID flat files, we need to handle the special case where the file
+	// is at the same path as the directory we want to create.
+	if isUUIDFlatFile {
+		// Move the flat files to temporary locations first.
+		tempPrivateKey := sourcePrivateKey + ".migrating"
+		tempPublicKey := sourcePublicKey + ".migrating"
+
+		if _, err := os.Stat(sourcePrivateKey); err == nil {
+			if err := os.Rename(sourcePrivateKey, tempPrivateKey); err != nil {
+				return fmt.Errorf("failed to move private key to temp location: %w", err)
+			}
+			sourcePrivateKey = tempPrivateKey
 		}
-		if err := os.Rename(oldPrivateKeyPath, newPrivateKeyPath); err != nil {
-			return fmt.Errorf("failed to rename private key: %w", err)
+
+		if _, err := os.Stat(sourcePublicKey); err == nil {
+			if err := os.Rename(sourcePublicKey, tempPublicKey); err != nil {
+				return fmt.Errorf("failed to move public key to temp location: %w", err)
+			}
+			sourcePublicKey = tempPublicKey
 		}
 	}
 
-	// Rename public key if it exists.
-	if _, err := os.Stat(oldPublicKeyPath); err == nil {
-		// Check if new key already exists.
-		if _, err := os.Stat(newPublicKeyPath); err == nil {
-			// New key already exists, don't overwrite.
-			return nil
+	// Create new key directory.
+	if err := os.MkdirAll(newKeyDir, 0700); err != nil {
+		return fmt.Errorf("failed to create key directory: %w", err)
+	}
+
+	// Move private key if it exists.
+	if _, err := os.Stat(sourcePrivateKey); err == nil {
+		if err := os.Rename(sourcePrivateKey, newPrivateKeyPath); err != nil {
+			return fmt.Errorf("failed to migrate private key: %w", err)
 		}
-		if err := os.Rename(oldPublicKeyPath, newPublicKeyPath); err != nil {
-			return fmt.Errorf("failed to rename public key: %w", err)
+	}
+
+	// Move public key if it exists.
+	if _, err := os.Stat(sourcePublicKey); err == nil {
+		if err := os.Rename(sourcePublicKey, newPublicKeyPath); err != nil {
+			return fmt.Errorf("failed to migrate public key: %w", err)
 		}
 	}
 

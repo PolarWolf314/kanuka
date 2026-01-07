@@ -65,8 +65,9 @@ func testForceWithExistingKeys(t *testing.T, originalWd string, originalUserSett
 	projectUUID := shared.GetProjectUUID(t)
 	userUUID := shared.GetUserUUID(t)
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	// Read original keys
@@ -214,13 +215,14 @@ func testForceWithoutExistingKeys(t *testing.T, originalWd string, originalUserS
 	// Remove any existing keys from init to ensure clean state
 	projectUUID := shared.GetProjectUUID(t)
 	userUUID := shared.GetUserUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectUUID+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 	os.Remove(kanukaFilePath)
 
@@ -307,7 +309,7 @@ func testForceFlagWarnings(t *testing.T, originalWd string, originalUserSettings
 
 	// Verify that the command completed successfully despite overwriting
 	projectUUID := shared.GetProjectUUID(t)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key was not created after force")
 	}
