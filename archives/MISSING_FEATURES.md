@@ -7,3 +7,5 @@
 - There is missing documentation on `kanuka config` commands, how they work, and their concepts. There also needs to be another page explaining the new toml files and how they work together (user config and project config).
 - `kanuka secrets register` doesn't list out the paths of the files created, only the name. We should consider listing out the full path for clarity and consistency with encryption.
 - Encryption output is non-deterministic. There is a diff when we run encrypt again on the exact same .env file. Admittedly I don't know how much of an issue this is, but it would be good to not have a diff when we encrypt something that is exactly the same.
+
+- user config projects heading should also say the name of the project just for reference

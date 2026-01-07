@@ -181,7 +181,18 @@ func CaptureOutput(fn func() error) (string, error) {
 }
 
 // CreateTestCLI creates a complete CLI instance for testing with the specified command and flags.
+// By default, passes --yes flag to avoid interactive prompts in tests.
 func CreateTestCLI(subcommand string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
+	// Default to non-interactive mode for init command.
+	extraArgs := []string{}
+	if subcommand == "init" {
+		extraArgs = append(extraArgs, "--yes")
+	}
+	return CreateTestCLIWithArgs(subcommand, extraArgs, stdout, stderr, verboseFlag, debugFlag)
+}
+
+// CreateTestCLIWithArgs creates a CLI instance for testing with additional command arguments.
+func CreateTestCLIWithArgs(subcommand string, extraArgs []string, stdout, stderr io.Writer, verboseFlag, debugFlag bool) *cobra.Command {
 	// Set global flags for the actual command (needed for the real command implementations)
 	cmd.SetVerbose(verboseFlag)
 	cmd.SetDebug(debugFlag)
@@ -224,8 +235,10 @@ handling project packages using a nix shell environment, and securely storing en
 		}
 	}
 
-	// Set args to run the specified subcommand
-	rootCmd.SetArgs([]string{"secrets", subcommand})
+	// Build args: secrets <subcommand> [extraArgs...]
+	args := []string{"secrets", subcommand}
+	args = append(args, extraArgs...)
+	rootCmd.SetArgs(args)
 
 	// Set the flags on the secrets command
 	if err := cmd.GetSecretsCmd().PersistentFlags().Set("verbose", fmt.Sprintf("%t", verboseFlag)); err != nil {

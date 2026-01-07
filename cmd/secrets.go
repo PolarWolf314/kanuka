@@ -54,6 +54,8 @@ func ResetGlobalState() {
 	resetRegisterCommandState()
 	// Reset the revoke command flags
 	resetRevokeCommandState()
+	// Reset the init command flags
+	resetInitCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -70,6 +72,13 @@ func resetCobraFlagState() {
 	// Reset the revoke command flags specifically
 	if revokeCmd != nil && revokeCmd.Flags() != nil {
 		revokeCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the init command flags specifically
+	if initCmd != nil && initCmd.Flags() != nil {
+		initCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}

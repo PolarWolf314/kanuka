@@ -65,10 +65,22 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create user configs directory: %v", err)
 	}
 
+	// Create user config with UUID so init doesn't prompt for interactive setup.
+	userConfig := &configs.UserConfig{
+		User: configs.User{
+			UUID:  shared.TestUserUUID,
+			Email: shared.TestUserEmail,
+		},
+		Projects: make(map[string]string),
+	}
+	if err := configs.SaveUserConfig(userConfig); err != nil {
+		t.Fatalf("Failed to save user config: %v", err)
+	}
+
 	// Initialize the project
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"init"})
+	secretsCmd.SetArgs([]string{"init", "--yes"})
 	if err := secretsCmd.Execute(); err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}

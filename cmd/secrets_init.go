@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
@@ -12,6 +15,22 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
+
+var (
+	initYes         bool
+	initProjectName string
+)
+
+func init() {
+	initCmd.Flags().BoolVarP(&initYes, "yes", "y", false, "non-interactive mode (fail if user config is incomplete)")
+	initCmd.Flags().StringVarP(&initProjectName, "name", "n", "", "project name (defaults to directory name)")
+}
+
+// resetInitCommandState resets the init command's global state for testing.
+func resetInitCommandState() {
+	initYes = false
+	initProjectName = ""
+}
 
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -39,6 +58,44 @@ var initCmd = &cobra.Command{
 		}
 		Logger.Infof("User settings ensured successfully")
 
+		// Check if user config is complete (has email and UUID).
+		Logger.Debugf("Checking if user config is complete")
+		isComplete, err := IsUserConfigComplete()
+		if err != nil {
+			return Logger.ErrorfAndReturn("Failed to check user config: %v", err)
+		}
+
+		if !isComplete {
+			Logger.Infof("User config is incomplete, need to run setup")
+
+			// If --yes flag is set, fail with clear error.
+			if initYes {
+				spinner.FinalMSG = color.RedString("✗") + " User configuration is incomplete\n" +
+					color.CyanString("→") + " Run " + color.YellowString("kanuka config init") + " first to set up your identity"
+				return fmt.Errorf("user configuration required: run 'kanuka config init' first")
+			}
+
+			// Run config init inline.
+			spinner.Stop()
+			fmt.Println(color.YellowString("⚠") + " User configuration not found.\n")
+			fmt.Println("Running initial setup...")
+			fmt.Println()
+
+			setupPerformed, err := RunConfigInit(verbose, debug)
+			if err != nil {
+				return Logger.ErrorfAndReturn("Failed to set up user config: %v", err)
+			}
+
+			if !setupPerformed {
+				// Config was already complete (shouldn't happen, but handle gracefully).
+				Logger.Debugf("Config init reported no setup needed")
+			}
+
+			// Restart spinner for project initialization.
+			fmt.Println("Initializing project...")
+			spinner.Restart()
+		}
+
 		Logger.Debugf("Ensuring kanuka settings and creating .kanuka folders")
 		if err := secrets.EnsureKanukaSettings(); err != nil {
 			return Logger.ErrorfAndReturn("Failed to create .kanuka folders: %v", err)
@@ -59,7 +116,41 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return Logger.ErrorfAndReturn("Failed to get working directory: %v", err)
 		}
-		projectName := filepath.Base(wd)
+
+		// Determine project name.
+		defaultProjectName := filepath.Base(wd)
+		var projectName string
+
+		if initProjectName != "" {
+			// Use flag value if provided.
+			projectName = strings.TrimSpace(initProjectName)
+			Logger.Debugf("Using project name from flag: %s", projectName)
+		} else if initYes {
+			// Non-interactive mode: use default.
+			projectName = defaultProjectName
+			Logger.Debugf("Using default project name (non-interactive): %s", projectName)
+		} else {
+			// Interactive mode: prompt for project name.
+			spinner.Stop()
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Printf("Project name [%s]: ", defaultProjectName)
+			input, readErr := reader.ReadString('\n')
+			if readErr != nil {
+				return Logger.ErrorfAndReturn("Failed to read project name: %v", readErr)
+			}
+			projectName = strings.TrimSpace(input)
+			if projectName == "" {
+				projectName = defaultProjectName
+			}
+			spinner.Restart()
+		}
+
+		// Validate project name.
+		if projectName == "" {
+			return Logger.ErrorfAndReturn("Project name cannot be empty")
+		}
+		Logger.Infof("Using project name: %s", projectName)
+
 		projectConfig := &configs.ProjectConfig{
 			Project: configs.Project{
 				UUID: configs.GenerateProjectUUID(),
