@@ -45,8 +45,8 @@ func TestDecryptWithWrongPrivateKey(t *testing.T) {
 	}
 
 	// Replace the private key with a wrong one
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	// #nosec G101 -- This is a test with intentionally invalid key data
 	wrongPrivateKey := `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAwrongkey123456789abcdefghijklmnopqrstuvwxyz
@@ -101,8 +101,8 @@ func TestDecryptWithCorruptedPrivateKey(t *testing.T) {
 	}
 
 	// Corrupt the private key file
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	if err := os.WriteFile(privateKeyPath, []byte("corrupted private key data"), 0600); err != nil {
 		t.Fatalf("Failed to corrupt private key: %v", err)
 	}
@@ -153,8 +153,8 @@ func TestDecryptWithWrongKeyFormat(t *testing.T) {
 	}
 
 	// Replace private key with wrong format (e.g., SSH key format)
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	wrongFormatKey := `-----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAFwAAAAdzc2gtcn
 -----END OPENSSH PRIVATE KEY-----`

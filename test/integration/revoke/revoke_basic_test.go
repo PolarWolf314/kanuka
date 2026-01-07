@@ -126,10 +126,10 @@ func TestRevokeCommand_UserNotFound(t *testing.T) {
 		t.Fatalf("Failed to create secrets directory: %v", err)
 	}
 
-	// Test revoke command for non-existent user
+	// Test revoke command for non-existent user (using valid email format)
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", "nonexistentuser"})
+	secretsCmd.SetArgs([]string{"revoke", "--user", "nonexistent@example.com"})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -190,10 +190,10 @@ func TestRevokeCommand_SuccessfulRemoval(t *testing.T) {
 		t.Fatalf("Failed to create secrets directory: %v", err)
 	}
 
-	// Create test user files
-	testUser := "testuser2"
-	publicKeyPath := filepath.Join(publicKeysDir, testUser+".pub")
-	kanukaKeyPath := filepath.Join(secretsDir, testUser+".kanuka")
+	// Create test user files (using UUID-like identifier since --file uses filename as user ID)
+	testUserUUID := "testuser2-uuid"
+	publicKeyPath := filepath.Join(publicKeysDir, testUserUUID+".pub")
+	kanukaKeyPath := filepath.Join(secretsDir, testUserUUID+".kanuka")
 
 	// Create dummy files
 	err = os.WriteFile(publicKeyPath, []byte("dummy public key"), 0600)
@@ -215,10 +215,12 @@ func TestRevokeCommand_SuccessfulRemoval(t *testing.T) {
 		t.Fatal("Kanuka key file should exist before removal")
 	}
 
-	// Remove the user
+	// Remove the user using --file flag (points to .kanuka file)
+	// Use relative path as the revoke command expects paths relative to project root
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
 
 	err = secretsCmd.Execute()
 	if err != nil {
@@ -227,10 +229,10 @@ func TestRevokeCommand_SuccessfulRemoval(t *testing.T) {
 
 	// Verify files are removed
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
-		t.Error("Public key file should be revokedd")
+		t.Error("Public key file should be revoked")
 	}
 
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
-		t.Error("Kanuka key file should be revokedd")
+		t.Error("Kanuka key file should be revoked")
 	}
 }

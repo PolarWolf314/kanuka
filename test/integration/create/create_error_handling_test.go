@@ -61,6 +61,10 @@ func testReadOnlyProjectDirectory(t *testing.T, originalWd string, originalUserS
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
+	// Get UUIDs for path references
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
+
 	// Make project directory read-only
 	if err := os.Chmod(tempDir, 0555); err != nil {
 		t.Fatalf("Failed to make project directory read-only: %v", err)
@@ -68,14 +72,12 @@ func testReadOnlyProjectDirectory(t *testing.T, originalWd string, originalUserS
 	defer func() { _ = os.Chmod(tempDir, 0755) }() // Restore permissions for cleanup
 
 	// Clean up any existing keys first to test actual permission behavior
-	username := configs.UserKanukaSettings.Username
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 
 	// Try to create keys - should fail gracefully due to read-only project directory
@@ -138,15 +140,16 @@ func testReadOnlyUserDirectory(t *testing.T, originalWd string, originalUserSett
 	}
 	defer func() { _ = os.Chmod(keysDir, 0755) }() // Restore permissions for cleanup
 
-	// Clean up any existing keys first to test actual permission behavior
-	username := configs.UserKanukaSettings.Username
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	// Get UUIDs for path references
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
 
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
+	// Clean up any existing keys first to test actual permission behavior
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
+
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 
 	// Try to create keys - should fail gracefully due to read-only user directory

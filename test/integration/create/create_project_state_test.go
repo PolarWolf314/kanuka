@@ -71,9 +71,10 @@ func testMultipleProjectSupport(t *testing.T, originalWd string, originalUserSet
 		t.Errorf("Failed to create keys for project 1: %v", err)
 	}
 
-	project1Name := filepath.Base(tempDir1)
-	project1PrivateKey := filepath.Join(tempUserDir, "keys", project1Name)
-	project1PublicKey := filepath.Join(tempUserDir, "keys", project1Name+".pub")
+	project1UUID := shared.GetProjectUUID(t)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	project1PrivateKey := shared.GetPrivateKeyPath(keysDir, project1UUID)
+	project1PublicKey := shared.GetPublicKeyPath(keysDir, project1UUID)
 
 	// Verify first project keys exist
 	if _, err := os.Stat(project1PrivateKey); os.IsNotExist(err) {
@@ -96,9 +97,9 @@ func testMultipleProjectSupport(t *testing.T, originalWd string, originalUserSet
 		t.Errorf("Failed to create keys for project 2: %v", err)
 	}
 
-	project2Name := filepath.Base(tempDir2)
-	project2PrivateKey := filepath.Join(tempUserDir, "keys", project2Name)
-	project2PublicKey := filepath.Join(tempUserDir, "keys", project2Name+".pub")
+	project2UUID := shared.GetProjectUUID(t)
+	project2PrivateKey := shared.GetPrivateKeyPath(keysDir, project2UUID)
+	project2PublicKey := shared.GetPublicKeyPath(keysDir, project2UUID)
 
 	// Verify second project keys exist
 	if _, err := os.Stat(project2PrivateKey); os.IsNotExist(err) {
@@ -166,8 +167,8 @@ func testProjectNameHandling(t *testing.T, originalWd string, originalUserSettin
 			}
 
 			if tc.shouldWork {
-				projectName := filepath.Base(tempDir)
-				privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+				projectUUID := shared.GetProjectUUID(t)
+				privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 				if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 					t.Errorf("Private key not created for project %s", tc.name)
 				}
@@ -210,16 +211,28 @@ func testExistingProjectStructure(t *testing.T, originalWd string, originalUserS
 		t.Fatalf("Failed to create existing file: %v", err)
 	}
 
-	// Initialize project (should work with existing structure)
-	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Fatalf("Failed to initialize project: %v", err)
+	// Since .kanuka directory already exists, init will say "already initialized".
+	// We need to create a project config manually to simulate a valid existing project.
+	configs.ProjectKanukaSettings = &configs.ProjectSettings{
+		ProjectName:          filepath.Base(tempDir),
+		ProjectPath:          tempDir,
+		ProjectPublicKeyPath: publicKeysDir,
+		ProjectSecretsPath:   secretsDir,
 	}
 
-	// Create keys should work (but since init already created keys, we need force)
+	projectConfig := &configs.ProjectConfig{
+		Project: configs.Project{
+			UUID: shared.TestProjectUUID,
+			Name: filepath.Base(tempDir),
+		},
+		Users:   make(map[string]string),
+		Devices: make(map[string]configs.DeviceConfig),
+	}
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to create project config: %v", err)
+	}
+
+	// Create keys using create command (since project already has config, this should work)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		cmd.SetArgs([]string{"secrets", "create", "--force"})
@@ -236,8 +249,8 @@ func testExistingProjectStructure(t *testing.T, originalWd string, originalUserS
 	}
 
 	// Verify new keys were created
-	username := configs.UserKanukaSettings.Username
-	newPublicKey := filepath.Join(publicKeysDir, username+".pub")
+	userUUID := shared.GetUserUUID(t)
+	newPublicKey := filepath.Join(publicKeysDir, userUUID+".pub")
 	if _, err := os.Stat(newPublicKey); os.IsNotExist(err) {
 		t.Errorf("New public key was not created")
 	}

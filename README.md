@@ -81,12 +81,20 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 
 ## Commands
 
+### Secrets Commands
+
 - `kanuka secrets init`: Initialize a new secrets store
 - `kanuka secrets create`: Create new encryption keys
 - `kanuka secrets encrypt`: Encrypt .env files
 - `kanuka secrets decrypt`: Decrypt .kanuka files
-- `kanuka secrets register --user <username>`: Register a new user
-- `kanuka secrets revoke --user <username>`: Revoke a user
+- `kanuka secrets register --user <email>`: Register a new user
+- `kanuka secrets revoke --user <email>`: Revoke a user's access
+
+### Configuration Commands
+
+- `kanuka config list-devices`: List all devices in the project
+- `kanuka config set-device-name <name>`: Set your device name for the current project
+- `kanuka config rename-device --user <email> <new-name>`: Rename a device in the project
 
 ### General Commands
 

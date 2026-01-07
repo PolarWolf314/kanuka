@@ -36,6 +36,22 @@ func TestSecretsInitBasic(t *testing.T) {
 	t.Run("InitWithDebugFlag", func(t *testing.T) {
 		testInitWithDebugFlag(t, originalWd, originalUserSettings)
 	})
+
+	t.Run("InitUpdatesUserConfigWithProject", func(t *testing.T) {
+		testInitUpdatesUserConfigWithProject(t, originalWd, originalUserSettings)
+	})
+
+	t.Run("InitWithValidConfigSkipsSetup", func(t *testing.T) {
+		testInitWithValidConfigSkipsSetup(t, originalWd, originalUserSettings)
+	})
+
+	t.Run("InitWithYesFlagAndNoConfigFails", func(t *testing.T) {
+		testInitWithYesFlagAndNoConfigFails(t, originalWd, originalUserSettings)
+	})
+
+	t.Run("InitWithNameFlag", func(t *testing.T) {
+		testInitWithNameFlag(t, originalWd, originalUserSettings)
+	})
 }
 
 // testInitInEmptyFolder tests successful initialization in an empty folder.
@@ -189,4 +205,188 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 	}
 
 	shared.VerifyProjectStructure(t, tempDir)
+}
+
+// testInitUpdatesUserConfigWithProject tests that init updates user config with project entry.
+func testInitUpdatesUserConfigWithProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-init-user-config-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	// Verify user config has empty projects before init.
+	userConfigBefore, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config before init: %v", err)
+	}
+	if len(userConfigBefore.Projects) != 0 {
+		t.Errorf("Expected empty projects before init, got: %v", userConfigBefore.Projects)
+	}
+
+	// Run init command.
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+
+	// Verify project structure.
+	shared.VerifyProjectStructure(t, tempDir)
+
+	// Load project config to get the project UUID.
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectUUID := projectConfig.Project.UUID
+	if projectUUID == "" {
+		t.Fatal("Project UUID should not be empty")
+	}
+
+	// Verify user config was updated with project entry.
+	userConfigAfter, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config after init: %v", err)
+	}
+
+	entry, exists := userConfigAfter.Projects[projectUUID]
+	if !exists {
+		t.Errorf("Expected project UUID %s in user config projects, got: %v", projectUUID, userConfigAfter.Projects)
+	}
+	if entry.DeviceName == "" {
+		t.Error("Expected device name to be set in user config projects")
+	}
+}
+
+// testInitWithValidConfigSkipsSetup tests that init skips config setup when user config is complete.
+func testInitWithValidConfigSkipsSetup(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-init-valid-config-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	// SetupTestEnvironment creates a complete user config with email and UUID.
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	// Run init command.
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+
+	// Should NOT see the "User configuration not found" message.
+	if strings.Contains(output, "User configuration not found") {
+		t.Errorf("Expected to skip config init setup but saw 'User configuration not found' message")
+	}
+
+	// Should NOT see the "Welcome to Kanuka" message (from config init).
+	if strings.Contains(output, "Welcome to Kanuka") {
+		t.Errorf("Expected to skip config init setup but saw 'Welcome to Kanuka' message")
+	}
+
+	// Verify project was created.
+	shared.VerifyProjectStructure(t, tempDir)
+}
+
+// testInitWithYesFlagAndNoConfigFails tests that init with --yes flag fails when user config is incomplete.
+func testInitWithYesFlagAndNoConfigFails(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-init-yes-no-config-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	// SetupTestEnvironmentWithoutUserConfig does NOT create user config.
+	shared.SetupTestEnvironmentWithoutUserConfig(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	// Run init command with --yes flag.
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLIWithArgs("init", []string{"--yes"}, nil, nil, false, false)
+		return cmd.Execute()
+	})
+
+	// Should fail with an error.
+	if err == nil {
+		t.Errorf("Expected command to fail with --yes flag when user config is incomplete, but it succeeded")
+		t.Errorf("Output: %s", output)
+	}
+
+	// Error message should mention running config init.
+	if !strings.Contains(output, "User configuration is incomplete") && !strings.Contains(err.Error(), "user configuration required") {
+		t.Errorf("Expected error about incomplete user config, got output: %s, error: %v", output, err)
+	}
+
+	// Project should NOT be created.
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	if _, statErr := os.Stat(filepath.Join(kanukaDir, "config.toml")); statErr == nil {
+		t.Errorf("Project config should not exist when init fails due to missing user config")
+	}
+}
+
+// testInitWithNameFlag tests that init with --name flag uses the specified project name.
+func testInitWithNameFlag(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-init-name-flag-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	customProjectName := "My Custom Project Name"
+
+	// Run init command with --name flag.
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLIWithArgs("init", []string{"--name", customProjectName}, nil, nil, false, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+
+	// Verify project structure.
+	shared.VerifyProjectStructure(t, tempDir)
+
+	// Load project config and verify name.
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+
+	if projectConfig.Project.Name != customProjectName {
+		t.Errorf("Expected project name to be %q, got %q", customProjectName, projectConfig.Project.Name)
+	}
 }

@@ -14,11 +14,33 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
+
+// addUserToProjectConfig adds a user with the given UUID and email to the project config.
+// This is needed before registering a user with --pubkey, as the register command
+// looks up users by email to find their UUID.
+func addUserToProjectConfig(t *testing.T, userUUID, email string) {
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+
+	if projectConfig.Users == nil {
+		projectConfig.Users = make(map[string]string)
+	}
+
+	projectConfig.Users[userUUID] = email
+
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+}
 
 func TestSecretsRegisterCryptographic(t *testing.T) {
 	// Save original state
@@ -78,14 +100,18 @@ func testRegisterWithOpenSSHFormatKey(t *testing.T, originalWd string, originalU
 
 	// Convert to OpenSSH format
 	opensshKey := generateOpenSSHKey(t, &privateKey.PublicKey)
-	targetUser := "opensshuser"
+	targetUserEmail := "opensshuser@example.com"
+	targetUserUUID := uuid.New().String()
+
+	// Add user to project config so register can find them by email
+	addUserToProjectConfig(t, targetUserUUID, targetUserEmail)
 
 	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -96,18 +122,18 @@ func testRegisterWithOpenSSHFormatKey(t *testing.T, originalWd string, originalU
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, targetUser) {
-		t.Errorf("Expected target user name not found in output: %s", output)
+	if !strings.Contains(output, targetUserEmail) {
+		t.Errorf("Expected target user email not found in output: %s", output)
 	}
 
-	// Verify the public key was saved
-	pubKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
+	// Verify the public key was saved (using UUID, not email)
+	pubKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", targetUserUUID+".pub")
 	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
 		t.Errorf("Public key file was not created at %s", pubKeyPath)
 	}
 
-	// Verify the kanuka key was created
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	// Verify the kanuka key was created (using UUID, not email)
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}
@@ -138,14 +164,18 @@ func testRegisterWithPEMFormatKey(t *testing.T, originalWd string, originalUserS
 
 	// Convert to PEM format
 	pemKey := generatePEMKeyCrypto(t, &privateKey.PublicKey)
-	targetUser := "pemuser"
+	targetUserEmail := "pemuser@example.com"
+	targetUserUUID := uuid.New().String()
+
+	// Add user to project config so register can find them by email
+	addUserToProjectConfig(t, targetUserUUID, targetUserEmail)
 
 	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -156,18 +186,18 @@ func testRegisterWithPEMFormatKey(t *testing.T, originalWd string, originalUserS
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, targetUser) {
-		t.Errorf("Expected target user name not found in output: %s", output)
+	if !strings.Contains(output, targetUserEmail) {
+		t.Errorf("Expected target user email not found in output: %s", output)
 	}
 
-	// Verify the public key was saved
-	pubKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
+	// Verify the public key was saved (using UUID, not email)
+	pubKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", targetUserUUID+".pub")
 	if _, err := os.Stat(pubKeyPath); os.IsNotExist(err) {
 		t.Errorf("Public key file was not created at %s", pubKeyPath)
 	}
 
-	// Verify the kanuka key was created
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	// Verify the kanuka key was created (using UUID, not email)
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}
@@ -191,14 +221,24 @@ func testRegisterVerifyEncryptedKeyUniqueness(t *testing.T, originalWd string, o
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Register two different users
-	users := []string{"user1", "user2"}
+	type testUser struct {
+		email string
+		uuid  string
+	}
+	users := []testUser{
+		{email: "user1@example.com", uuid: uuid.New().String()},
+		{email: "user2@example.com", uuid: uuid.New().String()},
+	}
 	var encryptedKeys [][]byte
 
 	for _, user := range users {
+		// Add user to project config so register can find them by email
+		addUserToProjectConfig(t, user.uuid, user.email)
+
 		// Generate a test RSA key pair for each user
 		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
-			t.Fatalf("Failed to generate RSA key for %s: %v", user, err)
+			t.Fatalf("Failed to generate RSA key for %s: %v", user.email, err)
 		}
 
 		opensshKey := generateOpenSSHKey(t, &privateKey.PublicKey)
@@ -208,18 +248,18 @@ func testRegisterVerifyEncryptedKeyUniqueness(t *testing.T, originalWd string, o
 
 		_, err = shared.CaptureOutput(func() error {
 			cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-			cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", user})
+			cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", user.email})
 			return cmd.Execute()
 		})
 		if err != nil {
-			t.Errorf("Command failed for user %s: %v", user, err)
+			t.Errorf("Command failed for user %s: %v", user.email, err)
 		}
 
-		// Read the encrypted key
-		kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user+".kanuka")
+		// Read the encrypted key (using UUID, not email)
+		kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user.uuid+".kanuka")
 		encryptedKey, err := os.ReadFile(kanukaKeyPath)
 		if err != nil {
-			t.Errorf("Failed to read kanuka key for %s: %v", user, err)
+			t.Errorf("Failed to read kanuka key for %s: %v", user.email, err)
 		}
 		encryptedKeys = append(encryptedKeys, encryptedKey)
 	}
@@ -254,22 +294,26 @@ func testRegisterVerifyDecryptionWorks(t *testing.T, originalWd string, original
 	}
 
 	opensshKey := generateOpenSSHKey(t, &privateKey.PublicKey)
-	targetUser := "decryptuser"
+	targetUserEmail := "decryptuser@example.com"
+	targetUserUUID := uuid.New().String()
+
+	// Add user to project config so register can find them by email
+	addUserToProjectConfig(t, targetUserUUID, targetUserEmail)
 
 	// Reset register command state
 	cmd.ResetGlobalState()
 
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
 	}
 
-	// Read the encrypted symmetric key
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	// Read the encrypted symmetric key (using UUID, not email)
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
 	if err != nil {
 		t.Fatalf("Failed to read kanuka key: %v", err)
@@ -315,14 +359,18 @@ func testRegisterWithDifferentKeySizes(t *testing.T, originalWd string, original
 			}
 
 			opensshKey := generateOpenSSHKey(t, &privateKey.PublicKey)
-			targetUser := fmt.Sprintf("keysize%duser", keySize)
+			targetUserEmail := fmt.Sprintf("keysize%duser@example.com", keySize)
+			targetUserUUID := uuid.New().String()
+
+			// Add user to project config so register can find them by email
+			addUserToProjectConfig(t, targetUserUUID, targetUserEmail)
 
 			// Reset register command state
 			cmd.ResetGlobalState()
 
 			output, err := shared.CaptureOutput(func() error {
 				cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-				cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUser})
+				cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", targetUserEmail})
 				return cmd.Execute()
 			})
 			if err != nil {
@@ -333,8 +381,8 @@ func testRegisterWithDifferentKeySizes(t *testing.T, originalWd string, original
 				t.Errorf("Expected success symbol not found for %d-bit key in output: %s", keySize, output)
 			}
 
-			// Verify the kanuka key was created and can be decrypted
-			kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+			// Verify the kanuka key was created and can be decrypted (using UUID, not email)
+			kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 			encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
 			if err != nil {
 				t.Errorf("Failed to read kanuka key for %d-bit key: %v", keySize, err)
@@ -366,6 +414,16 @@ func testRegisterCrossFormatCompatibility(t *testing.T, originalWd string, origi
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Define users with their emails and UUIDs
+	opensshUserEmail := "opensshuser@example.com"
+	opensshUserUUID := uuid.New().String()
+	pemUserEmail := "pemuser@example.com"
+	pemUserUUID := uuid.New().String()
+
+	// Add both users to project config so register can find them by email
+	addUserToProjectConfig(t, opensshUserUUID, opensshUserEmail)
+	addUserToProjectConfig(t, pemUserUUID, pemUserEmail)
+
 	// Register one user with OpenSSH format
 	privateKey1, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -378,7 +436,7 @@ func testRegisterCrossFormatCompatibility(t *testing.T, originalWd string, origi
 
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", "opensshuser"})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", opensshKey, "--user", opensshUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -397,33 +455,34 @@ func testRegisterCrossFormatCompatibility(t *testing.T, originalWd string, origi
 
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", "pemuser"})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", pemUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
 		t.Errorf("Command failed for PEM user: %v", err)
 	}
 
-	// Verify both users can decrypt their keys
+	// Verify both users can decrypt their keys (using UUIDs, not emails)
 	users := []struct {
-		name       string
+		uuid       string
+		email      string
 		privateKey *rsa.PrivateKey
 	}{
-		{"opensshuser", privateKey1},
-		{"pemuser", privateKey2},
+		{opensshUserUUID, opensshUserEmail, privateKey1},
+		{pemUserUUID, pemUserEmail, privateKey2},
 	}
 
 	for _, user := range users {
-		kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user.name+".kanuka")
+		kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user.uuid+".kanuka")
 		encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
 		if err != nil {
-			t.Errorf("Failed to read kanuka key for %s: %v", user.name, err)
+			t.Errorf("Failed to read kanuka key for %s: %v", user.email, err)
 			continue
 		}
 
 		_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, user.privateKey)
 		if err != nil {
-			t.Errorf("Failed to decrypt symmetric key for %s: %v", user.name, err)
+			t.Errorf("Failed to decrypt symmetric key for %s: %v", user.email, err)
 		}
 	}
 }

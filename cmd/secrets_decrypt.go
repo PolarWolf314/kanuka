@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
-
-	"github.com/PolarWolf314/kanuka/internal/secrets"
-	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -54,14 +52,26 @@ var decryptCmd = &cobra.Command{
 			Logger.Warnf("Processing %d encrypted files - this may take a moment", len(listOfKanukaFiles))
 		}
 
-		username := configs.UserKanukaSettings.Username
-		userKeysPath := configs.UserKanukaSettings.UserKeysPath
-		Logger.Debugf("Username: %s, User keys path: %s", username, userKeysPath)
-
-		Logger.Debugf("Getting project kanuka key for user: %s", username)
-		encryptedSymKey, err := secrets.GetProjectKanukaKey(username)
+		// Load user config for user UUID
+		userConfig, err := configs.EnsureUserConfig()
 		if err != nil {
-			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", username, err)
+			return Logger.ErrorfAndReturn("failed to load user config: %v", err)
+		}
+		userUUID := userConfig.User.UUID
+
+		// Load project config for project UUID
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
+		}
+		projectUUID := projectConfig.Project.UUID
+
+		Logger.Debugf("User UUID: %s", userUUID)
+
+		Logger.Debugf("Getting project kanuka key for user: %s", userUUID)
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
+		if err != nil {
+			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
 			finalMessage := color.RedString("✗") + " Failed to obtain your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error()
@@ -69,7 +79,7 @@ var decryptCmd = &cobra.Command{
 			return nil
 		}
 
-		privateKeyPath := filepath.Join(userKeysPath, projectName)
+		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 		Logger.Debugf("Loading private key from: %s", privateKeyPath)
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {

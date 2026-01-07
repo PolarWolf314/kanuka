@@ -75,12 +75,36 @@ func InitProjectSettings() error {
 		return fmt.Errorf("error getting project root: %w", err)
 	}
 
+	// Check for legacy project and migrate if needed.
+	if IsLegacyProject(projectPath) {
+		result, err := MigrateProject(projectPath)
+		if err != nil {
+			return fmt.Errorf("failed to migrate legacy project: %w", err)
+		}
+
+		// Migrate user's local keys.
+		if err := MigrateUserKeys(projectName, result.ProjectUUID); err != nil {
+			return fmt.Errorf("failed to migrate user keys: %w", err)
+		}
+
+		// Update user config with project UUID.
+		if err := UpdateUserConfigWithProjectUUID(projectName, result.ProjectUUID); err != nil {
+			return fmt.Errorf("failed to update user config: %w", err)
+		}
+	}
+
 	ProjectKanukaSettings = &ProjectSettings{
 		ProjectName:          projectName,
 		ProjectPath:          projectPath,
 		ProjectPublicKeyPath: filepath.Join(projectPath, ".kanuka", "public_keys"),
 		ProjectSecretsPath:   filepath.Join(projectPath, ".kanuka", "secrets"),
 	}
+
+	userConfig, err := LoadUserConfig()
+	if err != nil {
+		return fmt.Errorf("error loading user config: %w", err)
+	}
+	GlobalUserConfig = userConfig
 
 	return nil
 }

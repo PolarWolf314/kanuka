@@ -81,7 +81,8 @@ func testEncryptWithEmptyEnvFile(t *testing.T, originalWd string, originalUserSe
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	encryptedFile := filepath.Join(tempDir, ".kanuka", "secrets", "testuser.kanuka")
+	userUUID := shared.GetUserUUID(t)
+	encryptedFile := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	if _, err := os.Stat(encryptedFile); os.IsNotExist(err) {
 		t.Errorf("Encrypted file was not created at %s", encryptedFile)
 	}
@@ -297,7 +298,8 @@ func testEncryptWithVeryLargeEnvFile(t *testing.T, originalWd string, originalUs
 		t.Errorf("Expected success message, got: %s", output)
 	}
 
-	encryptedFile := filepath.Join(tempDir, ".kanuka", "secrets", "testuser.kanuka")
+	userUUID := shared.GetUserUUID(t)
+	encryptedFile := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	if stat, err := os.Stat(encryptedFile); os.IsNotExist(err) {
 		t.Errorf("Encrypted file was not created at %s", encryptedFile)
 	} else if stat.Size() == 0 {

@@ -34,18 +34,29 @@ func CreateSymmetricKey() ([]byte, error) {
 }
 
 // CreateAndSaveEncryptedSymmetricKey creates a symmetric key, encrypts it with the user's public key, and saves it.
+// Uses user UUID for file naming.
 func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	username := configs.UserKanukaSettings.Username
+	// Ensure user config has UUID
+	userConfig, err := configs.EnsureUserConfig()
+	if err != nil {
+		return fmt.Errorf("failed to ensure user config: %w", err)
+	}
+
+	userUUID := userConfig.User.UUID
+	if userUUID == "" {
+		return fmt.Errorf("user UUID not found in user config")
+	}
 
 	// Project hasn't been made at this point yet, so do it relative to working directory.
 	kanukaDir := filepath.Join(wd, ".kanuka")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
-	pubKeyPath := filepath.Join(kanukaDir, "public_keys", username+".pub")
+	// Public key is named with user UUID
+	pubKeyPath := filepath.Join(kanukaDir, "public_keys", userUUID+".pub")
 
 	// 1. create sym key in memory
 	symKey, err := CreateSymmetricKey()
@@ -65,8 +76,8 @@ func CreateAndSaveEncryptedSymmetricKey(verbose bool) error {
 		return fmt.Errorf("failed to encrypt symmetric key: %w", err)
 	}
 
-	// 4. save sym key to project
-	encryptedSymPath := filepath.Join(secretsDir, fmt.Sprintf("%s.kanuka", username))
+	// 4. save sym key to project using user UUID
+	encryptedSymPath := filepath.Join(secretsDir, fmt.Sprintf("%s.kanuka", userUUID))
 
 	if err := os.WriteFile(encryptedSymPath, encryptedSymKey, 0600); err != nil {
 		return fmt.Errorf("failed to save encrypted symmetric key: %v", err)
@@ -142,7 +153,8 @@ func DecryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 
 // RotateSymmetricKey rotates the symmetric key for all users in the project.
 // It generates a new symmetric key, encrypts it for all users, and re-encrypts all files.
-func RotateSymmetricKey(currentUsername string, privateKey *rsa.PrivateKey, verbose bool) error {
+// currentUserUUID is the UUID of the user performing the rotation.
+func RotateSymmetricKey(currentUserUUID string, privateKey *rsa.PrivateKey, verbose bool) error {
 	if err := configs.InitProjectSettings(); err != nil {
 		return fmt.Errorf("failed to init project settings: %w", err)
 	}
@@ -150,20 +162,20 @@ func RotateSymmetricKey(currentUsername string, privateKey *rsa.PrivateKey, verb
 	projectPath := configs.ProjectKanukaSettings.ProjectPath
 	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
 
-	// Get all users in the project
-	usernames, err := GetAllUsersInProject()
+	// Get all user UUIDs in the project
+	userUUIDs, err := GetAllUsersInProject()
 	if err != nil {
 		return fmt.Errorf("failed to get list of users: %w", err)
 	}
 
-	if len(usernames) == 0 {
+	if len(userUUIDs) == 0 {
 		return fmt.Errorf("no users found in project")
 	}
 
 	// Get current encrypted symmetric key
-	currentEncryptedSymKey, err := GetProjectKanukaKey(currentUsername)
+	currentEncryptedSymKey, err := GetProjectKanukaKey(currentUserUUID)
 	if err != nil {
-		return fmt.Errorf("failed to get current symmetric key for user %s: %w", currentUsername, err)
+		return fmt.Errorf("failed to get current symmetric key for user %s: %w", currentUserUUID, err)
 	}
 
 	// Decrypt current symmetric key
@@ -218,21 +230,21 @@ func RotateSymmetricKey(currentUsername string, privateKey *rsa.PrivateKey, verb
 		return fmt.Errorf("failed to generate new symmetric key: %w", err)
 	}
 
-	// Encrypt new symmetric key for each user
-	for _, username := range usernames {
-		publicKeyPath := filepath.Join(projectPublicKeyPath, username+".pub")
+	// Encrypt new symmetric key for each user UUID
+	for _, userUUID := range userUUIDs {
+		publicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
 		publicKey, err := LoadPublicKey(publicKeyPath)
 		if err != nil {
-			return fmt.Errorf("failed to load public key for user %s: %w", username, err)
+			return fmt.Errorf("failed to load public key for user %s: %w", userUUID, err)
 		}
 
 		encryptedSymKey, err := EncryptWithPublicKey(newSymKey, publicKey)
 		if err != nil {
-			return fmt.Errorf("failed to encrypt symmetric key for user %s: %w", username, err)
+			return fmt.Errorf("failed to encrypt symmetric key for user %s: %w", userUUID, err)
 		}
 
-		if err := SaveKanukaKeyToProject(username, encryptedSymKey); err != nil {
-			return fmt.Errorf("failed to save symmetric key for user %s: %w", username, err)
+		if err := SaveKanukaKeyToProject(userUUID, encryptedSymKey); err != nil {
+			return fmt.Errorf("failed to save symmetric key for user %s: %w", userUUID, err)
 		}
 	}
 

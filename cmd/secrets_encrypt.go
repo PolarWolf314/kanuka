@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
@@ -53,14 +52,26 @@ var encryptCmd = &cobra.Command{
 			Logger.Warnf("Processing %d environment files - this may take a moment", len(listOfEnvFiles))
 		}
 
-		username := configs.UserKanukaSettings.Username
-		userKeysPath := configs.UserKanukaSettings.UserKeysPath
-		Logger.Debugf("Username: %s, User keys path: %s", username, userKeysPath)
-
-		Logger.Debugf("Getting project kanuka key for user: %s", username)
-		encryptedSymKey, err := secrets.GetProjectKanukaKey(username)
+		// Load user config for user UUID
+		userConfig, err := configs.EnsureUserConfig()
 		if err != nil {
-			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", username, err)
+			return Logger.ErrorfAndReturn("failed to load user config: %v", err)
+		}
+		userUUID := userConfig.User.UUID
+
+		// Load project config for project UUID
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
+		}
+		projectUUID := projectConfig.Project.UUID
+
+		Logger.Debugf("User UUID: %s", userUUID)
+
+		Logger.Debugf("Getting project kanuka key for user: %s", userUUID)
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
+		if err != nil {
+			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
 			finalMessage := color.RedString("✗") + " Failed to get your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error()
@@ -68,7 +79,7 @@ var encryptCmd = &cobra.Command{
 			return nil
 		}
 
-		privateKeyPath := filepath.Join(userKeysPath, projectName)
+		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 		Logger.Debugf("Loading private key from: %s", privateKeyPath)
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
@@ -125,7 +136,9 @@ var encryptCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +
-			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control"
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control\n\n" +
+			color.YellowString("Note:") + " Encryption is non-deterministic for security reasons.\n" +
+			"       Re-encrypting unchanged files will produce different output."
 
 		spinner.FinalMSG = finalMessage
 		return nil

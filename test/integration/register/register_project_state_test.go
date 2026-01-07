@@ -64,12 +64,20 @@ func testRegisterInUninitializedProject(t *testing.T, originalWd string, origina
 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	// Note: NOT calling shared.InitializeProject here - that's the point
+	// Also NOT creating any .kanuka directory - truly uninitialized project
 
-	targetUser := "targetuser"
+	// Create a temporary public key file outside of any .kanuka directory
+	targetUserKeyFile := filepath.Join(tempDir, "targetuser.pub")
+
+	// Create a valid RSA key pair
+	privateKeyPath := filepath.Join(tempUserDir, "targetuser.key")
+	if err := shared.GenerateRSAKeyPair(privateKeyPath, targetUserKeyFile); err != nil {
+		t.Fatalf("Failed to generate RSA key pair: %v", err)
+	}
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -111,10 +119,11 @@ func testRegisterWhenCurrentUserHasNoAccess(t *testing.T, originalWd string, ori
 	// Create target user's public key
 	targetUser := "targetuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -152,19 +161,21 @@ func testRegisterWhenCurrentUserPrivateKeyMissing(t *testing.T, originalWd strin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Remove the current user's private key
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	if err := os.Remove(privateKeyPath); err != nil {
-		t.Fatalf("Failed to remove private key: %v", err)
+	projectUUID := shared.GetProjectUUID(t)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	if err := os.RemoveAll(keyDir); err != nil {
+		t.Fatalf("Failed to remove key directory: %v", err)
 	}
 
 	// Create target user's public key
 	targetUser := "targetuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -204,11 +215,12 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 	// Create target user's public key
 	targetUser := "targetuser"
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	// Register the user first time
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -225,7 +237,7 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 	// Register the user again
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -278,10 +290,11 @@ func testRegisterInCorruptedProjectStructure(t *testing.T, originalWd string, or
 	// Create target user's public key
 	targetUser := "targetuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -315,8 +328,8 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Corrupt the current user's .kanuka file
-	currentUsername := configs.UserKanukaSettings.Username
-	kanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", currentUsername+".kanuka")
+	userUUID := shared.GetUserUUID(t)
+	kanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	if err := os.WriteFile(kanukaFile, []byte("corrupted data"), 0600); err != nil {
 		t.Fatalf("Failed to corrupt .kanuka file: %v", err)
 	}
@@ -324,10 +337,11 @@ func testRegisterWithCorruptedKanukaFile(t *testing.T, originalWd string, origin
 	// Create target user's public key
 	targetUser := "targetuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -365,8 +379,9 @@ func testRegisterWithCorruptedPrivateKey(t *testing.T, originalWd string, origin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Corrupt the current user's private key
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
 	if err := os.WriteFile(privateKeyPath, []byte("corrupted private key data"), 0600); err != nil {
 		t.Fatalf("Failed to corrupt private key: %v", err)
 	}
@@ -374,10 +389,11 @@ func testRegisterWithCorruptedPrivateKey(t *testing.T, originalWd string, origin
 	// Create target user's public key
 	targetUser := "targetuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
