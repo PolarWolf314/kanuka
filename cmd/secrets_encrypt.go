@@ -136,7 +136,9 @@ var encryptCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +
-			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control"
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control\n\n" +
+			color.YellowString("Note:") + " Encryption is non-deterministic for security reasons.\n" +
+			"       Re-encrypting unchanged files will produce different output."
 
 		spinner.FinalMSG = finalMessage
 		return nil

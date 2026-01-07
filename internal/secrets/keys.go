@@ -150,9 +150,10 @@ func CreateAndSaveRSAKeyPair(verbose bool) error {
 
 	// Create metadata.toml with project information
 	metadata := &configs.KeyMetadata{
-		ProjectName: projectConfig.Project.Name,
-		ProjectPath: configs.ProjectKanukaSettings.ProjectPath,
-		CreatedAt:   time.Now(),
+		ProjectName:    projectConfig.Project.Name,
+		ProjectPath:    configs.ProjectKanukaSettings.ProjectPath,
+		CreatedAt:      time.Now(),
+		LastAccessedAt: time.Now(),
 	}
 
 	if err := configs.SaveKeyMetadata(projectUUID, metadata); err != nil {

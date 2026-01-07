@@ -162,19 +162,24 @@ Examples:
 		}
 
 		// Update the device name.
+		ConfigLogger.Debugf("Updating device UUID %s from %s to %s", targetUUID, oldDeviceName, newName)
 		device := projectConfig.Devices[targetUUID]
 		device.Name = newName
 		projectConfig.Devices[targetUUID] = device
 
+		ConfigLogger.Debugf("Saving project config")
 		if err := configs.SaveProjectConfig(projectConfig); err != nil {
 			return ConfigLogger.ErrorfAndReturn("Failed to save project config: %v", err)
 		}
+		ConfigLogger.Infof("Project config saved successfully")
 
 		// If the device being renamed belongs to the current user, also update their user config.
+		ConfigLogger.Debugf("Checking if device belongs to current user")
 		userConfig, err := configs.LoadUserConfig()
 		if err != nil {
 			ConfigLogger.Debugf("Could not load user config to check if device is owned by current user: %v", err)
 		} else if userConfig.User.UUID == targetUUID {
+			ConfigLogger.Infof("Device belongs to current user, updating user config")
 			// This is the current user's device, update their [projects] section.
 			projectUUID := projectConfig.Project.UUID
 			if projectUUID != "" && userConfig.Projects != nil {
@@ -187,6 +192,8 @@ Examples:
 					ConfigLogger.Infof("Updated user config [projects] with new device name")
 				}
 			}
+		} else {
+			ConfigLogger.Debugf("Device belongs to another user, skipping user config update")
 		}
 
 		ConfigLogger.Infof("Device renamed successfully from %s to %s", oldDeviceName, newName)

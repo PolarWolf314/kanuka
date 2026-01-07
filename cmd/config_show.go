@@ -49,10 +49,13 @@ Examples:
   kanuka config show --project --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ConfigLogger.Infof("Starting config show command")
+		ConfigLogger.Debugf("Flags: project=%t, json=%t", configShowProject, configShowJSON)
 
 		if configShowProject {
+			ConfigLogger.Infof("Showing project configuration")
 			return showProjectConfig()
 		}
+		ConfigLogger.Infof("Showing user configuration")
 		return showUserConfig()
 	},
 }
@@ -60,10 +63,12 @@ Examples:
 // showUserConfig displays the user configuration.
 func showUserConfig() error {
 	// Ensure user settings are initialized.
+	ConfigLogger.Debugf("Ensuring user settings are initialized")
 	if err := secrets.EnsureUserSettings(); err != nil {
 		return ConfigLogger.ErrorfAndReturn("Failed to initialize user settings: %v", err)
 	}
 
+	ConfigLogger.Debugf("Loading user config from %s", configs.UserKanukaSettings.UserConfigsPath)
 	userConfig, err := configs.LoadUserConfig()
 	if err != nil {
 		return ConfigLogger.ErrorfAndReturn("Failed to load user config: %v", err)
@@ -71,6 +76,7 @@ func showUserConfig() error {
 
 	// Check if config exists.
 	if userConfig.User.Email == "" && userConfig.User.UUID == "" {
+		ConfigLogger.Infof("No user configuration found")
 		if configShowJSON {
 			fmt.Println("{}")
 			return nil
@@ -81,7 +87,11 @@ func showUserConfig() error {
 		return nil
 	}
 
+	ConfigLogger.Infof("User config loaded successfully (email: %s, UUID: %s)", userConfig.User.Email, userConfig.User.UUID)
+	ConfigLogger.Debugf("User has %d project entries", len(userConfig.Projects))
+
 	if configShowJSON {
+		ConfigLogger.Debugf("Outputting user config as JSON")
 		return outputUserConfigJSON(userConfig)
 	}
 
@@ -143,12 +153,14 @@ func outputUserConfigText(config *configs.UserConfig) error {
 // showProjectConfig displays the project configuration.
 func showProjectConfig() error {
 	// Check if we're in a project directory.
+	ConfigLogger.Debugf("Checking if in a Kanuka project directory")
 	exists, err := secrets.DoesProjectKanukaSettingsExist()
 	if err != nil {
 		return ConfigLogger.ErrorfAndReturn("Failed to check project settings: %v", err)
 	}
 
 	if !exists {
+		ConfigLogger.Infof("Not in a Kanuka project directory")
 		if configShowJSON {
 			fmt.Println("{\"error\": \"not in a project directory\"}")
 			return nil
@@ -160,16 +172,22 @@ func showProjectConfig() error {
 	}
 
 	// Initialize project settings.
+	ConfigLogger.Debugf("Initializing project settings")
 	if err := configs.InitProjectSettings(); err != nil {
 		return ConfigLogger.ErrorfAndReturn("Failed to initialize project settings: %v", err)
 	}
 
+	ConfigLogger.Debugf("Loading project config from %s/.kanuka/config.toml", configs.ProjectKanukaSettings.ProjectPath)
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		return ConfigLogger.ErrorfAndReturn("Failed to load project config: %v", err)
 	}
 
+	ConfigLogger.Infof("Project config loaded successfully (name: %s, UUID: %s)", projectConfig.Project.Name, projectConfig.Project.UUID)
+	ConfigLogger.Debugf("Project has %d users and %d devices", len(projectConfig.Users), len(projectConfig.Devices))
+
 	if configShowJSON {
+		ConfigLogger.Debugf("Outputting project config as JSON")
 		return outputProjectConfigJSON(projectConfig)
 	}
 

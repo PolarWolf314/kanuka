@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/PolarWolf314/kanuka/internal/configs"
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -41,6 +42,9 @@ Examples:
 				Debug:   configDebug,
 			}
 			ConfigLogger.Debugf("Initializing config command with verbose=%t, debug=%t", configVerbose, configDebug)
+
+			// Update key metadata access time if in a project.
+			updateConfigProjectAccessTime()
 		},
 	}
 )
@@ -74,4 +78,24 @@ func resetConfigCobraFlagState() {
 			flag.Changed = false
 		})
 	}
+}
+
+// updateConfigProjectAccessTime updates the key metadata access time if running inside a project.
+// This is called from PersistentPreRun to track when the project was last accessed.
+// Errors are silently ignored as this is a non-critical operation.
+func updateConfigProjectAccessTime() {
+	// Try to find project root - if not in a project, this will fail silently.
+	if err := configs.InitProjectSettings(); err != nil {
+		// Not in a project or project not initialized - this is fine.
+		return
+	}
+
+	// Load project config to get project UUID.
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil || projectConfig.Project.UUID == "" {
+		return
+	}
+
+	// Update the access time - errors are non-critical.
+	_ = configs.UpdateKeyMetadataAccessTime(projectConfig.Project.UUID)
 }

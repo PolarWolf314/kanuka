@@ -1,7 +1,12 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+
+	"github.com/PolarWolf314/kanuka/internal/configs"
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -21,6 +26,9 @@ var (
 				Debug:   debug,
 			}
 			Logger.Debugf("Initializing secrets command with verbose=%t, debug=%t", verbose, debug)
+
+			// Update key metadata access time if in a project.
+			updateProjectAccessTime()
 		},
 	}
 )
@@ -104,4 +112,41 @@ func SetDebug(d bool) {
 // SetLogger sets the logger for testing.
 func SetLogger(l logger.Logger) {
 	Logger = l
+}
+
+// updateProjectAccessTime updates the key metadata access time if running inside a project.
+// This is called from PersistentPreRun to track when the project was last accessed.
+// Errors are silently ignored as this is a non-critical operation.
+// Important: This function avoids calling InitProjectSettings to prevent triggering
+// legacy project migration during PersistentPreRun.
+func updateProjectAccessTime() {
+	// Find project root without initializing settings (which could trigger migration).
+	projectPath, err := utils.FindProjectKanukaRoot()
+	if err != nil || projectPath == "" {
+		// Not in a project - this is fine.
+		return
+	}
+
+	// Check if config.toml exists (only update access time for properly initialized projects).
+	configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		// No config.toml - project not properly initialized or is legacy.
+		return
+	}
+
+	// Load project config directly to get project UUID.
+	projectConfig := &configs.ProjectConfig{
+		Users:   make(map[string]string),
+		Devices: make(map[string]configs.DeviceConfig),
+	}
+	if err := configs.LoadTOML(configPath, projectConfig); err != nil {
+		return
+	}
+
+	if projectConfig.Project.UUID == "" {
+		return
+	}
+
+	// Update the access time - errors are non-critical.
+	_ = configs.UpdateKeyMetadataAccessTime(projectConfig.Project.UUID)
 }

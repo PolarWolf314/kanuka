@@ -40,25 +40,34 @@ Examples:
   kanuka config list-devices --user alice@example.com`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ConfigLogger.Infof("Starting list-devices command")
+		ConfigLogger.Debugf("Flags: user=%s", listDevicesUserEmail)
 
 		// Initialize project settings.
+		ConfigLogger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
+			ConfigLogger.Infof("Failed to initialize project settings: %v", err)
 			fmt.Println(color.RedString("✗") + " Failed to initialize project settings")
 			fmt.Println(color.CyanString("→") + " Make sure you're in a Kānuka project directory")
 			return nil
 		}
 
 		if configs.ProjectKanukaSettings.ProjectPath == "" {
+			ConfigLogger.Infof("Not in a Kanuka project directory")
 			fmt.Println(color.RedString("✗") + " Not in a Kānuka project directory")
 			fmt.Println(color.CyanString("→") + " Run this command from within a Kānuka project")
 			return nil
 		}
 
+		ConfigLogger.Debugf("Project path: %s", configs.ProjectKanukaSettings.ProjectPath)
+
 		// Load project config.
+		ConfigLogger.Debugf("Loading project config")
 		projectConfig, err := configs.LoadProjectConfig()
 		if err != nil {
 			return ConfigLogger.ErrorfAndReturn("Failed to load project config: %v", err)
 		}
+
+		ConfigLogger.Infof("Project config loaded: %d devices found", len(projectConfig.Devices))
 
 		if len(projectConfig.Devices) == 0 {
 			fmt.Println(color.YellowString("⚠") + " No devices found in this project")
@@ -76,13 +85,17 @@ Examples:
 			devicesByEmail[device.Email] = append(devicesByEmail[device.Email], info)
 		}
 
+		ConfigLogger.Debugf("Devices grouped by %d unique emails", len(devicesByEmail))
+
 		// Filter by user if specified.
 		if listDevicesUserEmail != "" {
+			ConfigLogger.Infof("Filtering devices by user: %s", listDevicesUserEmail)
 			devices, exists := devicesByEmail[listDevicesUserEmail]
 			if !exists {
 				fmt.Println(color.RedString("✗") + " User " + color.YellowString(listDevicesUserEmail) + " not found in this project")
 				return nil
 			}
+			ConfigLogger.Debugf("Found %d devices for user %s", len(devices), listDevicesUserEmail)
 			devicesByEmail = map[string][]deviceInfo{listDevicesUserEmail: devices}
 		}
 

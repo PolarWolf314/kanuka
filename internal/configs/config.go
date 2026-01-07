@@ -46,9 +46,10 @@ type DeviceConfig struct {
 
 // KeyMetadata stores metadata about a project's keys in the user's key directory.
 type KeyMetadata struct {
-	ProjectName string    `toml:"project_name"`
-	ProjectPath string    `toml:"project_path"`
-	CreatedAt   time.Time `toml:"created_at"`
+	ProjectName    string    `toml:"project_name"`
+	ProjectPath    string    `toml:"project_path"`
+	CreatedAt      time.Time `toml:"created_at"`
+	LastAccessedAt time.Time `toml:"last_accessed_at"`
 }
 
 var (
@@ -192,6 +193,36 @@ func LoadKeyMetadata(projectUUID string) (*KeyMetadata, error) {
 	}
 
 	return metadata, nil
+}
+
+// UpdateKeyMetadataAccessTime updates the last accessed timestamp in the key metadata.
+// This should be called whenever a command runs inside a kanuka project.
+// Returns nil if the metadata doesn't exist (project not fully initialized).
+func UpdateKeyMetadataAccessTime(projectUUID string) error {
+	if projectUUID == "" {
+		return nil
+	}
+
+	metadataPath := GetKeyMetadataPath(projectUUID)
+
+	// Check if metadata file exists.
+	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+		// Metadata doesn't exist yet - project may not be fully initialized.
+		return nil
+	}
+
+	metadata, err := LoadKeyMetadata(projectUUID)
+	if err != nil {
+		return fmt.Errorf("failed to load key metadata: %w", err)
+	}
+
+	metadata.LastAccessedAt = time.Now()
+
+	if err := SaveKeyMetadata(projectUUID, metadata); err != nil {
+		return fmt.Errorf("failed to save key metadata: %w", err)
+	}
+
+	return nil
 }
 
 // GetUserUUIDByEmail looks up a user UUID by their email in the project config.

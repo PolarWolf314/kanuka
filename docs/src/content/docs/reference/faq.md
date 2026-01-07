@@ -3,6 +3,28 @@ title: Frequently Asked Questions
 description: Common questions and answers about using Kanuka.
 ---
 
+## Why do encrypted files change even when my secrets haven't?
+
+This is expected behavior and a security feature. When you run
+`kanuka secrets encrypt`, the output differs each time due to how AES-GCM
+encryption works.
+
+**Technical explanation:** AES-GCM requires a unique nonce (number used once)
+for each encryption operation. Kānuka generates a random nonce each time,
+so encrypting the same plaintext produces different ciphertext.
+
+**Why this is secure:** If encryption were deterministic, attackers could:
+- Detect when secrets are reused across files
+- Build dictionaries to guess plaintext values
+- Identify patterns in your encrypted data
+
+**What to do about git diffs:**
+1. Only run `encrypt` when you actually change secrets
+2. Commit the `.kanuka` files immediately after encrypting
+3. If you encrypted by accident, run `git checkout -- *.kanuka` to discard
+
+For more details, see the [encryption guide](/guides/encryption/).
+
 ## Why do I need to provide my email?
 
 Your email address serves as a human-readable identifier that links your

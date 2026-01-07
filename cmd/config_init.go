@@ -77,6 +77,9 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	var email string
 	if configInitEmail != "" {
 		email = configInitEmail
+		if verbose {
+			fmt.Println("[info] Using email from flag: " + email)
+		}
 	} else {
 		defaultEmail := userConfig.User.Email
 		promptedEmail, err := promptForInput(reader, "Email address", defaultEmail)
@@ -90,11 +93,17 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	if !utils.IsValidEmail(email) {
 		return false, fmt.Errorf("invalid email format: %s", email)
 	}
+	if verbose {
+		fmt.Println("[info] Email validated successfully")
+	}
 
 	// Prompt for display name (optional).
 	var displayName string
 	if configInitName != "" {
 		displayName = configInitName
+		if verbose {
+			fmt.Println("[info] Using display name from flag: " + displayName)
+		}
 	} else {
 		defaultName := userConfig.User.Name
 		promptedName, err := promptForInput(reader, "Display name (optional)", defaultName)
@@ -108,6 +117,9 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	var deviceName string
 	if configInitDeviceName != "" {
 		deviceName = utils.SanitizeDeviceName(configInitDeviceName)
+		if verbose {
+			fmt.Println("[info] Using device name from flag: " + deviceName)
+		}
 	} else {
 		// Generate default from hostname.
 		defaultDevice, _ := utils.GenerateDeviceName([]string{})
@@ -125,6 +137,9 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	if !isValidDeviceName(deviceName) {
 		return false, fmt.Errorf("invalid device name: %s (must be alphanumeric with hyphens and underscores)", deviceName)
 	}
+	if verbose {
+		fmt.Println("[info] Device name validated: " + deviceName)
+	}
 
 	// Update user config.
 	userConfig.User.Email = email
@@ -134,6 +149,9 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	// Generate UUID if not present.
 	if userConfig.User.UUID == "" {
 		userConfig.User.UUID = configs.GenerateUserUUID()
+		if verbose {
+			fmt.Println("[info] Generated new user UUID: " + userConfig.User.UUID)
+		}
 	}
 
 	// Initialize projects map if nil.
@@ -144,6 +162,9 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	// Save user config.
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		return false, fmt.Errorf("failed to save user config: %w", err)
+	}
+	if verbose {
+		fmt.Println("[info] User configuration saved to " + configs.UserKanukaSettings.UserConfigsPath + "/config.toml")
 	}
 
 	// Display summary.
@@ -197,13 +218,17 @@ Examples:
   kanuka config init --email alice@example.com --name "Alice Smith" --device workstation`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ConfigLogger.Infof("Starting config init command")
+		ConfigLogger.Debugf("Flags: email=%s, name=%s, device=%s", configInitEmail, configInitName, configInitDeviceName)
 
 		// Ensure user settings directory exists.
+		ConfigLogger.Debugf("Ensuring user settings directory exists")
 		if err := secrets.EnsureUserSettings(); err != nil {
 			return ConfigLogger.ErrorfAndReturn("Failed to initialize user settings: %v", err)
 		}
+		ConfigLogger.Infof("User settings directory initialized")
 
 		// Check if already configured and no flags provided.
+		ConfigLogger.Debugf("Checking if user config is complete")
 		isComplete, err := IsUserConfigComplete()
 		if err != nil {
 			return ConfigLogger.ErrorfAndReturn("Failed to check user config: %v", err)
@@ -211,6 +236,7 @@ Examples:
 
 		// If already complete and no flags provided, show current config.
 		if isComplete && configInitEmail == "" && configInitName == "" && configInitDeviceName == "" {
+			ConfigLogger.Infof("User config already exists, showing current configuration")
 			userConfig, err := configs.LoadUserConfig()
 			if err != nil {
 				return ConfigLogger.ErrorfAndReturn("Failed to load user config: %v", err)
@@ -233,6 +259,8 @@ Examples:
 
 		// If flags are provided, update directly without prompts.
 		if configInitEmail != "" || configInitName != "" || configInitDeviceName != "" {
+			ConfigLogger.Infof("Flags provided, updating configuration directly")
+			ConfigLogger.Debugf("Loading existing user config")
 			userConfig, err := configs.LoadUserConfig()
 			if err != nil {
 				return ConfigLogger.ErrorfAndReturn("Failed to load user config: %v", err)
@@ -244,10 +272,12 @@ Examples:
 					fmt.Println(color.RedString("✗") + " Invalid email format: " + color.YellowString(configInitEmail))
 					return nil
 				}
+				ConfigLogger.Infof("Updating email to: %s", configInitEmail)
 				userConfig.User.Email = configInitEmail
 			}
 
 			if configInitName != "" {
+				ConfigLogger.Infof("Updating display name to: %s", configInitName)
 				userConfig.User.Name = configInitName
 			}
 
@@ -257,12 +287,14 @@ Examples:
 					fmt.Println(color.RedString("✗") + " Invalid device name: " + color.YellowString(configInitDeviceName))
 					return nil
 				}
+				ConfigLogger.Infof("Updating device name to: %s", deviceName)
 				userConfig.User.DefaultDeviceName = deviceName
 			}
 
 			// Generate UUID if not present.
 			if userConfig.User.UUID == "" {
 				userConfig.User.UUID = configs.GenerateUserUUID()
+				ConfigLogger.Infof("Generated new user UUID: %s", userConfig.User.UUID)
 			}
 
 			// Initialize projects map if nil.
@@ -271,9 +303,11 @@ Examples:
 			}
 
 			// Save.
+			ConfigLogger.Debugf("Saving user config to disk")
 			if err := configs.SaveUserConfig(userConfig); err != nil {
 				return ConfigLogger.ErrorfAndReturn("Failed to save user config: %v", err)
 			}
+			ConfigLogger.Infof("User config saved successfully")
 
 			fmt.Println(color.GreenString("✓") + " User configuration updated\n")
 			fmt.Println("Your settings:")
@@ -289,6 +323,7 @@ Examples:
 		}
 
 		// Run interactive setup.
+		ConfigLogger.Infof("Running interactive setup")
 		_, err = RunConfigInit(configVerbose, configDebug)
 		if err != nil {
 			fmt.Println(color.RedString("✗") + " " + err.Error())
