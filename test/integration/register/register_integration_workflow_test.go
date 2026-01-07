@@ -435,7 +435,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 			UUID:  userB, // UUID matches the filename
 			Email: "userB@example.com",
 		},
-		Projects: make(map[string]string),
+		Projects: make(map[string]configs.UserProjectEntry),
 	}
 	if err := configs.SaveUserConfig(userBConfig); err != nil {
 		t.Fatalf("Failed to save User B's config: %v", err)

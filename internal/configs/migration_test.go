@@ -323,13 +323,13 @@ func TestUpdateUserConfigWithProjectUUID(t *testing.T) {
 
 		projectName := "my-project"
 		projectUUID := "550e8400-e29b-41d4-a716-446655440000"
-		projectPath := "/path/to/project"
+		deviceName := "my-device"
 
-		// Create user config with project name as key.
+		// Create user config with project name as key (old format).
 		config := &UserConfig{
 			User: User{Email: "test@example.com", UUID: "user-uuid"},
-			Projects: map[string]string{
-				projectName: projectPath,
+			Projects: map[string]UserProjectEntry{
+				projectName: {DeviceName: deviceName, ProjectName: ""},
 			},
 		}
 		if err := SaveUserConfig(config); err != nil {
@@ -351,8 +351,12 @@ func TestUpdateUserConfigWithProjectUUID(t *testing.T) {
 			t.Fatal("Project name key should have been removed")
 		}
 
-		if loadedConfig.Projects[projectUUID] != projectPath {
-			t.Fatalf("Expected project path %q, got %q", projectPath, loadedConfig.Projects[projectUUID])
+		entry := loadedConfig.Projects[projectUUID]
+		if entry.DeviceName != deviceName {
+			t.Fatalf("Expected device name %q, got %q", deviceName, entry.DeviceName)
+		}
+		if entry.ProjectName != projectName {
+			t.Fatalf("Expected project name %q, got %q", projectName, entry.ProjectName)
 		}
 	})
 
@@ -367,7 +371,7 @@ func TestUpdateUserConfigWithProjectUUID(t *testing.T) {
 		// Create user config without the project.
 		config := &UserConfig{
 			User:     User{Email: "test@example.com", UUID: "user-uuid"},
-			Projects: map[string]string{},
+			Projects: map[string]UserProjectEntry{},
 		}
 		if err := SaveUserConfig(config); err != nil {
 			t.Fatalf("Failed to save user config: %v", err)

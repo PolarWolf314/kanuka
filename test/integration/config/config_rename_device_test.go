@@ -622,7 +622,10 @@ func testRenameOwnDeviceUpdatesUserConfig(t *testing.T, originalWd string, origi
 	if err != nil {
 		t.Fatalf("Failed to load user config: %v", err)
 	}
-	userConfig.Projects[projectUUID] = "old-device-name"
+	userConfig.Projects[projectUUID] = configs.UserProjectEntry{
+		DeviceName:  "old-device-name",
+		ProjectName: "test-project",
+	}
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		t.Fatalf("Failed to save user config: %v", err)
 	}
@@ -656,12 +659,12 @@ func testRenameOwnDeviceUpdatesUserConfig(t *testing.T, originalWd string, origi
 	if err != nil {
 		t.Fatalf("Failed to reload user config: %v", err)
 	}
-	deviceName, exists := userConfig.Projects[projectUUID]
+	entry, exists := userConfig.Projects[projectUUID]
 	if !exists {
 		t.Errorf("Expected project entry in user config, but not found")
 	}
-	if deviceName != "new-device-name" {
-		t.Errorf("Expected user config device name 'new-device-name', got '%s'", deviceName)
+	if entry.DeviceName != "new-device-name" {
+		t.Errorf("Expected user config device name 'new-device-name', got '%s'", entry.DeviceName)
 	}
 }
 
@@ -717,7 +720,10 @@ func testRenameOtherUserDeviceDoesNotUpdateUserConfig(t *testing.T, originalWd s
 	if err != nil {
 		t.Fatalf("Failed to load user config: %v", err)
 	}
-	userConfig.Projects[projectUUID] = "my-device"
+	userConfig.Projects[projectUUID] = configs.UserProjectEntry{
+		DeviceName:  "my-device",
+		ProjectName: "test-project",
+	}
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		t.Fatalf("Failed to save user config: %v", err)
 	}
@@ -751,11 +757,11 @@ func testRenameOtherUserDeviceDoesNotUpdateUserConfig(t *testing.T, originalWd s
 	if err != nil {
 		t.Fatalf("Failed to reload user config: %v", err)
 	}
-	deviceName, exists := userConfig.Projects[projectUUID]
+	entry, exists := userConfig.Projects[projectUUID]
 	if !exists {
 		t.Errorf("Expected project entry in user config, but not found")
 	}
-	if deviceName != "my-device" {
-		t.Errorf("Expected user config device name to remain 'my-device', got '%s'", deviceName)
+	if entry.DeviceName != "my-device" {
+		t.Errorf("Expected user config device name to remain 'my-device', got '%s'", entry.DeviceName)
 	}
 }

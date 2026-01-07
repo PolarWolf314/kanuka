@@ -42,9 +42,9 @@ func TestSaveAndLoadUserConfig(t *testing.T) {
 			Email: "test@example.com",
 			UUID:  "test-uuid-123",
 		},
-		Projects: map[string]string{
-			"project-uuid-1": "device-1",
-			"project-uuid-2": "device-2",
+		Projects: map[string]UserProjectEntry{
+			"project-uuid-1": {DeviceName: "device-1", ProjectName: "Project 1"},
+			"project-uuid-2": {DeviceName: "device-2", ProjectName: "Project 2"},
 		},
 	}
 

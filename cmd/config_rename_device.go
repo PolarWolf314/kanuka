@@ -178,7 +178,9 @@ Examples:
 			// This is the current user's device, update their [projects] section.
 			projectUUID := projectConfig.Project.UUID
 			if projectUUID != "" && userConfig.Projects != nil {
-				userConfig.Projects[projectUUID] = newName
+				existingEntry := userConfig.Projects[projectUUID]
+				existingEntry.DeviceName = newName
+				userConfig.Projects[projectUUID] = existingEntry
 				if err := configs.SaveUserConfig(userConfig); err != nil {
 					ConfigLogger.Debugf("Could not update user config with new device name: %v", err)
 				} else {

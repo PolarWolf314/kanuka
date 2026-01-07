@@ -291,12 +291,14 @@ func UpdateUserConfigWithProjectUUID(projectName, projectUUID string) error {
 		return fmt.Errorf("failed to load user config: %w", err)
 	}
 
-	// Check if project exists by name.
-	if _, exists := userConfig.Projects[projectName]; exists {
-		// Move to UUID-based key.
-		projectPath := userConfig.Projects[projectName]
+	// Check if project exists by name (old format used project name as key).
+	if existingEntry, exists := userConfig.Projects[projectName]; exists {
+		// Move to UUID-based key, preserving the device name and setting project name.
 		delete(userConfig.Projects, projectName)
-		userConfig.Projects[projectUUID] = projectPath
+		userConfig.Projects[projectUUID] = UserProjectEntry{
+			DeviceName:  existingEntry.DeviceName,
+			ProjectName: projectName, // Use the old project name as the display name.
+		}
 
 		if err := SaveUserConfig(userConfig); err != nil {
 			return fmt.Errorf("failed to save user config: %w", err)

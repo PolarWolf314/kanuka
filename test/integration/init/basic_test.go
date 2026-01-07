@@ -260,11 +260,11 @@ func testInitUpdatesUserConfigWithProject(t *testing.T, originalWd string, origi
 		t.Fatalf("Failed to load user config after init: %v", err)
 	}
 
-	deviceName, exists := userConfigAfter.Projects[projectUUID]
+	entry, exists := userConfigAfter.Projects[projectUUID]
 	if !exists {
 		t.Errorf("Expected project UUID %s in user config projects, got: %v", projectUUID, userConfigAfter.Projects)
 	}
-	if deviceName == "" {
+	if entry.DeviceName == "" {
 		t.Error("Expected device name to be set in user config projects")
 	}
 }

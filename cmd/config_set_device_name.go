@@ -104,19 +104,34 @@ Examples:
 
 		// Initialize projects map if nil.
 		if userConfig.Projects == nil {
-			userConfig.Projects = make(map[string]string)
+			userConfig.Projects = make(map[string]configs.UserProjectEntry)
 		}
 
 		// Check if there's an existing device name for this project.
-		oldName, hasExisting := userConfig.Projects[projectUUID]
-		if hasExisting && oldName == deviceName {
+		existingEntry, hasExisting := userConfig.Projects[projectUUID]
+		if hasExisting && existingEntry.DeviceName == deviceName {
 			finalMessage := color.YellowString("⚠") + " Device name is already set to " + color.CyanString(deviceName) + " for this project"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
-		// Set the device name.
-		userConfig.Projects[projectUUID] = deviceName
+		// Get project name to store.
+		projectName := ""
+		if configs.ProjectKanukaSettings.ProjectPath != "" {
+			projectConfig, err := configs.LoadProjectConfig()
+			if err == nil && projectConfig.Project.Name != "" {
+				projectName = projectConfig.Project.Name
+			}
+		}
+
+		// Set the device name, preserving existing project name if available.
+		if hasExisting && existingEntry.ProjectName != "" {
+			projectName = existingEntry.ProjectName
+		}
+		userConfig.Projects[projectUUID] = configs.UserProjectEntry{
+			DeviceName:  deviceName,
+			ProjectName: projectName,
+		}
 		ConfigLogger.Debugf("Setting device name for project %s to %s", projectUUID, deviceName)
 
 		if err := configs.SaveUserConfig(userConfig); err != nil {
@@ -127,8 +142,8 @@ Examples:
 
 		// Build success message.
 		var finalMessage string
-		if hasExisting {
-			finalMessage = color.GreenString("✓") + " Device name updated from " + color.YellowString(oldName) + " to " + color.CyanString(deviceName)
+		if hasExisting && existingEntry.DeviceName != "" {
+			finalMessage = color.GreenString("✓") + " Device name updated from " + color.YellowString(existingEntry.DeviceName) + " to " + color.CyanString(deviceName)
 		} else {
 			finalMessage = color.GreenString("✓") + " Device name set to " + color.CyanString(deviceName)
 		}

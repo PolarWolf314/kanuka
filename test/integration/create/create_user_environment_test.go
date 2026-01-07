@@ -103,7 +103,7 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 					UUID:  shared.TestUserUUID,
 					Email: tc.username + "@example.com",
 				},
-				Projects: make(map[string]string),
+				Projects: make(map[string]configs.UserProjectEntry),
 			}
 			if err := configs.SaveUserConfig(userConfig); err != nil {
 				t.Fatalf("Failed to save user config: %v", err)

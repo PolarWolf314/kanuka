@@ -85,7 +85,7 @@ func SetupTestEnvironmentWithUUID(t *testing.T, tempDir, tempUserDir, originalWd
 			UUID:  userUUID,
 			Email: email,
 		},
-		Projects: make(map[string]string),
+		Projects: make(map[string]configs.UserProjectEntry),
 	}
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		t.Fatalf("Failed to save user config: %v", err)

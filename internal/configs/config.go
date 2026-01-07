@@ -10,8 +10,14 @@ import (
 )
 
 type UserConfig struct {
-	User     User              `toml:"user"`
-	Projects map[string]string `toml:"projects"`
+	User     User                        `toml:"user"`
+	Projects map[string]UserProjectEntry `toml:"projects"`
+}
+
+// UserProjectEntry stores information about a project in the user's config.
+type UserProjectEntry struct {
+	DeviceName  string `toml:"device_name"`
+	ProjectName string `toml:"project_name"`
 }
 
 type User struct {
@@ -48,7 +54,7 @@ func LoadUserConfig() (*UserConfig, error) {
 	configPath := filepath.Join(UserKanukaSettings.UserConfigsPath, "config.toml")
 
 	config := &UserConfig{
-		Projects: make(map[string]string),
+		Projects: make(map[string]UserProjectEntry),
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {

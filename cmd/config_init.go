@@ -138,7 +138,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 
 	// Initialize projects map if nil.
 	if userConfig.Projects == nil {
-		userConfig.Projects = make(map[string]string)
+		userConfig.Projects = make(map[string]configs.UserProjectEntry)
 	}
 
 	// Save user config.
@@ -267,7 +267,7 @@ Examples:
 
 			// Initialize projects map if nil.
 			if userConfig.Projects == nil {
-				userConfig.Projects = make(map[string]string)
+				userConfig.Projects = make(map[string]configs.UserProjectEntry)
 			}
 
 			// Save.

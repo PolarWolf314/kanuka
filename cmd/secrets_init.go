@@ -185,13 +185,16 @@ var initCmd = &cobra.Command{
 		// Update user config with project entry
 		Logger.Debugf("Updating user config with project entry")
 		if userConfig.Projects == nil {
-			userConfig.Projects = make(map[string]string)
+			userConfig.Projects = make(map[string]configs.UserProjectEntry)
 		}
-		userConfig.Projects[projectConfig.Project.UUID] = deviceName
+		userConfig.Projects[projectConfig.Project.UUID] = configs.UserProjectEntry{
+			DeviceName:  deviceName,
+			ProjectName: projectName,
+		}
 		if err := configs.SaveUserConfig(userConfig); err != nil {
 			return Logger.ErrorfAndReturn("Failed to update user config with project: %v", err)
 		}
-		Logger.Infof("User config updated with project UUID: %s -> device: %s", projectConfig.Project.UUID, deviceName)
+		Logger.Infof("User config updated with project UUID: %s -> device: %s, project: %s", projectConfig.Project.UUID, deviceName, projectName)
 
 		// Now initialize project settings (which loads the project config)
 		Logger.Debugf("Initializing project settings")

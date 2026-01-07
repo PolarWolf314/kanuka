@@ -123,13 +123,17 @@ func outputUserConfigText(config *configs.UserConfig) error {
 		sort.Strings(projectUUIDs)
 
 		for _, uuid := range projectUUIDs {
-			deviceName := config.Projects[uuid]
+			entry := config.Projects[uuid]
 			// Truncate UUID for display.
 			shortUUID := uuid
 			if len(uuid) > 8 {
 				shortUUID = uuid[:8] + "..."
 			}
-			fmt.Printf("  %s → %s\n", color.YellowString(shortUUID), color.GreenString(deviceName))
+			if entry.ProjectName != "" {
+				fmt.Printf("  %s → %s (%s)\n", color.YellowString(shortUUID), color.GreenString(entry.DeviceName), color.CyanString(entry.ProjectName))
+			} else {
+				fmt.Printf("  %s → %s\n", color.YellowString(shortUUID), color.GreenString(entry.DeviceName))
+			}
 		}
 	}
 

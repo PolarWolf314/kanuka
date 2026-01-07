@@ -130,12 +130,12 @@ func testSetDeviceNameWithProjectUUID(t *testing.T, originalWd string, originalU
 		t.Fatalf("Failed to load user config: %v", err)
 	}
 
-	deviceName, exists := userConfig.Projects[specificUUID]
+	entry, exists := userConfig.Projects[specificUUID]
 	if !exists {
 		t.Errorf("Expected project UUID '%s' not found in user config projects", specificUUID)
 	}
-	if deviceName != "workstation" {
-		t.Errorf("Expected device name 'workstation', got '%s'", deviceName)
+	if entry.DeviceName != "workstation" {
+		t.Errorf("Expected device name 'workstation', got '%s'", entry.DeviceName)
 	}
 }
 

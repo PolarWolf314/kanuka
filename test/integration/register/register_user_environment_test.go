@@ -89,7 +89,7 @@ func testRegisterWithDifferentUserDirectories(t *testing.T, originalWd string, o
 			UUID:  shared.TestUserUUID,
 			Email: "testuser@example.com",
 		},
-		Projects: make(map[string]string),
+		Projects: make(map[string]configs.UserProjectEntry),
 	}
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		t.Fatalf("Failed to save user config: %v", err)

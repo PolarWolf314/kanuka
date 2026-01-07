@@ -71,7 +71,7 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 			UUID:  shared.TestUserUUID,
 			Email: shared.TestUserEmail,
 		},
-		Projects: make(map[string]string),
+		Projects: make(map[string]configs.UserProjectEntry),
 	}
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		t.Fatalf("Failed to save user config: %v", err)
