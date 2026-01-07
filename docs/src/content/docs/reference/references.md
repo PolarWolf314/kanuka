@@ -16,6 +16,7 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
+  config      Manage user and project configuration
   help        Help about any command
   secrets     Manage secrets stored in the repository
 
@@ -144,6 +145,174 @@ Usage:
 
 Flags:
   -h, --help   help for revoke
+```
+
+## Configuration Management
+
+Provides commands for managing user and project configuration settings.
+
+### `kanuka config`
+
+```
+Usage:
+  kanuka config [command]
+
+Available Commands:
+  init            Initialize your user configuration
+  list-devices    List all devices in the project
+  rename-device   Rename a device in the project
+  set-device-name Set your device name for a project
+  show            Display current configuration
+
+Flags:
+  -d, --debug     enable debug output
+  -h, --help      help for config
+  -v, --verbose   enable verbose output
+```
+
+### `kanuka config init`
+
+Sets up your Kānuka user identity. Creates or updates your user configuration file at `~/.config/kanuka/config.toml`.
+
+```
+Usage:
+  kanuka config init [flags]
+
+Flags:
+      --device string   default device name (defaults to hostname)
+  -e, --email string    your email address
+  -h, --help            help for init
+  -n, --name string     your display name (optional)
+
+Global Flags:
+  -d, --debug     enable debug output
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Interactive setup
+kanuka config init
+
+# Non-interactive setup
+kanuka config init --email alice@example.com --device macbook
+
+# With all options
+kanuka config init --email alice@example.com --name "Alice Smith" --device workstation
+```
+
+### `kanuka config show`
+
+Displays the current Kānuka configuration. By default, shows user configuration. Use `--project` to show project configuration.
+
+```
+Usage:
+  kanuka config show [flags]
+
+Flags:
+  -h, --help      help for show
+      --json      output in JSON format
+  -p, --project   show project configuration instead of user configuration
+
+Global Flags:
+  -d, --debug     enable debug output
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Show user configuration
+kanuka config show
+
+# Show project configuration (must be in a project directory)
+kanuka config show --project
+
+# Output in JSON format
+kanuka config show --json
+```
+
+### `kanuka config set-device-name`
+
+Sets your preferred device name for a project in your local user configuration. This name is used when you create keys for a project.
+
+```
+Usage:
+  kanuka config set-device-name [device-name] [flags]
+
+Flags:
+  -h, --help                  help for set-device-name
+      --project-uuid string   project UUID (defaults to current project)
+
+Global Flags:
+  -d, --debug     enable debug output
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Set device name for the current project
+kanuka config set-device-name my-laptop
+
+# Set device name for a specific project
+kanuka config set-device-name --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation
+```
+
+### `kanuka config rename-device`
+
+Renames a device in the project configuration. You must specify the user email whose device you want to rename.
+
+```
+Usage:
+  kanuka config rename-device [new-name] [flags]
+
+Flags:
+  -h, --help              help for rename-device
+      --old-name string   old device name (required if user has multiple devices)
+  -u, --user string       user email (required)
+
+Global Flags:
+  -d, --debug     enable debug output
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Rename the only device for a user
+kanuka config rename-device --user alice@example.com new-laptop
+
+# Rename a specific device when user has multiple
+kanuka config rename-device --user alice@example.com --old-name macbook personal-macbook
+```
+
+### `kanuka config list-devices`
+
+Lists all devices registered in the project configuration.
+
+```
+Usage:
+  kanuka config list-devices [flags]
+
+Flags:
+  -h, --help          help for list-devices
+  -u, --user string   filter by user email
+
+Global Flags:
+  -d, --debug     enable debug output
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# List all devices in the project
+kanuka config list-devices
+
+# List devices for a specific user
+kanuka config list-devices --user alice@example.com
 ```
 
 ## Shell Completion Setup

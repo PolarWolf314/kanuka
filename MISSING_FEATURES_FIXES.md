@@ -466,7 +466,8 @@ This is a foundational improvement that makes the system more maintainable and e
 **Priority:** Low  
 **Type:** UX Improvement  
 **Estimated Effort:** Small  
-**Dependencies:** None
+**Dependencies:** None  
+**Status:** ✅ COMPLETED
 
 ### Problem Statement
 
@@ -514,7 +515,8 @@ Consistency across commands improves UX. When encryption shows paths, registrati
 **Priority:** Medium  
 **Type:** Documentation  
 **Estimated Effort:** Medium  
-**Dependencies:** Tickets 1, 6 (to document final command structure)
+**Dependencies:** Tickets 1, 6 (to document final command structure)  
+**Status:** ✅ COMPLETED
 
 ### Problem Statement
 

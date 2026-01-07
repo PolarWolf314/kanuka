@@ -181,8 +181,15 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
+	// Compute paths for output
+	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+	kanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+
 	Logger.Infof("Public key registration completed successfully for user: %s", registerUserEmail)
-	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n" +
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n\n" +
+		"Files created:\n" +
+		"  Public key:    " + color.CyanString(pubKeyFilePath) + "\n" +
+		"  Encrypted key: " + color.CyanString(kanukaFilePath) + "\n\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
@@ -357,8 +364,14 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
 
+	// Compute path for output
+	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+
 	Logger.Infof("User registration completed successfully for: %s", registerUserEmail)
-	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n" +
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n\n" +
+		"Files created:\n" +
+		"  Public key:    " + color.CyanString(targetPubkeyPath) + "\n" +
+		"  Encrypted key: " + color.CyanString(targetKanukaFilePath) + "\n\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
@@ -467,8 +480,14 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
 
+	// Compute path for output
+	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+
 	Logger.Infof("Custom file registration completed successfully for: %s", displayName)
-	finalMessage := color.GreenString("✓") + " " + color.YellowString(displayName) + " has been granted access successfully!\n" +
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(displayName) + " has been granted access successfully!\n\n" +
+		"Files created:\n" +
+		"  Public key:    " + color.CyanString(customFilePath) + " (provided)\n" +
+		"  Encrypted key: " + color.CyanString(targetKanukaFilePath) + "\n\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
