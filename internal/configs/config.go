@@ -15,8 +15,10 @@ type UserConfig struct {
 }
 
 type User struct {
-	Email string `toml:"email"`
-	UUID  string `toml:"user_uuid"`
+	Email             string `toml:"email"`
+	Name              string `toml:"name,omitempty"`
+	UUID              string `toml:"user_uuid"`
+	DefaultDeviceName string `toml:"default_device_name,omitempty"`
 }
 
 type ProjectConfig struct {

@@ -225,6 +225,17 @@ Examples:
 		}
 		Logger.Infof("Project config updated successfully")
 
+		// Update user config with project entry
+		Logger.Debugf("Updating user config with project entry")
+		if userConfig.Projects == nil {
+			userConfig.Projects = make(map[string]string)
+		}
+		userConfig.Projects[projectConfig.Project.UUID] = deviceName
+		if err := configs.SaveUserConfig(userConfig); err != nil {
+			return Logger.ErrorfAndReturn("Failed to update user config with project: %v", err)
+		}
+		Logger.Infof("User config updated with project UUID: %s -> device: %s", projectConfig.Project.UUID, deviceName)
+
 		didKanukaExist := true
 
 		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath

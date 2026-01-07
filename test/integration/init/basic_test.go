@@ -36,6 +36,10 @@ func TestSecretsInitBasic(t *testing.T) {
 	t.Run("InitWithDebugFlag", func(t *testing.T) {
 		testInitWithDebugFlag(t, originalWd, originalUserSettings)
 	})
+
+	t.Run("InitUpdatesUserConfigWithProject", func(t *testing.T) {
+		testInitUpdatesUserConfigWithProject(t, originalWd, originalUserSettings)
+	})
 }
 
 // testInitInEmptyFolder tests successful initialization in an empty folder.
@@ -189,4 +193,66 @@ func testInitWithDebugFlag(t *testing.T, originalWd string, originalUserSettings
 	}
 
 	shared.VerifyProjectStructure(t, tempDir)
+}
+
+// testInitUpdatesUserConfigWithProject tests that init updates user config with project entry.
+func testInitUpdatesUserConfigWithProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-init-user-config-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	// Verify user config has empty projects before init.
+	userConfigBefore, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config before init: %v", err)
+	}
+	if len(userConfigBefore.Projects) != 0 {
+		t.Errorf("Expected empty projects before init, got: %v", userConfigBefore.Projects)
+	}
+
+	// Run init command.
+	_, err = shared.CaptureOutput(func() error {
+		cmd := shared.CreateTestCLI("init", nil, nil, false, false)
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("Command failed: %v", err)
+	}
+
+	// Verify project structure.
+	shared.VerifyProjectStructure(t, tempDir)
+
+	// Load project config to get the project UUID.
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectUUID := projectConfig.Project.UUID
+	if projectUUID == "" {
+		t.Fatal("Project UUID should not be empty")
+	}
+
+	// Verify user config was updated with project entry.
+	userConfigAfter, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config after init: %v", err)
+	}
+
+	deviceName, exists := userConfigAfter.Projects[projectUUID]
+	if !exists {
+		t.Errorf("Expected project UUID %s in user config projects, got: %v", projectUUID, userConfigAfter.Projects)
+	}
+	if deviceName == "" {
+		t.Error("Expected device name to be set in user config projects")
+	}
 }

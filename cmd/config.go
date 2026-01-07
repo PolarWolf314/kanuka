@@ -18,11 +18,15 @@ var (
 		Long: `Provides commands for managing user and project configuration settings.
 
 Use these commands to:
+  - Initialize your user identity (config init)
   - Set your device name for a project
   - Rename devices in the project
   - List all devices in the project
 
 Examples:
+  # Initialize your user configuration
+  kanuka config init
+
   # List all devices in the project
   kanuka config list-devices
 
@@ -55,6 +59,7 @@ func GetConfigCmd() *cobra.Command {
 func ResetConfigState() {
 	configVerbose = false
 	configDebug = false
+	resetConfigInitState()
 	resetSetDeviceNameState()
 	resetRenameDeviceState()
 	resetListDevicesState()
