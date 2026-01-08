@@ -16,7 +16,48 @@ import (
 	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+
+	"golang.org/x/crypto/ssh"
 )
+
+// ErrPassphraseRequired is returned when a private key is passphrase-protected
+// but no passphrase was provided.
+var ErrPassphraseRequired = errors.New("private key is passphrase-protected")
+
+// parseOpenSSHPrivateKey parses an OpenSSH format private key and returns an RSA private key.
+// If the key is passphrase-protected and no passphrase is provided, it returns ErrPassphraseRequired.
+// Only RSA keys are supported; other key types (Ed25519, ECDSA) will return an error.
+func parseOpenSSHPrivateKey(data []byte, passphrase []byte) (*rsa.PrivateKey, error) {
+	var (
+		rawKey interface{}
+		err    error
+	)
+
+	if len(passphrase) > 0 {
+		rawKey, err = ssh.ParseRawPrivateKeyWithPassphrase(data, passphrase)
+	} else {
+		rawKey, err = ssh.ParseRawPrivateKey(data)
+	}
+
+	if err != nil {
+		// Check if the error indicates the key is passphrase-protected
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "passphrase") ||
+			strings.Contains(errMsg, "encrypted") ||
+			strings.Contains(errMsg, "this private key is passphrase protected") {
+			return nil, ErrPassphraseRequired
+		}
+		return nil, fmt.Errorf("failed to parse OpenSSH private key: %w", err)
+	}
+
+	// Check if the key is an RSA key
+	rsaKey, ok := rawKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("unsupported key type: only RSA keys are supported, got %T", rawKey)
+	}
+
+	return rsaKey, nil
+}
 
 // LoadPrivateKey loads an RSA private key from disk.
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {

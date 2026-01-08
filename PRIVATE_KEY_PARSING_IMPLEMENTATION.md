@@ -102,14 +102,14 @@ Use the `golang.org/x/crypto/ssh` package which is already an indirect dependenc
 
 ### Acceptance Criteria
 
-- [ ] New function `parseOpenSSHPrivateKey(data []byte, passphrase []byte) (*rsa.PrivateKey, error)` exists
-- [ ] Function correctly parses unencrypted OpenSSH format RSA keys
-- [ ] Function correctly parses passphrase-protected keys when passphrase is provided
-- [ ] Function returns a specific error type for encrypted keys when no passphrase provided
-- [ ] Function returns clear error for non-RSA key types (Ed25519, ECDSA)
-- [ ] Function is not exported (internal implementation detail)
-- [ ] Unit tests verify parsing of valid OpenSSH keys
-- [ ] Unit tests verify appropriate errors for unsupported cases
+- [x] New function `parseOpenSSHPrivateKey(data []byte, passphrase []byte) (*rsa.PrivateKey, error)` exists
+- [x] Function correctly parses unencrypted OpenSSH format RSA keys
+- [x] Function correctly parses passphrase-protected keys when passphrase is provided
+- [x] Function returns a specific error type for encrypted keys when no passphrase provided
+- [x] Function returns clear error for non-RSA key types (Ed25519, ECDSA)
+- [x] Function is not exported (internal implementation detail)
+- [x] Unit tests verify parsing of valid OpenSSH keys
+- [x] Unit tests verify appropriate errors for unsupported cases
 
 ### Implementation Steps
 
