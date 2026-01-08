@@ -81,6 +81,36 @@ If you accidentally run `encrypt` without changing any secrets, you can safely
 discard the changes with `git checkout -- *.kanuka` to avoid unnecessary commits.
 :::
 
+## Using in CI/CD pipelines
+
+In automated environments where your private key isn't stored on disk, you can
+pipe it directly from a secrets manager using the `--private-key-stdin` flag:
+
+```bash
+# From HashiCorp Vault
+vault read -field=private_key secret/kanuka | kanuka secrets encrypt --private-key-stdin
+
+# From 1Password CLI
+op read "op://Vault/Kanuka/private_key" | kanuka secrets encrypt --private-key-stdin
+
+# From AWS Secrets Manager
+aws secretsmanager get-secret-value --secret-id kanuka-key --query SecretString --output text | kanuka secrets encrypt --private-key-stdin
+
+# From environment variable
+echo "$KANUKA_PRIVATE_KEY" | kanuka secrets encrypt --private-key-stdin
+```
+
+This approach:
+- Avoids writing sensitive keys to disk
+- Works with any secrets manager that can output to stdout
+- Keeps your private key out of shell history (the key content isn't in the command)
+
+:::tip
+If your private key is passphrase-protected, Kanuka will prompt for the
+passphrase via `/dev/tty`, allowing you to pipe the key while still entering
+the passphrase interactively.
+:::
+
 ## Next steps
 
 To learn more about `kanuka secrets encrypt`, see the [encryption concepts](/concepts/encryption) and the [command reference](/reference/references).

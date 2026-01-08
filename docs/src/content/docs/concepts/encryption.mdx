@@ -13,6 +13,40 @@ are used widely across the internet. RSA is used any time you browse the
 internet with an HTTPS connection, while AES is used whenever you are logged
 into the Wi-Fi router.
 
+## Why RSA?
+
+Kānuka uses RSA keys exclusively for asymmetric encryption. While modern
+alternatives like Ed25519 exist, RSA was chosen for several reasons:
+
+1. **Direct encryption support** — RSA can directly encrypt data, which is
+   exactly what Kānuka needs to encrypt symmetric keys. Ed25519 is a
+   signature-only algorithm and cannot encrypt data directly. Using it for
+   encryption would require implementing additional cryptographic schemes,
+   adding complexity and potential for errors.
+
+2. **Universal tooling** — RSA keys can be generated with any SSH or OpenSSL
+   tool (`ssh-keygen -t rsa`, `openssl genrsa`). While Ed25519 support is
+   growing, RSA remains the most universally compatible option.
+
+3. **Sufficient security** — RSA-2048 provides approximately 112 bits of
+   security, which is more than sufficient for Kānuka's use case. The
+   performance advantages of Ed25519 are irrelevant when encrypting small
+   symmetric keys infrequently.
+
+4. **Simplicity** — Supporting a single key type keeps the codebase simple,
+   reduces testing burden, and eliminates user confusion about which key type
+   to use.
+
+:::note[Supported key formats]
+Kānuka supports RSA private keys in multiple formats:
+- **PEM PKCS#1** (`-----BEGIN RSA PRIVATE KEY-----`)
+- **PEM PKCS#8** (`-----BEGIN PRIVATE KEY-----`)
+- **OpenSSH** (`-----BEGIN OPENSSH PRIVATE KEY-----`)
+
+Passphrase-protected keys are also supported — Kānuka will prompt for your
+passphrase when needed.
+:::
+
 ## How does Kānuka work?
 
 Here is the basic workflow for encryption, assuming you have access:

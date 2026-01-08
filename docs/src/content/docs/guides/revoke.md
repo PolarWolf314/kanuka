@@ -122,6 +122,30 @@ kanuka secrets revoke --user alice@example.com --yes
 kanuka secrets revoke --file .kanuka/secrets/abc123.kanuka
 ```
 
+## Using in CI/CD pipelines
+
+In automated environments where your private key isn't stored on disk, you can
+pipe it directly from a secrets manager using the `--private-key-stdin` flag:
+
+```bash
+# From HashiCorp Vault
+vault read -field=private_key secret/kanuka | kanuka secrets revoke --user alice@example.com --yes --private-key-stdin
+
+# From 1Password CLI
+op read "op://Vault/Kanuka/private_key" | kanuka secrets revoke --user alice@example.com --yes --private-key-stdin
+
+# From environment variable
+echo "$KANUKA_PRIVATE_KEY" | kanuka secrets revoke --user alice@example.com --yes --private-key-stdin
+```
+
+Note the `--yes` flag to skip confirmation prompts in automated environments.
+
+:::tip
+If your private key is passphrase-protected, Kanuka will prompt for the
+passphrase via `/dev/tty`, allowing you to pipe the key while still entering
+the passphrase interactively.
+:::
+
 ## After revoking
 
 After revoking access:

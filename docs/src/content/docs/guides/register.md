@@ -86,6 +86,31 @@ The `--user` flag is required with `--pubkey` because the key contents don't
 include any identifying information.
 :::
 
+## Using in CI/CD pipelines
+
+In automated environments where your private key isn't stored on disk, you can
+pipe it directly from a secrets manager using the `--private-key-stdin` flag:
+
+```bash
+# From HashiCorp Vault
+vault read -field=private_key secret/kanuka | kanuka secrets register --user alice@example.com --private-key-stdin
+
+# From 1Password CLI
+op read "op://Vault/Kanuka/private_key" | kanuka secrets register --user alice@example.com --private-key-stdin
+
+# From environment variable
+echo "$KANUKA_PRIVATE_KEY" | kanuka secrets register --user alice@example.com --private-key-stdin
+```
+
+This is useful for automated onboarding workflows where you need to register
+new team members without manual intervention.
+
+:::tip
+If your private key is passphrase-protected, Kanuka will prompt for the
+passphrase via `/dev/tty`, allowing you to pipe the key while still entering
+the passphrase interactively.
+:::
+
 ## Viewing registered users
 
 The project's registered users are tracked in `.kanuka/config.toml`:
