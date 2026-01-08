@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - release
+      - main
 
 permissions:
   contents: write
@@ -13,21 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
 
-      - name: Install tools
-        run: |
-          go install github.com/goreleaser/goreleaser@latest
-          go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
-
-      - name: Run release script
-        run: ./scripts/release.sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run semantic-release
+        uses: go-semantic-release/action@v1
+        with:
+          github-token: ${{ secrets.RELEASE_PAT }}
+          hooks: goreleaser
