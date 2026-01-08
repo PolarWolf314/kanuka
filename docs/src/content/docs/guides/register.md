@@ -23,6 +23,17 @@ This command:
 
 Commit these changes and they'll have access after pulling.
 
+### Previewing registration
+
+Use the `--dry-run` flag to preview what would be created without making changes:
+
+```bash
+kanuka secrets register --user alice@example.com --dry-run
+```
+
+This verifies that the user exists in the project config, their public key is
+available, and shows which files would be created.
+
 ### Multiple devices
 
 Users can have multiple devices registered under the same email. When you register

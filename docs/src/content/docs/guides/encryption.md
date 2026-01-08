@@ -30,6 +30,20 @@ That's it! Kānuka will automatically encrypt the files, and name the encrypted
 secrets the same as the original with `.kanuka` added onto the end. You can now
 safely commit these files to your version control.
 
+### Previewing encryption
+
+Use the `--dry-run` flag to preview which files would be encrypted without
+making any changes:
+
+```bash
+kanuka secrets encrypt --dry-run
+```
+
+This is useful for:
+- Verifying which `.env` files Kānuka discovered in your project
+- Checking file discovery in new projects before committing
+- CI/CD pipelines for validation without side effects
+
 ## Non-Deterministic Encryption
 
 You may notice that running `kanuka secrets encrypt` produces different output

@@ -89,8 +89,19 @@ Usage:
   kanuka secrets decrypt [flags]
 
 Flags:
+      --dry-run   preview decryption without making changes
   -h, --help      help for decrypt
   -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Preview which files would be decrypted
+kanuka secrets decrypt --dry-run
+
+# Decrypt all .kanuka files
+kanuka secrets decrypt
 ```
 
 ### `kanuka secrets encrypt`
@@ -102,8 +113,19 @@ Usage:
   kanuka secrets encrypt [flags]
 
 Flags:
+      --dry-run   preview encryption without making changes
   -h, --help      help for encrypt
   -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Preview which files would be encrypted
+kanuka secrets encrypt --dry-run
+
+# Encrypt all .env files
+kanuka secrets encrypt
 ```
 
 ### `kanuka secrets init`
@@ -128,11 +150,25 @@ Usage:
   kanuka secrets register [flags]
 
 Flags:
+      --dry-run         preview registration without making changes
   -f, --file string     the path to a custom public key — will add public key to the project
   -h, --help            help for register
       --pubkey string   OpenSSH or PEM public key content to be saved with the specified username
   -u, --user string     username to register for access
   -v, --verbose         enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Preview what would be created
+kanuka secrets register --user alice@example.com --dry-run
+
+# Register a user by email
+kanuka secrets register --user alice@example.com
+
+# Register using a public key file
+kanuka secrets register --file path/to/key.pub --dry-run
 ```
 
 ### `kanuka secrets revoke`
@@ -144,7 +180,29 @@ Usage:
   kanuka secrets revoke [flags]
 
 Flags:
-  -h, --help   help for revoke
+  -d, --device string   revoke a specific device only
+      --dry-run         preview revocation without making changes
+  -f, --file string     path to the .kanuka file to revoke
+  -h, --help            help for revoke
+  -u, --user string     user email to revoke
+  -v, --verbose         enable verbose output
+  -y, --yes             skip confirmation prompts
+```
+
+**Examples:**
+
+```bash
+# Preview what would be revoked
+kanuka secrets revoke --user alice@example.com --dry-run
+
+# Revoke all devices for a user
+kanuka secrets revoke --user alice@example.com
+
+# Revoke a specific device
+kanuka secrets revoke --user alice@example.com --device old-laptop --dry-run
+
+# Revoke by file path
+kanuka secrets revoke --file .kanuka/secrets/uuid.kanuka
 ```
 
 ## Configuration Management
