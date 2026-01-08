@@ -617,6 +617,90 @@ func GenerateOpenSSHKeyPairWithPassphrase(privatePath, publicPath string, passph
 	return nil
 }
 
+// CaptureOutputWithStdin captures both stdout and stderr during function execution,
+// while also providing data on stdin. This is useful for testing commands that read from stdin.
+func CaptureOutputWithStdin(stdinData []byte, fn func() error) (string, error) {
+	// Save original stdin, stdout, and stderr
+	originalStdin := os.Stdin
+	originalStdout := os.Stdout
+	originalStderr := os.Stderr
+
+	// Create a pipe for stdin
+	stdinReader, stdinWriter, err := os.Pipe()
+	if err != nil {
+		return "", fmt.Errorf("failed to create stdin pipe: %w", err)
+	}
+
+	// Create pipes to capture output
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		stdinReader.Close()
+		stdinWriter.Close()
+		return "", fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
+		stdinReader.Close()
+		stdinWriter.Close()
+		stdoutReader.Close()
+		stdoutWriter.Close()
+		return "", fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	// Replace stdin, stdout, and stderr
+	os.Stdin = stdinReader
+	os.Stdout = stdoutWriter
+	os.Stderr = stderrWriter
+
+	// Write data to stdin in a goroutine
+	go func() {
+		defer stdinWriter.Close()
+		_, _ = stdinWriter.Write(stdinData)
+	}()
+
+	// Channel to collect output
+	outputChan := make(chan string, 2)
+
+	// Start goroutines to read from pipes
+	go func() {
+		var buf bytes.Buffer
+		_, copyErr := io.Copy(&buf, stdoutReader)
+		if copyErr != nil {
+			log.Printf("Failed to copy stdout: %s", copyErr)
+		}
+		outputChan <- buf.String()
+	}()
+
+	go func() {
+		var buf bytes.Buffer
+		_, copyErr := io.Copy(&buf, stderrReader)
+		if copyErr != nil {
+			log.Printf("Failed to copy stderr: %s", copyErr)
+		}
+		outputChan <- buf.String()
+	}()
+
+	// Execute the function
+	fnErr := fn()
+
+	// Close writers to signal EOF
+	stdoutWriter.Close()
+	stderrWriter.Close()
+	stdinReader.Close()
+
+	// Restore original stdin, stdout, and stderr
+	os.Stdin = originalStdin
+	os.Stdout = originalStdout
+	os.Stderr = originalStderr
+
+	// Collect output
+	stdout := <-outputChan
+	stderr := <-outputChan
+
+	return stdout + stderr, fnErr
+}
+
 // ConvertPKCS1ToOpenSSH reads a PKCS#1 format private key and converts it to OpenSSH format.
 // This is useful for tests that need to convert existing keys to OpenSSH format.
 func ConvertPKCS1ToOpenSSH(pkcs1Path, opensshPath string) error {
