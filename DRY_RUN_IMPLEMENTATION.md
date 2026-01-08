@@ -289,15 +289,17 @@ No changes made. Run without --dry-run to execute.
 
 ### Acceptance Criteria
 
-- [ ] `--dry-run` flag is available on `secrets encrypt` command
-- [ ] When `--dry-run` is set:
-  - [ ] No `.kanuka` files are created or modified
-  - [ ] Output shows source → destination file mapping
-  - [ ] Output shows total count of files that would be encrypted
-  - [ ] Output ends with "No changes made" message
-- [ ] All validation still runs (no access, no project init, etc. still produce errors)
-- [ ] Symmetric key decryption is still validated (user must have access)
-- [ ] Tests added for dry-run behavior
+- [x] `--dry-run` flag is available on `secrets encrypt` command
+- [x] When `--dry-run` is set:
+  - [x] No `.kanuka` files are created or modified
+  - [x] Output shows source → destination file mapping
+  - [x] Output shows total count of files that would be encrypted
+  - [x] Output ends with "No changes made" message
+- [x] All validation still runs (no access, no project init, etc. still produce errors)
+- [x] Symmetric key decryption is still validated (user must have access)
+- [x] Tests added for dry-run behavior
+
+**Status: COMPLETED** ✓
 
 ### Implementation Steps
 
