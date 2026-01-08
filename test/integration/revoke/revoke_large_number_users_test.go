@@ -9,6 +9,8 @@ import (
 
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
+
 	"github.com/google/uuid"
 )
 
@@ -134,9 +136,8 @@ func testRevokeWithLargeNumberOfUsers(t *testing.T, originalWd string, originalU
 	// Remove the user using --file flag (use relative path)
 	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", userToRemoveUUID+".kanuka")
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
-	if err := secretsCmd.Execute(); err != nil {
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
+	if err := testCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
 

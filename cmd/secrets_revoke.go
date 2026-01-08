@@ -20,6 +20,7 @@ var (
 	revokeFilePath  string
 	revokeDevice    string
 	revokeYes       bool
+	revokeDryRun    bool
 )
 
 func resetRevokeCommandState() {
@@ -27,6 +28,7 @@ func resetRevokeCommandState() {
 	revokeFilePath = ""
 	revokeDevice = ""
 	revokeYes = false
+	revokeDryRun = false
 }
 
 func init() {
@@ -34,6 +36,7 @@ func init() {
 	revokeCmd.Flags().StringVarP(&revokeFilePath, "file", "f", "", "path to a .kanuka file to revoke along with its corresponding public key")
 	revokeCmd.Flags().StringVar(&revokeDevice, "device", "", "specific device name to revoke (requires --user)")
 	revokeCmd.Flags().BoolVarP(&revokeYes, "yes", "y", false, "skip confirmation prompts (for automation)")
+	revokeCmd.Flags().BoolVar(&revokeDryRun, "dry-run", false, "preview revocation without making changes")
 }
 
 var revokeCmd = &cobra.Command{
@@ -54,6 +57,9 @@ You can revoke access by:
 When revoking a user with multiple devices, you will be prompted to confirm
 unless --yes is specified. Use --device to revoke only a specific device.
 
+Use --dry-run to preview what would be revoked without making any changes.
+This shows which files would be deleted, config changes, and key rotation impact.
+
 Warning: After revocation, the revoked user may still have access to old
 secret values from their local git history. Consider rotating your actual
 secret values after this revocation if the user was compromised.
@@ -67,6 +73,9 @@ Examples:
 
   # Revoke without confirmation (for CI/CD automation)
   kanuka secrets revoke --user alice@example.com --yes
+
+  # Preview revocation without making changes
+  kanuka secrets revoke --user alice@example.com --dry-run
 
   # Revoke by file path
   kanuka secrets revoke --file .kanuka/secrets/abc123.kanuka`,
@@ -407,9 +416,54 @@ func getFilesByPath(spinner *spinner.Spinner) (*revokeContext, error) {
 	}, nil
 }
 
+func printRevokeDryRun(spinner *spinner.Spinner, ctx *revokeContext) error {
+	spinner.Stop()
+
+	fmt.Println()
+	fmt.Println(color.YellowString("[dry-run]") + " Would revoke access for " + color.CyanString(ctx.DisplayName))
+	fmt.Println()
+
+	// List files that would be deleted.
+	fmt.Println("Files that would be deleted:")
+	for _, file := range ctx.Files {
+		fmt.Println("  - " + color.RedString(file.Path))
+	}
+	fmt.Println()
+
+	// Show config changes.
+	fmt.Println("Config changes:")
+	for _, uuid := range ctx.UUIDsRevoked {
+		fmt.Println("  - Remove user " + color.YellowString(uuid) + " from project")
+	}
+	fmt.Println()
+
+	// Show key rotation impact.
+	allUsers, err := secrets.GetAllUsersInProject()
+	if err == nil && len(allUsers) > len(ctx.UUIDsRevoked) {
+		remainingCount := len(allUsers) - len(ctx.UUIDsRevoked)
+		fmt.Println("Post-revocation actions:")
+		fmt.Printf("  - Symmetric key would be rotated for %d remaining user(s)\n", remainingCount)
+		fmt.Println()
+	}
+
+	// Warning about git history.
+	fmt.Println(color.YellowString("⚠") + " Warning: After revocation, " + ctx.DisplayName + " may still have access to old secrets from git history.")
+	fmt.Println()
+
+	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+
+	spinner.FinalMSG = ""
+	return nil
+}
+
 func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	if len(ctx.Files) == 0 {
 		return nil
+	}
+
+	// If dry-run, print preview and exit early.
+	if revokeDryRun {
+		return printRevokeDryRun(spinner, ctx)
 	}
 
 	displayName := ctx.DisplayName

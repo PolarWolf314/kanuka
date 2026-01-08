@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/rsa"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -18,6 +19,7 @@ var (
 	registerUserEmail string
 	customFilePath    string
 	publicKeyText     string
+	registerDryRun    bool
 )
 
 // resetRegisterCommandState resets all register command global variables to their default values for testing.
@@ -25,12 +27,14 @@ func resetRegisterCommandState() {
 	registerUserEmail = ""
 	customFilePath = ""
 	publicKeyText = ""
+	registerDryRun = false
 }
 
 func init() {
 	RegisterCmd.Flags().StringVarP(&registerUserEmail, "user", "u", "", "user email to register for access")
 	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
 	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified user email")
+	RegisterCmd.Flags().BoolVar(&registerDryRun, "dry-run", false, "preview registration without making changes")
 }
 
 var RegisterCmd = &cobra.Command{
@@ -50,6 +54,8 @@ Methods to register a user:
 After running this command, the user will immediately have access to decrypt
 secrets once they pull the latest changes from the repository.
 
+Use --dry-run to preview what would be created without making changes.
+
 Examples:
   # Register a user by their email address
   kanuka secrets register --user alice@example.com
@@ -58,7 +64,10 @@ Examples:
   kanuka secrets register --file ./alice-key.pub
 
   # Register a user with public key text (useful for automation)
-  kanuka secrets register --user alice@example.com --pubkey "ssh-rsa AAAA..."`,
+  kanuka secrets register --user alice@example.com --pubkey "ssh-rsa AAAA..."
+
+  # Preview registration without making changes
+  kanuka secrets register --user alice@example.com --dry-run`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting register command")
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
@@ -159,8 +168,59 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	}
 	Logger.Infof("Public key parsed successfully")
 
-	// Save the public key to a file using user UUID
+	// Compute paths for output
 	pubKeyFilePath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
+	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+	kanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+
+	// Validate current user has access to decrypt symmetric key before making changes
+	userConfig, err := configs.EnsureUserConfig()
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
+	}
+	currentUserUUID := userConfig.User.UUID
+	projectUUID := projectConfig.Project.UUID
+
+	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
+	if err != nil {
+		currentKanukaKeyPath := filepath.Join(projectSecretsPath, currentUserUUID+".kanuka")
+		finalMessage := color.RedString("✗") + " Couldn't get your Kānuka key from " + color.YellowString(currentKanukaKeyPath) + "\n\n" +
+			"Are you sure you have access?\n\n" +
+			color.RedString("Error: ") + err.Error()
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
+	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+	if err != nil {
+		finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
+			"Are you sure you have access?\n\n" +
+			color.RedString("Error: ") + err.Error()
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	// Validate decryption works
+	_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+	if err != nil {
+		currentKanukaKeyPath := filepath.Join(projectSecretsPath, currentUserUUID+".kanuka")
+		finalMessage := color.RedString("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
+			"    Kānuka key path: " + color.YellowString(currentKanukaKeyPath) + "\n" +
+			"    Private key path: " + color.YellowString(privateKeyPath) + "\n\n" +
+			"Are you sure you have access?\n\n" +
+			color.RedString("Error: ") + err.Error()
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	// If dry-run, print preview and exit early
+	if registerDryRun {
+		printRegisterDryRun(spinner, registerUserEmail, pubKeyFilePath, kanukaFilePath, true)
+		return nil
+	}
+
+	// Save the public key to a file using user UUID
 	Logger.Debugf("Saving public key to: %s", pubKeyFilePath)
 	if err := secrets.SavePublicKeyToFile(publicKey, pubKeyFilePath); err != nil {
 		Logger.Errorf("Failed to save public key to %s: %v", pubKeyFilePath, err)
@@ -180,10 +240,6 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
-
-	// Compute paths for output
-	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-	kanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
 
 	Logger.Infof("Public key registration completed successfully for user: %s", registerUserEmail)
 	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n\n" +
@@ -339,7 +395,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 
 	// Decrypt symmetric key with current user's private key
 	Logger.Debugf("Decrypting symmetric key with current user's private key")
-	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+	_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
 		Logger.Errorf("Failed to decrypt symmetric key: %v", err)
 		finalMessage := color.RedString("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
@@ -349,6 +405,21 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
+	}
+
+	// Compute path for output
+	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+
+	// If dry-run, print preview and exit early
+	if registerDryRun {
+		printRegisterDryRun(spinner, registerUserEmail, targetPubkeyPath, targetKanukaFilePath, false)
+		return nil
+	}
+
+	// Re-decrypt symmetric key for actual use (we verified it works above)
+	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to decrypt symmetric key: %v", err)
 	}
 
 	// Encrypt symmetric key with target user's public key
@@ -363,9 +434,6 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
-
-	// Compute path for output
-	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
 
 	Logger.Infof("User registration completed successfully for: %s", registerUserEmail)
 	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n\n" +
@@ -447,7 +515,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	}
 
 	// Decrypt symmetric key with current user's private key
-	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+	_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
 		finalMessage := color.RedString("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
 			"    Kānuka key path: " + color.YellowString(kanukaKeyPath) + "\n" +
@@ -458,13 +526,6 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	// Encrypt symmetric key with target user's public key
-	targetEncryptedSymKey, err := secrets.EncryptWithPublicKey(symKey, targetUserPublicKey)
-	if err != nil {
-		return Logger.ErrorfAndReturn("Failed to encrypt symmetric key for target user: %v", err)
-	}
-
-	// Save encrypted symmetric key for target user
 	// The target user UUID is the filename without .pub extension
 	targetUserUUID := strings.TrimSuffix(filepath.Base(customFilePath), ".pub")
 
@@ -475,13 +536,31 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		displayName = targetUserUUID
 	}
 
+	// Compute path for output
+	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+
+	// If dry-run, print preview and exit early
+	if registerDryRun {
+		printRegisterDryRunForFile(spinner, displayName, customFilePath, targetKanukaFilePath)
+		return nil
+	}
+
+	// Re-decrypt symmetric key for actual use (we verified it works above)
+	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to decrypt symmetric key: %v", err)
+	}
+
+	// Encrypt symmetric key with target user's public key
+	targetEncryptedSymKey, err := secrets.EncryptWithPublicKey(symKey, targetUserPublicKey)
+	if err != nil {
+		return Logger.ErrorfAndReturn("Failed to encrypt symmetric key for target user: %v", err)
+	}
+
 	Logger.Debugf("Saving kanuka key for target user: %s (from custom file)", targetUserUUID)
 	if err := secrets.SaveKanukaKeyToProject(targetUserUUID, targetEncryptedSymKey); err != nil {
 		return Logger.ErrorfAndReturn("Failed to save encrypted key for target user: %v", err)
 	}
-
-	// Compute path for output
-	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
 
 	Logger.Infof("Custom file registration completed successfully for: %s", displayName)
 	finalMessage := color.GreenString("✓") + " " + color.YellowString(displayName) + " has been granted access successfully!\n\n" +
@@ -491,4 +570,46 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
+}
+
+// printRegisterDryRun prints a preview of what would be created during registration.
+func printRegisterDryRun(spinner *spinner.Spinner, displayName, pubKeyPath, kanukaPath string, pubKeyWouldBeCreated bool) {
+	spinner.Stop()
+
+	fmt.Println(color.YellowString("[dry-run]") + " Would register " + color.CyanString(displayName))
+	fmt.Println()
+
+	fmt.Println("Files that would be created:")
+	if pubKeyWouldBeCreated {
+		fmt.Println("  - " + color.GreenString(pubKeyPath))
+	}
+	fmt.Println("  - " + color.GreenString(kanukaPath))
+	fmt.Println()
+
+	fmt.Println("Prerequisites verified:")
+	fmt.Println("  " + color.GreenString("✓") + " User exists in project config")
+	fmt.Println("  " + color.GreenString("✓") + " Public key found at " + pubKeyPath)
+	fmt.Println("  " + color.GreenString("✓") + " Current user has access to decrypt symmetric key")
+	fmt.Println()
+
+	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+}
+
+// printRegisterDryRunForFile prints a preview for --file registration mode.
+func printRegisterDryRunForFile(spinner *spinner.Spinner, displayName, pubKeyPath, kanukaPath string) {
+	spinner.Stop()
+
+	fmt.Println(color.YellowString("[dry-run]") + " Would register " + color.CyanString(displayName))
+	fmt.Println()
+
+	fmt.Println("Files that would be created:")
+	fmt.Println("  - " + color.GreenString(kanukaPath))
+	fmt.Println()
+
+	fmt.Println("Prerequisites verified:")
+	fmt.Println("  " + color.GreenString("✓") + " Public key loaded from " + pubKeyPath)
+	fmt.Println("  " + color.GreenString("✓") + " Current user has access to decrypt symmetric key")
+	fmt.Println()
+
+	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
 }

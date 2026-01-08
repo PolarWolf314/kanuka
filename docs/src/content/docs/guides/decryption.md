@@ -24,6 +24,23 @@ kanuka secrets decrypt
 That's it! Kānuka will automatically decrypt the files, and return the original
 `.env`, as long as you have access.
 
+## Previewing decryption
+
+Use the `--dry-run` flag to preview which files would be decrypted without
+making any changes:
+
+```bash
+kanuka secrets decrypt --dry-run
+```
+
+This shows:
+- Which `.kanuka` files would be decrypted
+- The target `.env` files that would be created
+- Whether any existing `.env` files would be overwritten
+
+This is especially useful to check if you have local `.env` modifications that
+would be lost during decryption.
+
 ## Next steps
 
 To learn more about `kanuka secrets decrypt`, see the [encryption concepts](/concepts/encryption) and the [command reference](/reference/references).

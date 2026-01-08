@@ -6,6 +6,22 @@ description: A guide to revoking a user's access to a repo's secrets using Kanuk
 When a team member leaves or a device is compromised, you can revoke their access
 to the project's secrets using Kanuka.
 
+## Previewing revocation
+
+Before revoking access, you can preview what would happen using the `--dry-run` flag:
+
+```bash
+kanuka secrets revoke --user alice@example.com --dry-run
+```
+
+This shows:
+- Which files would be deleted (public keys and encrypted symmetric keys)
+- Which config entries would be removed
+- How many remaining users would have their keys rotated
+
+No changes are made when using `--dry-run`, so you can safely verify the impact
+before executing the revocation.
+
 ## Revoking by email
 
 To revoke all access for a user across all their devices:
@@ -87,11 +103,17 @@ also rotate your actual secret values (API keys, passwords, etc.) after revocati
 ## Revocation examples
 
 ```bash
+# Preview revocation without making changes
+kanuka secrets revoke --user alice@example.com --dry-run
+
 # Revoke all devices for a user
 kanuka secrets revoke --user alice@example.com
 
 # Revoke a specific device
 kanuka secrets revoke --user alice@example.com --device old-laptop
+
+# Preview specific device revocation
+kanuka secrets revoke --user alice@example.com --device old-laptop --dry-run
 
 # Revoke without confirmation (for CI/CD automation)
 kanuka secrets revoke --user alice@example.com --yes

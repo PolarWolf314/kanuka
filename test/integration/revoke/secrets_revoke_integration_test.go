@@ -79,9 +79,8 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 
 	// Initialize the project
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"init", "--yes"})
-	if err := secretsCmd.Execute(); err != nil {
+	initCmd := shared.CreateTestCLIWithArgs("init", []string{"--yes"}, nil, nil, false, false)
+	if err := initCmd.Execute(); err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
@@ -101,9 +100,8 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 
 	// Register the second user using --file flag
 	cmd.ResetGlobalState()
-	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"register", "--file", projectPublicKeyPath})
-	if err := secretsCmd.Execute(); err != nil {
+	registerCmd := shared.CreateTestCLIWithArgs("register", []string{"--file", projectPublicKeyPath}, nil, nil, false, false)
+	if err := registerCmd.Execute(); err != nil {
 		t.Fatalf("Failed to register second user: %v", err)
 	}
 
@@ -139,9 +137,8 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 	// Remove the user using --file flag (use relative path)
 	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", secondUser+".kanuka")
 	cmd.ResetGlobalState()
-	secretsCmd = cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
-	if err := secretsCmd.Execute(); err != nil {
+	revokeCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
+	if err := revokeCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
 

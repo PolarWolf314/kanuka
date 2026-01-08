@@ -1,19 +1,46 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
+	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
+var encryptDryRun bool
+
+func init() {
+	encryptCmd.Flags().BoolVar(&encryptDryRun, "dry-run", false, "preview encryption without making changes")
+}
+
+func resetEncryptCommandState() {
+	encryptDryRun = false
+}
+
 var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
 	Short: "Encrypts the .env file into .env.kanuka using your Kānuka key",
+	Long: `Encrypts all .env files in the project into .env.kanuka files.
+
+This command discovers all .env files in your project (recursively, excluding
+the .kanuka/ directory) and encrypts each one using the project's symmetric key.
+The encrypted files are saved with a .kanuka extension (e.g., .env → .env.kanuka).
+
+Use --dry-run to preview which files would be encrypted without making changes.
+
+Examples:
+  # Encrypt all .env files
+  kanuka secrets encrypt
+
+  # Preview which files would be encrypted
+  kanuka secrets encrypt --dry-run`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting encrypt command")
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
@@ -114,6 +141,11 @@ var encryptCmd = &cobra.Command{
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
 
+		// If dry-run, print preview and exit early.
+		if encryptDryRun {
+			return printEncryptDryRun(spinner, listOfEnvFiles, projectPath)
+		}
+
 		Logger.Infof("Encrypting %d files", len(listOfEnvFiles))
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
 			Logger.Errorf("Failed to encrypt files: %v", err)
@@ -143,4 +175,29 @@ var encryptCmd = &cobra.Command{
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+func printEncryptDryRun(spinner *spinner.Spinner, envFiles []string, projectPath string) error {
+	spinner.Stop()
+
+	fmt.Println()
+	fmt.Println(color.YellowString("[dry-run]") + fmt.Sprintf(" Would encrypt %d environment file(s)", len(envFiles)))
+	fmt.Println()
+
+	fmt.Println("Files that would be created:")
+	for _, envFile := range envFiles {
+		// Get relative path for cleaner output.
+		relPath, err := filepath.Rel(projectPath, envFile)
+		if err != nil {
+			relPath = envFile
+		}
+		kanukaFile := relPath + ".kanuka"
+		fmt.Printf("  %s → %s\n", color.CyanString(relPath), color.GreenString(kanukaFile))
+	}
+	fmt.Println()
+
+	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+
+	spinner.FinalMSG = ""
+	return nil
 }

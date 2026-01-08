@@ -7,7 +7,21 @@ import (
 
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
+
+// resetConfigState resets global config state to prevent test pollution.
+func resetConfigState() {
+	configs.ProjectKanukaSettings = &configs.ProjectSettings{
+		ProjectUUID:          "",
+		ProjectName:          "",
+		ProjectPath:          "",
+		ProjectPublicKeyPath: "",
+		ProjectSecretsPath:   "",
+	}
+	configs.GlobalUserConfig = nil
+	configs.GlobalProjectConfig = nil
+}
 
 func TestRevokeCommand_FileFlag(t *testing.T) {
 	originalWd, err := os.Getwd()
@@ -15,6 +29,9 @@ func TestRevokeCommand_FileFlag(t *testing.T) {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
 	originalUserSettings := configs.UserKanukaSettings
+
+	// Reset config state at the start to clean up any pollution from previous tests.
+	resetConfigState()
 
 	t.Run("RevokeFileWithBothFilesPresent", func(t *testing.T) {
 		testRevokeFileWithBothFilesPresent(t, originalWd, originalUserSettings)
@@ -58,6 +75,9 @@ func TestRevokeCommand_FileFlag(t *testing.T) {
 }
 
 func testRevokeFileWithBothFilesPresent(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -131,10 +151,9 @@ func testRevokeFileWithBothFilesPresent(t *testing.T, originalWd string, origina
 	relativeFilePath := filepath.Join(".kanuka", "secrets", testUser+".kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeFilePath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
@@ -149,6 +168,9 @@ func testRevokeFileWithBothFilesPresent(t *testing.T, originalWd string, origina
 }
 
 func testRevokeFileWithRelativePath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -214,10 +236,9 @@ func testRevokeFileWithRelativePath(t *testing.T, originalWd string, originalUse
 	relativeFilePath := filepath.Join(".kanuka", "secrets", testUser+".kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeFilePath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command with relative path should succeed: %v", err)
 	}
@@ -232,6 +253,9 @@ func testRevokeFileWithRelativePath(t *testing.T, originalWd string, originalUse
 }
 
 func testRevokeFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -300,10 +324,9 @@ func testRevokeFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalU
 	relativeFilePath := filepath.Join(".kanuka", "secrets", testUser+".kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeFilePath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should succeed even without public key file: %v", err)
 	}
@@ -318,6 +341,9 @@ func testRevokeFileWithOnlyKanukaFile(t *testing.T, originalWd string, originalU
 }
 
 func testRevokeNonExistentFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -369,16 +395,18 @@ func testRevokeNonExistentFile(t *testing.T, originalWd string, originalUserSett
 	nonExistentPath := filepath.Join(".kanuka", "secrets", "nonexistent.kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", nonExistentPath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", nonExistentPath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even when file doesn't exist: %v", err)
 	}
 }
 
 func testRevokeDirectoryPath(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -430,16 +458,18 @@ func testRevokeDirectoryPath(t *testing.T, originalWd string, originalUserSettin
 	directoryPath := filepath.Join(".kanuka", "secrets", "")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", directoryPath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", directoryPath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even when path is a directory: %v", err)
 	}
 }
 
 func testRevokeFileOutsideSecretsDir(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -495,10 +525,9 @@ func testRevokeFileOutsideSecretsDir(t *testing.T, originalWd string, originalUs
 	defer os.Remove(tempFile.Name())
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", tempFile.Name()})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", tempFile.Name()}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even when file is outside secrets dir: %v", err)
 	}
@@ -509,6 +538,9 @@ func testRevokeFileOutsideSecretsDir(t *testing.T, originalWd string, originalUs
 }
 
 func testRevokeNonKanukaExtension(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -572,10 +604,9 @@ func testRevokeNonKanukaExtension(t *testing.T, originalWd string, originalUserS
 	testFilePathRelative := filepath.Join(".kanuka", "secrets", testUser+".txt")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", testFilePathRelative})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", testFilePathRelative}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even when file has wrong extension: %v", err)
 	}
@@ -586,6 +617,9 @@ func testRevokeNonKanukaExtension(t *testing.T, originalWd string, originalUserS
 }
 
 func testBothUserAndFileFlags(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -651,10 +685,9 @@ func testBothUserAndFileFlags(t *testing.T, originalWd string, originalUserSetti
 	relativeFilePath := filepath.Join(".kanuka", "secrets", testUser+".kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", testUser, "--file", relativeFilePath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--user", testUser, "--file", relativeFilePath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even when both flags are specified: %v", err)
 	}
@@ -669,6 +702,9 @@ func testBothUserAndFileFlags(t *testing.T, originalWd string, originalUserSetti
 }
 
 func testRevokeFileWithDotsInUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -742,10 +778,9 @@ func testRevokeFileWithDotsInUsername(t *testing.T, originalWd string, originalU
 	relativeFilePath := filepath.Join(".kanuka", "secrets", testUser+".kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeFilePath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should succeed with dots in username: %v", err)
 	}
@@ -760,6 +795,9 @@ func testRevokeFileWithDotsInUsername(t *testing.T, originalWd string, originalU
 }
 
 func testRevokeFileWithEmptyUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	// Reset config state at the start of each subtest.
+	resetConfigState()
+
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -822,10 +860,9 @@ func testRevokeFileWithEmptyUsername(t *testing.T, originalWd string, originalUs
 	relativeFilePath := filepath.Join(".kanuka", "secrets", ".kanuka")
 
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeFilePath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeFilePath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should succeed with empty username: %v", err)
 	}
