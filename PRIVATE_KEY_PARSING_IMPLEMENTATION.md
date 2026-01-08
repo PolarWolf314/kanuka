@@ -53,16 +53,16 @@ This implementation focuses on:
 
 ## Ticket Overview
 
-| Ticket | Description | Priority | Effort | Dependencies |
-|--------|-------------|----------|--------|--------------|
-| [PKP-001](#pkp-001-add-openssh-private-key-parsing-function) | Add OpenSSH private key parsing function | HIGH | 2-3 hours | None |
-| [PKP-002](#pkp-002-update-loadprivatekey-to-support-both-formats) | Update LoadPrivateKey to support both formats | HIGH | 1-2 hours | PKP-001 |
-| [PKP-003](#pkp-003-add-parseprivatekeytext-helper-function) | Add ParsePrivateKeyText helper function | MEDIUM | 1-2 hours | PKP-001 |
-| [PKP-004](#pkp-004-add-comprehensive-test-coverage) | Add comprehensive test coverage | HIGH | 2-3 hours | PKP-001, PKP-002, PKP-003 |
-| [PKP-005](#pkp-005-update-documentation) | Update documentation | LOW | 1 hour | PKP-001, PKP-002 |
-| [PKP-006](#pkp-006-add-passphrase-protected-key-support) | Add passphrase-protected key support | MEDIUM | 2-3 hours | PKP-001, PKP-002 |
-| [PKP-007](#pkp-007-add-private-key-stdin-flag) | Add `--private-key-stdin` flag for piping | LOW | 2-3 hours | PKP-003, PKP-006 |
-| [PKP-008](#pkp-008-document-rsa-only-design-decision) | Document RSA-only design decision | LOW | 1 hour | None |
+| Ticket | Description | Priority | Effort | Dependencies | Status |
+|--------|-------------|----------|--------|--------------|--------|
+| [PKP-001](#pkp-001-add-openssh-private-key-parsing-function) | Add OpenSSH private key parsing function | HIGH | 2-3 hours | None | ✅ DONE |
+| [PKP-002](#pkp-002-update-loadprivatekey-to-support-both-formats) | Update LoadPrivateKey to support both formats | HIGH | 1-2 hours | PKP-001 | ✅ DONE |
+| [PKP-003](#pkp-003-add-parseprivatekeytext-helper-function) | Add ParsePrivateKeyText helper function | MEDIUM | 1-2 hours | PKP-001 | ✅ DONE |
+| [PKP-004](#pkp-004-add-comprehensive-test-coverage) | Add comprehensive test coverage | HIGH | 2-3 hours | PKP-001, PKP-002, PKP-003 | 🔲 TODO |
+| [PKP-005](#pkp-005-update-documentation) | Update documentation | LOW | 1 hour | PKP-001, PKP-002 | 🔲 TODO |
+| [PKP-006](#pkp-006-add-passphrase-protected-key-support) | Add passphrase-protected key support | MEDIUM | 2-3 hours | PKP-001, PKP-002 | ✅ DONE |
+| [PKP-007](#pkp-007-add-private-key-stdin-flag) | Add `--private-key-stdin` flag for piping | LOW | 2-3 hours | PKP-003, PKP-006 | 🔲 TODO |
+| [PKP-008](#pkp-008-document-rsa-only-design-decision) | Document RSA-only design decision | LOW | 1 hour | None | 🔲 TODO |
 
 **Recommended implementation order:** PKP-001 → PKP-002 → PKP-003 → PKP-006 → PKP-004 → PKP-007 → PKP-005 → PKP-008
 
@@ -713,19 +713,19 @@ Enter passphrase for private key: ********
 
 ### Acceptance Criteria
 
-- [ ] Kanuka detects when a private key is passphrase-protected
-- [ ] User is prompted for passphrase with hidden input (no echo)
-- [ ] Passphrase is read securely (not visible in terminal)
-- [ ] User gets up to 3 attempts before command fails
-- [ ] Clear error message on final failure
-- [ ] Works for all commands that use private keys:
-  - [ ] `secrets decrypt`
-  - [ ] `secrets encrypt`
-  - [ ] `secrets register`
-  - [ ] `secrets revoke`
-- [ ] Passphrase is not logged or stored
-- [ ] Works in non-TTY environments (fails gracefully with clear message)
-- [ ] Unit tests cover passphrase prompting logic
+- [x] Kanuka detects when a private key is passphrase-protected
+- [x] User is prompted for passphrase with hidden input (no echo)
+- [x] Passphrase is read securely (not visible in terminal)
+- [x] User gets up to 3 attempts before command fails
+- [x] Clear error message on final failure
+- [x] Works for all commands that use private keys (via LoadPrivateKey):
+  - [x] `secrets decrypt`
+  - [x] `secrets encrypt`
+  - [x] `secrets register`
+  - [x] `secrets revoke`
+- [x] Passphrase is not logged or stored
+- [x] Works in non-TTY environments (fails gracefully with clear message)
+- [x] Unit tests cover passphrase prompting logic
 - [ ] Integration tests verify end-to-end passphrase flow
 
 ### Implementation Steps

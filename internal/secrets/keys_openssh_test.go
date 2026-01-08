@@ -621,3 +621,258 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+// Tests for ParsePrivateKeyBytesWithPassphrase
+
+func TestParsePrivateKeyBytesWithPassphrase_UnencryptedKey(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format (unencrypted)
+	pemBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		t.Fatalf("failed to marshal private key: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse without passphrase - should work
+	parsed, err := ParsePrivateKeyBytesWithPassphrase(pemBytes, nil)
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytesWithPassphrase failed for unencrypted key: %v", err)
+	}
+
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+}
+
+func TestParsePrivateKeyBytesWithPassphrase_EncryptedKeyCorrectPassphrase(t *testing.T) {
+	passphrase := "test-passphrase-123"
+
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format with passphrase
+	pemBlock, err := ssh.MarshalPrivateKeyWithPassphrase(privateKey, "", []byte(passphrase))
+	if err != nil {
+		t.Fatalf("failed to marshal private key with passphrase: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse with correct passphrase - should work
+	parsed, err := ParsePrivateKeyBytesWithPassphrase(pemBytes, []byte(passphrase))
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytesWithPassphrase failed with correct passphrase: %v", err)
+	}
+
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+}
+
+func TestParsePrivateKeyBytesWithPassphrase_EncryptedKeyNoPassphrase(t *testing.T) {
+	passphrase := "test-passphrase-123"
+
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format with passphrase
+	pemBlock, err := ssh.MarshalPrivateKeyWithPassphrase(privateKey, "", []byte(passphrase))
+	if err != nil {
+		t.Fatalf("failed to marshal private key with passphrase: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse without passphrase - should return ErrPassphraseRequired
+	_, err = ParsePrivateKeyBytesWithPassphrase(pemBytes, nil)
+	if err == nil {
+		t.Fatal("expected error when parsing encrypted key without passphrase")
+	}
+	if !errors.Is(err, ErrPassphraseRequired) {
+		t.Errorf("expected ErrPassphraseRequired, got: %v", err)
+	}
+}
+
+func TestParsePrivateKeyBytesWithPassphrase_EncryptedKeyWrongPassphrase(t *testing.T) {
+	passphrase := "correct-passphrase"
+	wrongPassphrase := "wrong-passphrase"
+
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format with passphrase
+	pemBlock, err := ssh.MarshalPrivateKeyWithPassphrase(privateKey, "", []byte(passphrase))
+	if err != nil {
+		t.Fatalf("failed to marshal private key with passphrase: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse with wrong passphrase - should return ErrPassphraseRequired
+	_, err = ParsePrivateKeyBytesWithPassphrase(pemBytes, []byte(wrongPassphrase))
+	if err == nil {
+		t.Fatal("expected error when parsing encrypted key with wrong passphrase")
+	}
+	// Should return ErrPassphraseRequired for wrong passphrase
+	if !errors.Is(err, ErrPassphraseRequired) {
+		t.Errorf("expected ErrPassphraseRequired for wrong passphrase, got: %v", err)
+	}
+}
+
+func TestParsePrivateKeyBytesWithPassphrase_PKCS1Unencrypted(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Encode in PKCS#1 PEM format (unencrypted)
+	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	pemBlock := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse with nil passphrase - should work
+	parsed, err := ParsePrivateKeyBytesWithPassphrase(pemBytes, nil)
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytesWithPassphrase failed for unencrypted PKCS#1: %v", err)
+	}
+
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+}
+
+func TestParsePrivateKeyBytesWithPassphrase_PKCS8Unencrypted(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Encode in PKCS#8 PEM format (unencrypted)
+	privBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("failed to marshal PKCS#8 private key: %v", err)
+	}
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse with nil passphrase - should work
+	parsed, err := ParsePrivateKeyBytesWithPassphrase(pemBytes, nil)
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytesWithPassphrase failed for unencrypted PKCS#8: %v", err)
+	}
+
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+}
+
+// Tests for LoadPrivateKeyFromBytesWithPrompt in non-TTY environment
+
+func TestLoadPrivateKeyFromBytesWithPrompt_UnencryptedKey(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format (unencrypted)
+	pemBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		t.Fatalf("failed to marshal private key: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Should work without prompting since key is unencrypted
+	parsed, err := LoadPrivateKeyFromBytesWithPrompt(pemBytes)
+	if err != nil {
+		t.Fatalf("LoadPrivateKeyFromBytesWithPrompt failed for unencrypted key: %v", err)
+	}
+
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+}
+
+func TestLoadPrivateKeyFromBytesWithPrompt_EncryptedKeyNonTTY(t *testing.T) {
+	passphrase := "test-passphrase"
+
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format with passphrase
+	pemBlock, err := ssh.MarshalPrivateKeyWithPassphrase(privateKey, "", []byte(passphrase))
+	if err != nil {
+		t.Fatalf("failed to marshal private key with passphrase: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// In test environment (non-TTY), should fail with appropriate error
+	_, err = LoadPrivateKeyFromBytesWithPrompt(pemBytes)
+	if err == nil {
+		t.Fatal("expected error when loading encrypted key in non-TTY environment")
+	}
+
+	// Should mention that stdin is not a terminal
+	if !containsString(err.Error(), "not a terminal") {
+		t.Errorf("expected error about non-terminal, got: %v", err)
+	}
+}
+
+// Test LoadPrivateKey with file
+
+func TestLoadPrivateKey_EncryptedOpenSSHFile_NonTTY(t *testing.T) {
+	passphrase := "test-passphrase"
+
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Create temp file with encrypted OpenSSH key
+	tempDir := t.TempDir()
+	keyPath := filepath.Join(tempDir, "privkey")
+
+	pemBlock, err := ssh.MarshalPrivateKeyWithPassphrase(privateKey, "", []byte(passphrase))
+	if err != nil {
+		t.Fatalf("failed to marshal private key with passphrase: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	if err := os.WriteFile(keyPath, pemBytes, 0600); err != nil {
+		t.Fatalf("failed to write test key file: %v", err)
+	}
+
+	// In test environment (non-TTY), should fail with appropriate error
+	_, err = LoadPrivateKey(keyPath)
+	if err == nil {
+		t.Fatal("expected error when loading encrypted key in non-TTY environment")
+	}
+
+	// Should mention that stdin is not a terminal
+	if !containsString(err.Error(), "not a terminal") {
+		t.Errorf("expected error about non-terminal, got: %v", err)
+	}
+}

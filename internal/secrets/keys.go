@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
+	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -40,11 +42,13 @@ func parseOpenSSHPrivateKey(data []byte, passphrase []byte) (*rsa.PrivateKey, er
 	}
 
 	if err != nil {
-		// Check if the error indicates the key is passphrase-protected
+		// Check if the error indicates the key is passphrase-protected or wrong passphrase
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "passphrase") ||
 			strings.Contains(errMsg, "encrypted") ||
-			strings.Contains(errMsg, "this private key is passphrase protected") {
+			strings.Contains(errMsg, "this private key is passphrase protected") ||
+			strings.Contains(errMsg, "password incorrect") ||
+			strings.Contains(errMsg, "decryption password") {
 			return nil, ErrPassphraseRequired
 		}
 		return nil, fmt.Errorf("failed to parse OpenSSH private key: %w", err)
@@ -60,18 +64,75 @@ func parseOpenSSHPrivateKey(data []byte, passphrase []byte) (*rsa.PrivateKey, er
 }
 
 // LoadPrivateKey loads an RSA private key from disk.
+// If the key is passphrase-protected, prompts the user for the passphrase.
 // Supports PEM (PKCS#1, PKCS#8) and OpenSSH formats.
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePrivateKeyBytes(data)
+	return LoadPrivateKeyFromBytesWithPrompt(data)
+}
+
+// LoadPrivateKeyFromBytesWithPrompt parses a private key from bytes, prompting for passphrase if needed.
+// If the key is passphrase-protected and stdin is a terminal, prompts up to 3 times for the passphrase.
+// Returns an error if the key is encrypted but stdin is not a terminal.
+func LoadPrivateKeyFromBytesWithPrompt(data []byte) (*rsa.PrivateKey, error) {
+	// First attempt without passphrase
+	key, err := ParsePrivateKeyBytes(data)
+	if err == nil {
+		return key, nil
+	}
+
+	// Check if passphrase is required
+	if !errors.Is(err, ErrPassphraseRequired) {
+		return nil, err
+	}
+
+	// Check if we can prompt for passphrase
+	if !utils.IsTerminal() {
+		return nil, fmt.Errorf("private key is passphrase-protected but stdin is not a terminal; cannot prompt for passphrase")
+	}
+
+	// Prompt for passphrase (up to 3 attempts)
+	maxAttempts := 3
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		passphrase, promptErr := utils.ReadPassphrase("Enter passphrase for private key: ")
+		if promptErr != nil {
+			return nil, promptErr
+		}
+
+		key, err = ParsePrivateKeyBytesWithPassphrase(data, passphrase)
+		if err == nil {
+			return key, nil
+		}
+
+		// Check if it's still a passphrase error (wrong passphrase)
+		if errors.Is(err, ErrPassphraseRequired) {
+			if attempt < maxAttempts {
+				fmt.Fprintln(os.Stderr, color.YellowString("✗")+" Incorrect passphrase. Please try again.")
+			}
+			continue
+		}
+
+		// Some other error
+		return nil, err
+	}
+
+	return nil, fmt.Errorf("failed to decrypt private key after %d attempts", maxAttempts)
 }
 
 // ParsePrivateKeyBytes parses an RSA private key from bytes.
 // Supports PEM (PKCS#1, PKCS#8) and OpenSSH formats.
+// For passphrase-protected keys, use ParsePrivateKeyBytesWithPassphrase.
 func ParsePrivateKeyBytes(data []byte) (*rsa.PrivateKey, error) {
+	return ParsePrivateKeyBytesWithPassphrase(data, nil)
+}
+
+// ParsePrivateKeyBytesWithPassphrase parses an RSA private key from bytes with an optional passphrase.
+// Supports PEM (PKCS#1, PKCS#8) and OpenSSH formats.
+// If passphrase is nil and the key is encrypted, returns ErrPassphraseRequired.
+func ParsePrivateKeyBytesWithPassphrase(data []byte, passphrase []byte) (*rsa.PrivateKey, error) {
 	// Try to decode as PEM
 	block, _ := pem.Decode(data)
 	if block == nil {
@@ -82,10 +143,21 @@ func ParsePrivateKeyBytes(data []byte) (*rsa.PrivateKey, error) {
 	switch block.Type {
 	case "RSA PRIVATE KEY":
 		// Traditional PEM format (PKCS#1)
+		// Note: PKCS#1 encrypted keys have headers like "Proc-Type" and "DEK-Info"
+		if x509.IsEncryptedPEMBlock(block) { //nolint:staticcheck // deprecated but still needed for legacy PEM
+			if len(passphrase) == 0 {
+				return nil, ErrPassphraseRequired
+			}
+			decryptedBytes, err := x509.DecryptPEMBlock(block, passphrase) //nolint:staticcheck // deprecated but still needed for legacy PEM
+			if err != nil {
+				return nil, ErrPassphraseRequired // Likely wrong passphrase
+			}
+			return x509.ParsePKCS1PrivateKey(decryptedBytes)
+		}
 		return x509.ParsePKCS1PrivateKey(block.Bytes)
 
 	case "PRIVATE KEY":
-		// PKCS#8 format
+		// PKCS#8 format (unencrypted)
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse PKCS#8 private key: %w", err)
@@ -96,9 +168,13 @@ func ParsePrivateKeyBytes(data []byte) (*rsa.PrivateKey, error) {
 		}
 		return rsaKey, nil
 
+	case "ENCRYPTED PRIVATE KEY":
+		// PKCS#8 encrypted format - not commonly used, return helpful error
+		return nil, fmt.Errorf("encrypted PKCS#8 keys are not supported; please convert to OpenSSH format")
+
 	case "OPENSSH PRIVATE KEY":
 		// OpenSSH format - pass the full data (including PEM wrapper)
-		return parseOpenSSHPrivateKey(data, nil)
+		return parseOpenSSHPrivateKey(data, passphrase)
 
 	default:
 		return nil, fmt.Errorf("unsupported private key format: %s", block.Type)
