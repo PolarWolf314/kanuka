@@ -105,6 +105,24 @@ func ParsePrivateKeyBytes(data []byte) (*rsa.PrivateKey, error) {
 	}
 }
 
+// ParsePrivateKeyText parses a PEM-encoded or OpenSSH format private key string
+// and returns an RSA private key.
+func ParsePrivateKeyText(privateKeyText string) (*rsa.PrivateKey, error) {
+	// Ensure the text is trimmed of whitespace
+	privateKeyText = strings.TrimSpace(privateKeyText)
+
+	if privateKeyText == "" {
+		return nil, errors.New("private key text is empty")
+	}
+
+	// Check that it looks like a PEM-encoded key
+	if !strings.HasPrefix(privateKeyText, "-----BEGIN") {
+		return nil, errors.New("private key text does not appear to be in PEM format")
+	}
+
+	return ParsePrivateKeyBytes([]byte(privateKeyText))
+}
+
 // LoadPublicKey loads the user's public key from the project directory.
 func LoadPublicKey(path string) (*rsa.PublicKey, error) {
 	data, err := os.ReadFile(path)

@@ -384,13 +384,13 @@ Kanuka already has `ParsePublicKeyText()` which accepts a string containing a pu
 
 ### Acceptance Criteria
 
-- [ ] New function `ParsePrivateKeyText(privateKeyText string) (*rsa.PrivateKey, error)` exists
-- [ ] Function handles PEM format (PKCS#1 and PKCS#8)
-- [ ] Function handles OpenSSH format
-- [ ] Function trims whitespace from input
-- [ ] Function returns clear errors for unsupported formats
-- [ ] Unit tests cover all supported formats
-- [ ] Function is exported (public API)
+- [x] New function `ParsePrivateKeyText(privateKeyText string) (*rsa.PrivateKey, error)` exists
+- [x] Function handles PEM format (PKCS#1 and PKCS#8)
+- [x] Function handles OpenSSH format
+- [x] Function trims whitespace from input
+- [x] Function returns clear errors for unsupported formats
+- [x] Unit tests cover all supported formats
+- [x] Function is exported (public API)
 
 ### Implementation Steps
 
