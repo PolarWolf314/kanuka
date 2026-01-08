@@ -433,17 +433,19 @@ No changes made. Run without --dry-run to execute.
 
 ### Acceptance Criteria
 
-- [ ] `--dry-run` flag is available on `secrets decrypt` command
-- [ ] When `--dry-run` is set:
-  - [ ] No `.env` files are created or modified
-  - [ ] Output shows source → destination file mapping
-  - [ ] Output indicates which destination files already exist
-  - [ ] Output shows warning if any files would be overwritten
-  - [ ] Output shows total count of files
-  - [ ] Output ends with "No changes made" message
-- [ ] All validation still runs (no access, etc. still produce errors)
-- [ ] Symmetric key decryption is still validated
-- [ ] Tests added for dry-run behavior
+- [x] `--dry-run` flag is available on `secrets decrypt` command
+- [x] When `--dry-run` is set:
+  - [x] No `.env` files are created or modified
+  - [x] Output shows source → destination file mapping
+  - [x] Output indicates which destination files already exist
+  - [x] Output shows warning if any files would be overwritten
+  - [x] Output shows total count of files
+  - [x] Output ends with "No changes made" message
+- [x] All validation still runs (no access, etc. still produce errors)
+- [x] Symmetric key decryption is still validated
+- [x] Tests added for dry-run behavior
+
+**Status: COMPLETED** ✓
 
 ### Implementation Steps
 

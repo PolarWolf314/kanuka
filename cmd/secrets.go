@@ -66,6 +66,8 @@ func ResetGlobalState() {
 	resetInitCommandState()
 	// Reset the encrypt command flags
 	resetEncryptCommandState()
+	// Reset the decrypt command flags
+	resetDecryptCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -96,6 +98,13 @@ func resetCobraFlagState() {
 	// Reset the encrypt command flags specifically
 	if encryptCmd != nil && encryptCmd.Flags() != nil {
 		encryptCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the decrypt command flags specifically
+	if decryptCmd != nil && decryptCmd.Flags() != nil {
+		decryptCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}

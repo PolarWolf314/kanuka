@@ -1,19 +1,48 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
+	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
+var decryptDryRun bool
+
+func init() {
+	decryptCmd.Flags().BoolVar(&decryptDryRun, "dry-run", false, "preview decryption without making changes")
+}
+
+func resetDecryptCommandState() {
+	decryptDryRun = false
+}
+
 var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
 	Short: "Decrypts the .env.kanuka file back into .env using your Kānuka key",
+	Long: `Decrypts all .env.kanuka files in the project back into .env files.
+
+This command discovers all .kanuka files in your project (recursively, excluding
+the .kanuka/ directory) and decrypts each one using your private key.
+The decrypted files are saved without the .kanuka extension (e.g., .env.kanuka → .env).
+
+Use --dry-run to preview which files would be decrypted and detect any existing
+files that would be overwritten.
+
+Examples:
+  # Decrypt all .kanuka files
+  kanuka secrets decrypt
+
+  # Preview which files would be decrypted
+  kanuka secrets decrypt --dry-run`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting decrypt command")
 		spinner, cleanup := startSpinner("Decrypting environment files...", verbose)
@@ -114,6 +143,11 @@ var decryptCmd = &cobra.Command{
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
 
+		// If dry-run, print preview and exit early.
+		if decryptDryRun {
+			return printDecryptDryRun(spinner, listOfKanukaFiles, projectPath)
+		}
+
 		Logger.Infof("Decrypting %d files", len(listOfKanukaFiles))
 		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles, verbose); err != nil {
 			Logger.Errorf("Failed to decrypt files: %v", err)
@@ -146,4 +180,47 @@ var decryptCmd = &cobra.Command{
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+func printDecryptDryRun(s *spinner.Spinner, kanukaFiles []string, projectPath string) error {
+	s.Stop()
+
+	fmt.Println()
+	fmt.Println(color.YellowString("[dry-run]") + fmt.Sprintf(" Would decrypt %d encrypted file(s)", len(kanukaFiles)))
+	fmt.Println()
+
+	fmt.Println("Files that would be created:")
+
+	overwriteCount := 0
+	for _, kanukaFile := range kanukaFiles {
+		// Get relative path for cleaner output.
+		relPath, err := filepath.Rel(projectPath, kanukaFile)
+		if err != nil {
+			relPath = kanukaFile
+		}
+
+		// Remove .kanuka extension to get target .env file.
+		envRelPath := strings.TrimSuffix(relPath, ".kanuka")
+		envFullPath := strings.TrimSuffix(kanukaFile, ".kanuka")
+
+		// Check if target file exists.
+		status := color.GreenString("new file")
+		if _, err := os.Stat(envFullPath); err == nil {
+			status = color.YellowString("exists - would be overwritten")
+			overwriteCount++
+		}
+
+		fmt.Printf("  %s → %s (%s)\n", color.CyanString(relPath), envRelPath, status)
+	}
+	fmt.Println()
+
+	if overwriteCount > 0 {
+		fmt.Printf(color.YellowString("⚠")+" Warning: %d existing file(s) would be overwritten.\n", overwriteCount)
+		fmt.Println()
+	}
+
+	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+
+	s.FinalMSG = ""
+	return nil
 }
