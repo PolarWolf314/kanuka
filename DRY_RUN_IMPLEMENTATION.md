@@ -74,22 +74,24 @@ No changes made. Run without --dry-run to execute.
 
 ### Acceptance Criteria
 
-- [ ] `--dry-run` flag is available on `secrets revoke` command
-- [ ] When `--dry-run` is set:
-  - [ ] No files are deleted
-  - [ ] No config files are modified
-  - [ ] No key rotation occurs
-  - [ ] Output clearly shows files that would be deleted
-  - [ ] Output shows config changes that would occur
-  - [ ] Output shows how many users would have keys rotated
-  - [ ] Output ends with "No changes made" message
-- [ ] All validation still runs (invalid email, user not found, etc. still produce errors)
-- [ ] `--dry-run` works with all revocation methods:
-  - [ ] `--user alice@example.com`
-  - [ ] `--user alice@example.com --device macbook`
-  - [ ] `--file .kanuka/secrets/uuid.kanuka`
-- [ ] `--dry-run` combined with `--yes` still shows preview (doesn't skip output)
-- [ ] Tests added for dry-run behavior
+- [x] `--dry-run` flag is available on `secrets revoke` command
+- [x] When `--dry-run` is set:
+  - [x] No files are deleted
+  - [x] No config files are modified
+  - [x] No key rotation occurs
+  - [x] Output clearly shows files that would be deleted
+  - [x] Output shows config changes that would occur
+  - [x] Output shows how many users would have keys rotated
+  - [x] Output ends with "No changes made" message
+- [x] All validation still runs (invalid email, user not found, etc. still produce errors)
+- [x] `--dry-run` works with all revocation methods:
+  - [x] `--user alice@example.com`
+  - [x] `--user alice@example.com --device macbook`
+  - [x] `--file .kanuka/secrets/uuid.kanuka`
+- [x] `--dry-run` combined with `--yes` still shows preview (doesn't skip output)
+- [x] Tests added for dry-run behavior
+
+**Status: COMPLETED** ✓
 
 ### Implementation Steps
 
