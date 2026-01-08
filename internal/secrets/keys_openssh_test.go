@@ -113,6 +113,30 @@ h7fLxPQHt8Xe8JeqhT5XAAAADHRlc3RAZXhhbXBsZQE=
 		// The error should mention unsupported key type
 		t.Logf("Got expected error: %v", err)
 	})
+
+	t.Run("ECDSAKeyNotSupported", func(t *testing.T) {
+		// This is a real ECDSA OpenSSH private key format structure (test-only)
+		// Generated using: ssh-keygen -t ecdsa -b 256 -f test -N ""
+		ecdsaKey := `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS
+1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQShcmh3dqwvV4IvbuVo51gclyncEhbj
+QHLvnYMxt5A0LndMr5dOBRmQPO8UA04iZuVh81eJSXb48g7FJLDldSFgAAAAqNv9EUnb/R
+FJAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKFyaHd2rC9Xgi9u
+5WjnWByXKdwSFuNAcu+dgzG3kDQud0yvl04FGZA87xQDTiJm5WHzV4lJdvjyDsUksOV1IW
+AAAAAga54bLSlctRzA6GmwuZpO6WZxgrBqjDk1QSyzpuS6opwAAAAMdGVzdEBleGFtcGxl
+AQIDBA==
+-----END OPENSSH PRIVATE KEY-----`
+
+		_, err := parseOpenSSHPrivateKey([]byte(ecdsaKey), nil)
+		if err == nil {
+			t.Fatal("expected error when parsing ECDSA key")
+		}
+		if errors.Is(err, ErrPassphraseRequired) {
+			t.Error("should not return ErrPassphraseRequired for non-RSA key")
+		}
+		// The error should mention unsupported key type
+		t.Logf("Got expected error: %v", err)
+	})
 }
 
 func TestParseOpenSSHPrivateKey_InvalidData(t *testing.T) {

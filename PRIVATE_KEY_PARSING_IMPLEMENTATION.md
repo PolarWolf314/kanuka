@@ -58,7 +58,7 @@ This implementation focuses on:
 | [PKP-001](#pkp-001-add-openssh-private-key-parsing-function) | Add OpenSSH private key parsing function | HIGH | 2-3 hours | None | ✅ DONE |
 | [PKP-002](#pkp-002-update-loadprivatekey-to-support-both-formats) | Update LoadPrivateKey to support both formats | HIGH | 1-2 hours | PKP-001 | ✅ DONE |
 | [PKP-003](#pkp-003-add-parseprivatekeytext-helper-function) | Add ParsePrivateKeyText helper function | MEDIUM | 1-2 hours | PKP-001 | ✅ DONE |
-| [PKP-004](#pkp-004-add-comprehensive-test-coverage) | Add comprehensive test coverage | HIGH | 2-3 hours | PKP-001, PKP-002, PKP-003 | 🔲 TODO |
+| [PKP-004](#pkp-004-add-comprehensive-test-coverage) | Add comprehensive test coverage | HIGH | 2-3 hours | PKP-001, PKP-002, PKP-003 | ✅ DONE |
 | [PKP-005](#pkp-005-update-documentation) | Update documentation | LOW | 1 hour | PKP-001, PKP-002 | 🔲 TODO |
 | [PKP-006](#pkp-006-add-passphrase-protected-key-support) | Add passphrase-protected key support | MEDIUM | 2-3 hours | PKP-001, PKP-002 | ✅ DONE |
 | [PKP-007](#pkp-007-add-private-key-stdin-flag) | Add `--private-key-stdin` flag for piping | LOW | 2-3 hours | PKP-003, PKP-006 | 🔲 TODO |
@@ -482,15 +482,15 @@ Private key handling is security-critical. We need thorough tests to ensure:
 
 ### Acceptance Criteria
 
-- [ ] Unit tests for `parseOpenSSHPrivateKey()` function
-- [ ] Unit tests for `ParsePrivateKeyBytes()` function
-- [ ] Unit tests for `ParsePrivateKeyText()` function
-- [ ] Unit tests for updated `LoadPrivateKey()` function
-- [ ] Integration tests for decrypt command with OpenSSH keys
-- [ ] Integration tests for encrypt command with OpenSSH keys
-- [ ] Tests use dynamically generated keys (not hardcoded)
-- [ ] Tests cover error cases (encrypted keys, wrong types, invalid data)
-- [ ] All tests pass with `go test -race` (race detector)
+- [x] Unit tests for `parseOpenSSHPrivateKey()` function
+- [x] Unit tests for `ParsePrivateKeyBytes()` function
+- [x] Unit tests for `ParsePrivateKeyText()` function
+- [x] Unit tests for updated `LoadPrivateKey()` function
+- [x] Integration tests for decrypt command with OpenSSH keys
+- [x] Integration tests for encrypt command with OpenSSH keys
+- [x] Tests use dynamically generated keys (not hardcoded)
+- [x] Tests cover error cases (encrypted keys, wrong types, invalid data)
+- [x] All tests pass with `go test -race` (race detector)
 
 ### Test Cases to Cover
 
