@@ -234,10 +234,10 @@ func testRegisterWhenTargetUserAlreadyRegistered(t *testing.T, originalWd string
 		t.Fatalf("Failed to read original .kanuka file: %v", err)
 	}
 
-	// Register the user again
+	// Register the user again with --force to skip confirmation prompt
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile, "--force"})
 		return cmd.Execute()
 	})
 	if err != nil {

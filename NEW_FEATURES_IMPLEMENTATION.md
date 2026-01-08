@@ -95,13 +95,13 @@ $ kanuka secrets register --user newuser@example.com
 
 ### Acceptance Criteria
 
-- [ ] When registering a user who already has access (public key AND .kanuka file exist), display a warning
-- [ ] Prompt for confirmation before proceeding (unless `--force` is provided)
-- [ ] Add `--force` flag to skip the confirmation prompt
-- [ ] If user declines confirmation, exit without making changes
-- [ ] If user confirms or uses `--force`, proceed with registration (overwrite)
-- [ ] Output message should say "Updated access" instead of "Registered" when overwriting
-- [ ] Existing behavior unchanged for new users
+- [x] When registering a user who already has access (public key AND .kanuka file exist), display a warning
+- [x] Prompt for confirmation before proceeding (unless `--force` is provided)
+- [x] Add `--force` flag to skip the confirmation prompt
+- [x] If user declines confirmation, exit without making changes
+- [x] If user confirms or uses `--force`, proceed with registration (overwrite)
+- [x] Output message should say "Updated access" instead of "Registered" when overwriting
+- [x] Existing behavior unchanged for new users
 
 ### Technical Details
 
@@ -194,13 +194,13 @@ Create `test/integration/register/register_overwrite_test.go`:
 
 ### Definition of Done
 
-- [ ] `--force` flag added to register command
-- [ ] Warning displayed when user already has access
-- [ ] Confirmation prompt works correctly
-- [ ] "Updated access" message shown for overwrites
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
-- [ ] Help text updated for `--force` flag
+- [x] `--force` flag added to register command
+- [x] Warning displayed when user already has access
+- [x] Confirmation prompt works correctly
+- [x] "Updated access" message shown for overwrites
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
+- [x] Help text updated for `--force` flag
 
 ---
 
