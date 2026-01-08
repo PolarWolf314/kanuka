@@ -597,19 +597,21 @@ No changes made. Run without --dry-run to execute.
 
 ### Acceptance Criteria
 
-- [ ] `--dry-run` flag is available on `secrets register` command
-- [ ] When `--dry-run` is set:
-  - [ ] No `.kanuka` files are created
-  - [ ] No public keys are copied (for `--file` or `--pubkey` modes)
-  - [ ] Output shows files that would be created
-  - [ ] Output confirms prerequisites were verified
-  - [ ] Output ends with "No changes made" message
-- [ ] All validation still runs
-- [ ] Works with all registration methods:
-  - [ ] `--user email@example.com`
-  - [ ] `--file path/to/key.pub`
-  - [ ] `--pubkey "ssh-rsa ..." --user email@example.com`
-- [ ] Tests added for dry-run behavior
+- [x] `--dry-run` flag is available on `secrets register` command
+- [x] When `--dry-run` is set:
+  - [x] No `.kanuka` files are created
+  - [x] No public keys are copied (for `--file` or `--pubkey` modes)
+  - [x] Output shows files that would be created
+  - [x] Output confirms prerequisites were verified
+  - [x] Output ends with "No changes made" message
+- [x] All validation still runs
+- [x] Works with all registration methods:
+  - [x] `--user email@example.com`
+  - [x] `--file path/to/key.pub`
+  - [x] `--pubkey "ssh-rsa ..." --user email@example.com`
+- [x] Tests added for dry-run behavior
+
+**Status: COMPLETED** ✓
 
 ### Implementation Steps
 
