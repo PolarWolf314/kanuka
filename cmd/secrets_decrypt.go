@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,13 +17,16 @@ import (
 )
 
 var decryptDryRun bool
+var decryptPrivateKeyStdin bool
 
 func init() {
 	decryptCmd.Flags().BoolVar(&decryptDryRun, "dry-run", false, "preview decryption without making changes")
+	decryptCmd.Flags().BoolVar(&decryptPrivateKeyStdin, "private-key-stdin", false, "read private key from stdin instead of from disk")
 }
 
 func resetDecryptCommandState() {
 	decryptDryRun = false
+	decryptPrivateKeyStdin = false
 }
 
 var decryptCmd = &cobra.Command{
@@ -37,12 +41,18 @@ The decrypted files are saved without the .kanuka extension (e.g., .env.kanuka �
 Use --dry-run to preview which files would be decrypted and detect any existing
 files that would be overwritten.
 
+Use --private-key-stdin to read your private key from stdin instead of from disk.
+This is useful for piping keys from secret managers (e.g., HashiCorp Vault, 1Password).
+
 Examples:
   # Decrypt all .kanuka files
   kanuka secrets decrypt
 
   # Preview which files would be decrypted
-  kanuka secrets decrypt --dry-run`,
+  kanuka secrets decrypt --dry-run
+
+  # Decrypt using a key piped from a secret manager
+  vault read -field=private_key secret/kanuka | kanuka secrets decrypt --private-key-stdin`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting decrypt command")
 		spinner, cleanup := startSpinner("Decrypting environment files...", verbose)
@@ -108,25 +118,48 @@ Examples:
 			return nil
 		}
 
-		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
-		Logger.Debugf("Loading private key from: %s", privateKeyPath)
-		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
-		if err != nil {
-			Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-			finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-		Logger.Infof("Private key loaded successfully")
+		// Load private key - either from stdin or from disk
+		var privateKey *rsa.PrivateKey
+		if decryptPrivateKeyStdin {
+			Logger.Debugf("Reading private key from stdin")
+			keyData, err := utils.ReadStdin()
+			if err != nil {
+				Logger.Errorf("Failed to read private key from stdin: %v", err)
+				finalMessage := color.RedString("✗") + " Failed to read private key from stdin\n" +
+					color.RedString("Error: ") + err.Error()
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			privateKey, err = secrets.LoadPrivateKeyFromBytesWithTTYPrompt(keyData)
+			if err != nil {
+				Logger.Errorf("Failed to parse private key from stdin: %v", err)
+				finalMessage := color.RedString("✗") + " Failed to parse private key from stdin\n" +
+					color.RedString("Error: ") + err.Error()
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			Logger.Infof("Private key loaded successfully from stdin")
+		} else {
+			privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
+			Logger.Debugf("Loading private key from: %s", privateKeyPath)
+			privateKey, err = secrets.LoadPrivateKey(privateKeyPath)
+			if err != nil {
+				Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
+				finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
+					color.RedString("Error: ") + err.Error()
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			Logger.Infof("Private key loaded successfully")
 
-		// Security warning: Check private key file permissions
-		if fileInfo, err := os.Stat(privateKeyPath); err == nil {
-			if fileInfo.Mode().Perm() != 0600 {
-				spinner.Stop()
-				Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'",
-					fileInfo.Mode().Perm(), privateKeyPath)
-				spinner.Restart()
+			// Security warning: Check private key file permissions
+			if fileInfo, err := os.Stat(privateKeyPath); err == nil {
+				if fileInfo.Mode().Perm() != 0600 {
+					spinner.Stop()
+					Logger.WarnfAlways("Private key file has overly permissive permissions (%o), consider running 'chmod 600 %s'",
+						fileInfo.Mode().Perm(), privateKeyPath)
+					spinner.Restart()
+				}
 			}
 		}
 

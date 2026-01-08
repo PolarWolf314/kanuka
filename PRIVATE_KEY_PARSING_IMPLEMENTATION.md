@@ -61,7 +61,7 @@ This implementation focuses on:
 | [PKP-004](#pkp-004-add-comprehensive-test-coverage) | Add comprehensive test coverage | HIGH | 2-3 hours | PKP-001, PKP-002, PKP-003 | ✅ DONE |
 | [PKP-005](#pkp-005-update-documentation) | Update documentation | LOW | 1 hour | PKP-001, PKP-002 | 🔲 TODO |
 | [PKP-006](#pkp-006-add-passphrase-protected-key-support) | Add passphrase-protected key support | MEDIUM | 2-3 hours | PKP-001, PKP-002 | ✅ DONE |
-| [PKP-007](#pkp-007-add-private-key-stdin-flag) | Add `--private-key-stdin` flag for piping | LOW | 2-3 hours | PKP-003, PKP-006 | 🔲 TODO |
+| [PKP-007](#pkp-007-add-private-key-stdin-flag) | Add `--private-key-stdin` flag for piping | LOW | 2-3 hours | PKP-003, PKP-006 | ✅ DONE |
 | [PKP-008](#pkp-008-document-rsa-only-design-decision) | Document RSA-only design decision | LOW | 1 hour | None | 🔲 TODO |
 
 **Recommended implementation order:** PKP-001 → PKP-002 → PKP-003 → PKP-006 → PKP-004 → PKP-007 → PKP-005 → PKP-008
@@ -942,20 +942,20 @@ Enter passphrase for private key: ********
 
 ### Acceptance Criteria
 
-- [ ] `--private-key-stdin` flag available on:
-  - [ ] `secrets decrypt`
-  - [ ] `secrets encrypt`
-  - [ ] `secrets register`
-  - [ ] `secrets revoke`
-- [ ] Flag reads entire stdin as private key content
-- [ ] Works with all supported key formats (PEM, OpenSSH)
-- [ ] Works with passphrase-protected keys (prompts on stderr/tty)
-- [ ] Mutually exclusive with default key loading (clear error if both attempted)
-- [ ] Clear error message if stdin is empty
-- [ ] Clear error message if key format is invalid
-- [ ] Does not interfere with normal command operation when flag not used
+- [x] `--private-key-stdin` flag available on:
+  - [x] `secrets decrypt`
+  - [x] `secrets encrypt`
+  - [x] `secrets register`
+  - [x] `secrets revoke`
+- [x] Flag reads entire stdin as private key content
+- [x] Works with all supported key formats (PEM, OpenSSH)
+- [x] Works with passphrase-protected keys (prompts on stderr/tty)
+- [x] Mutually exclusive with default key loading (clear error if both attempted)
+- [x] Clear error message if stdin is empty
+- [x] Clear error message if key format is invalid
+- [x] Does not interfere with normal command operation when flag not used
 - [ ] Integration tests verify piping workflows
-- [ ] Documentation updated with examples
+- [x] Documentation updated with examples
 
 ### Implementation Steps
 

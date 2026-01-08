@@ -122,6 +122,55 @@ func LoadPrivateKeyFromBytesWithPrompt(data []byte) (*rsa.PrivateKey, error) {
 	return nil, fmt.Errorf("failed to decrypt private key after %d attempts", maxAttempts)
 }
 
+// LoadPrivateKeyFromBytesWithTTYPrompt parses a private key from bytes, prompting for passphrase via TTY if needed.
+// This is used when stdin contains the private key data (e.g., piped from a secret manager),
+// so passphrase prompting must happen via /dev/tty instead of stdin.
+// Returns an error if the key is encrypted but TTY is not available.
+func LoadPrivateKeyFromBytesWithTTYPrompt(data []byte) (*rsa.PrivateKey, error) {
+	// First attempt without passphrase
+	key, err := ParsePrivateKeyBytes(data)
+	if err == nil {
+		return key, nil
+	}
+
+	// Check if passphrase is required
+	if !errors.Is(err, ErrPassphraseRequired) {
+		return nil, err
+	}
+
+	// Check if we can prompt for passphrase via TTY
+	if !utils.IsTTYAvailable() {
+		return nil, fmt.Errorf("private key is passphrase-protected but no TTY available; cannot prompt for passphrase")
+	}
+
+	// Prompt for passphrase via TTY (up to 3 attempts)
+	maxAttempts := 3
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		passphrase, promptErr := utils.ReadPassphraseFromTTY("Enter passphrase for private key: ")
+		if promptErr != nil {
+			return nil, promptErr
+		}
+
+		key, err = ParsePrivateKeyBytesWithPassphrase(data, passphrase)
+		if err == nil {
+			return key, nil
+		}
+
+		// Check if it's still a passphrase error (wrong passphrase)
+		if errors.Is(err, ErrPassphraseRequired) {
+			if attempt < maxAttempts {
+				fmt.Fprintln(os.Stderr, color.YellowString("✗")+" Incorrect passphrase. Please try again.")
+			}
+			continue
+		}
+
+		// Some other error
+		return nil, err
+	}
+
+	return nil, fmt.Errorf("failed to decrypt private key after %d attempts", maxAttempts)
+}
+
 // ParsePrivateKeyBytes parses an RSA private key from bytes.
 // Supports PEM (PKCS#1, PKCS#8) and OpenSSH formats.
 // For passphrase-protected keys, use ParsePrivateKeyBytesWithPassphrase.

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"crypto/rsa"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,11 +17,14 @@ import (
 )
 
 var (
-	revokeUserEmail string
-	revokeFilePath  string
-	revokeDevice    string
-	revokeYes       bool
-	revokeDryRun    bool
+	revokeUserEmail       string
+	revokeFilePath        string
+	revokeDevice          string
+	revokeYes             bool
+	revokeDryRun          bool
+	revokePrivateKeyStdin bool
+	// revokePrivateKeyData holds the private key data read from stdin (if --private-key-stdin is used).
+	revokePrivateKeyData []byte
 )
 
 func resetRevokeCommandState() {
@@ -29,6 +33,8 @@ func resetRevokeCommandState() {
 	revokeDevice = ""
 	revokeYes = false
 	revokeDryRun = false
+	revokePrivateKeyStdin = false
+	revokePrivateKeyData = nil
 }
 
 func init() {
@@ -37,6 +43,17 @@ func init() {
 	revokeCmd.Flags().StringVar(&revokeDevice, "device", "", "specific device name to revoke (requires --user)")
 	revokeCmd.Flags().BoolVarP(&revokeYes, "yes", "y", false, "skip confirmation prompts (for automation)")
 	revokeCmd.Flags().BoolVar(&revokeDryRun, "dry-run", false, "preview revocation without making changes")
+	revokeCmd.Flags().BoolVar(&revokePrivateKeyStdin, "private-key-stdin", false, "read private key from stdin instead of from disk")
+}
+
+// loadRevokePrivateKey loads the private key for the revoke command.
+// If --private-key-stdin was used, it uses the stored key data; otherwise loads from disk.
+func loadRevokePrivateKey(projectUUID string) (*rsa.PrivateKey, error) {
+	if revokePrivateKeyStdin {
+		return secrets.LoadPrivateKeyFromBytesWithTTYPrompt(revokePrivateKeyData)
+	}
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
+	return secrets.LoadPrivateKey(privateKeyPath)
 }
 
 var revokeCmd = &cobra.Command{
@@ -64,6 +81,15 @@ Warning: After revocation, the revoked user may still have access to old
 secret values from their local git history. Consider rotating your actual
 secret values after this revocation if the user was compromised.
 
+Private Key Input:
+  By default, your private key is loaded from disk based on the project UUID.
+  Use --private-key-stdin to read the private key from stdin instead (useful
+  for CI/CD pipelines or when the key is stored in a secrets manager).
+
+  When using --private-key-stdin with a passphrase-protected key, the
+  passphrase prompt will be read from /dev/tty (or CON on Windows), allowing
+  you to pipe the key while still entering the passphrase interactively.
+
 Examples:
   # Revoke all devices for a user (prompts for confirmation if multiple)
   kanuka secrets revoke --user alice@example.com
@@ -78,9 +104,27 @@ Examples:
   kanuka secrets revoke --user alice@example.com --dry-run
 
   # Revoke by file path
-  kanuka secrets revoke --file .kanuka/secrets/abc123.kanuka`,
+  kanuka secrets revoke --file .kanuka/secrets/abc123.kanuka
+
+  # Revoke with private key from stdin
+  cat ~/.ssh/id_rsa | kanuka secrets revoke --user alice@example.com --private-key-stdin
+
+  # Use with a secrets manager
+  vault kv get -field=private_key secret/kanuka | kanuka secrets revoke --user alice@example.com --private-key-stdin`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting revoke command")
+
+		// Read private key from stdin early, before any other code can consume stdin
+		if revokePrivateKeyStdin {
+			Logger.Debugf("Reading private key from stdin")
+			keyData, err := utils.ReadStdin()
+			if err != nil {
+				return Logger.ErrorfAndReturn("failed to read private key from stdin: %v", err)
+			}
+			revokePrivateKeyData = keyData
+			Logger.Infof("Read %d bytes of private key data from stdin", len(keyData))
+		}
+
 		spinner, cleanup := startSpinner("Revoking user access...", verbose)
 		defer cleanup()
 
@@ -538,11 +582,14 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 		spinner.Suffix = " Rotating symmetric key for remaining users..."
 		Logger.Infof("Rotating symmetric key for %d remaining users", len(allUsers))
 
-		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
-		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+		privateKey, err := loadRevokePrivateKey(projectUUID)
 		if err != nil {
 			Logger.Errorf("Failed to load private key: %v", err)
-			finalMessage := color.RedString("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
+			keySource := "from disk"
+			if revokePrivateKeyStdin {
+				keySource = "from stdin"
+			}
+			finalMessage := color.RedString("✗") + " Files were revoked but failed to load private key " + keySource + ": " + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
