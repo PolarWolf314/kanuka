@@ -27,3 +27,5 @@ jobs:
         with:
           github-token: ${{ secrets.RELEASE_PAT }}
           hooks: goreleaser
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
