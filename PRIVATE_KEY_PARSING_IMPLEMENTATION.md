@@ -59,7 +59,7 @@ This implementation focuses on:
 | [PKP-002](#pkp-002-update-loadprivatekey-to-support-both-formats) | Update LoadPrivateKey to support both formats | HIGH | 1-2 hours | PKP-001 | ✅ DONE |
 | [PKP-003](#pkp-003-add-parseprivatekeytext-helper-function) | Add ParsePrivateKeyText helper function | MEDIUM | 1-2 hours | PKP-001 | ✅ DONE |
 | [PKP-004](#pkp-004-add-comprehensive-test-coverage) | Add comprehensive test coverage | HIGH | 2-3 hours | PKP-001, PKP-002, PKP-003 | ✅ DONE |
-| [PKP-005](#pkp-005-update-documentation) | Update documentation | LOW | 1 hour | PKP-001, PKP-002 | 🔲 TODO |
+| [PKP-005](#pkp-005-update-documentation) | Update documentation | LOW | 1 hour | PKP-001, PKP-002 | ✅ DONE |
 | [PKP-006](#pkp-006-add-passphrase-protected-key-support) | Add passphrase-protected key support | MEDIUM | 2-3 hours | PKP-001, PKP-002 | ✅ DONE |
 | [PKP-007](#pkp-007-add-private-key-stdin-flag) | Add `--private-key-stdin` flag for piping | LOW | 2-3 hours | PKP-003, PKP-006 | ✅ DONE |
 | [PKP-008](#pkp-008-document-rsa-only-design-decision) | Document RSA-only design decision | LOW | 1 hour | None | 🔲 TODO |
@@ -590,9 +590,9 @@ Users need to know that Kanuka now supports OpenSSH format private keys. This af
 
 ### Acceptance Criteria
 
-- [ ] FAQ updated with supported key formats
-- [ ] Any error message changes reflected in docs
-- [ ] Troubleshooting section covers common key format issues
+- [x] FAQ updated with supported key formats
+- [x] Any error message changes reflected in docs
+- [x] Troubleshooting section covers common key format issues
 
 ### Documentation Updates
 

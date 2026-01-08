@@ -110,3 +110,126 @@ means:
 
 For most use cases, stick to one email address (typically your work email) for
 all your devices.
+
+## What private key formats does Kanuka support?
+
+Kanuka supports RSA private keys in the following formats:
+
+**PEM PKCS#1** - Traditional OpenSSL format:
+```
+-----BEGIN RSA PRIVATE KEY-----
+```
+
+**PEM PKCS#8** - Newer OpenSSL format:
+```
+-----BEGIN PRIVATE KEY-----
+```
+
+**OpenSSH** - Default format from modern ssh-keygen (OpenSSH 7.8+):
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+```
+
+Passphrase-protected keys are supported. Kanuka will prompt you for your
+passphrase when needed. If you're running in a non-interactive environment
+(like CI/CD), you can use the `--private-key-stdin` flag to pipe your key
+from a secrets manager.
+
+:::note
+Only RSA keys are supported. Ed25519 and ECDSA keys are not compatible with
+Kanuka. See [Why does Kanuka only support RSA keys?](#why-does-kanuka-only-support-rsa-keys)
+for details.
+:::
+
+## Why does Kanuka only support RSA keys?
+
+Kanuka intentionally supports only RSA keys to keep the implementation simple
+and reliable. Here's the reasoning:
+
+1. **RSA supports direct encryption** - Ed25519 is a signature-only algorithm
+   and cannot encrypt data directly. Using it for encryption would require
+   implementing ECIES (Elliptic Curve Integrated Encryption Scheme), adding
+   significant complexity.
+
+2. **Sufficient security** - RSA-2048 provides approximately 112 bits of
+   security, which is sufficient for current threats. The performance
+   advantages of Ed25519 are irrelevant for Kanuka's use case (encrypting
+   small symmetric keys infrequently).
+
+3. **Universal tooling support** - RSA keys can be generated and managed with
+   any SSH or OpenSSL tooling, making them the most universally supported
+   option.
+
+4. **Simplicity over flexibility** - Supporting multiple key types would add
+   significant implementation complexity, testing burden, and potential for
+   user confusion without providing meaningful benefits.
+
+If you only have Ed25519 keys, you'll need to generate an RSA key for use
+with Kanuka:
+
+```bash
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/kanuka_rsa
+```
+
+## Troubleshooting
+
+### "unsupported private key format"
+
+Your key may be in an unsupported format. Kanuka only supports RSA keys.
+Check your key type:
+
+```bash
+ssh-keygen -l -f your_key
+```
+
+If the output shows `ED25519` or `ECDSA`, you'll need to generate an RSA key
+instead:
+
+```bash
+ssh-keygen -t rsa -b 4096 -f new_rsa_key
+```
+
+### "private key is passphrase-protected" in non-interactive environment
+
+This error occurs when Kanuka detects a passphrase-protected key but cannot
+prompt for the passphrase (e.g., running in a script or CI pipeline).
+
+**Options:**
+
+1. **Use an unencrypted key for automation** - Generate a dedicated key
+   without a passphrase for CI/CD use.
+
+2. **Use `--private-key-stdin`** - Pipe your key from a secrets manager:
+   ```bash
+   vault read -field=private_key secret/kanuka | kanuka secrets decrypt --private-key-stdin
+   ```
+
+3. **Use a secrets manager** - Store and retrieve the unencrypted key securely:
+   ```bash
+   op read "op://Vault/Kanuka/private_key" | kanuka secrets decrypt --private-key-stdin
+   ```
+
+### "failed to parse private key" or "unsupported key type"
+
+This usually means your key is not an RSA key. To check:
+
+```bash
+# Check key type
+ssh-keygen -l -f your_key
+
+# Expected output for RSA:
+# 4096 SHA256:... your_key (RSA)
+
+# If you see ED25519 or ECDSA, generate an RSA key instead
+ssh-keygen -t rsa -b 4096 -f new_rsa_key
+```
+
+### Passphrase prompt not appearing
+
+If you're piping a passphrase-protected key via `--private-key-stdin` and the
+passphrase prompt doesn't appear, ensure your terminal supports `/dev/tty`
+(or `CON` on Windows). The passphrase is read from the terminal device, not
+stdin, when stdin is used for the key.
+
+If running in a container or environment without a TTY, consider using an
+unencrypted key stored in a secrets manager.
