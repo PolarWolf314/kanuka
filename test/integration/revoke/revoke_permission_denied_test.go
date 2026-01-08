@@ -7,6 +7,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 func TestRevokeCommand_PermissionDenied(t *testing.T) {
@@ -109,10 +110,9 @@ func testRevokeWithNoWritePermissionOnDirectory(t *testing.T, originalWd string,
 
 	// Remove the user
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--user", testUser})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--user", testUser}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even with permission issues: %v", err)
 	}

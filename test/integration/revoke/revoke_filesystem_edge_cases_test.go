@@ -7,6 +7,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
 func TestRevokeCommand_FilesystemEdgeCases(t *testing.T) {
@@ -104,10 +105,9 @@ func testRevokeWithOnlyPublicKeyFile(t *testing.T, originalWd string, originalUs
 	// Remove the user using --file flag (use relative path)
 	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
@@ -182,10 +182,9 @@ func testRevokeWithOnlyKanukaKeyFile(t *testing.T, originalWd string, originalUs
 	// Remove the user using --file flag (use relative path)
 	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
@@ -266,10 +265,9 @@ func testRevokeWithReadOnlyPublicKeyFile(t *testing.T, originalWd string, origin
 	// Remove the user using --file flag (use relative path)
 	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
-	secretsCmd := cmd.GetSecretsCmd()
-	secretsCmd.SetArgs([]string{"revoke", "--file", relativeKanukaKeyPath})
+	testCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
 
-	err = secretsCmd.Execute()
+	err = testCmd.Execute()
 	if err != nil {
 		t.Errorf("Remove command should not return error even with permission issues: %v", err)
 	}
