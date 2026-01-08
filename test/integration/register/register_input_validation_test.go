@@ -47,11 +47,11 @@ func TestSecretsRegisterInputValidation(t *testing.T) {
 		testRegisterWithEmptyUsername(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterWithSpecialCharactersInUsername", func(t *testing.T) {
+	t.Run("RegisterWithInvalidEmailFormat", func(t *testing.T) {
 		testRegisterWithSpecialCharactersInUsername(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterWithVeryLongUsername", func(t *testing.T) {
+	t.Run("RegisterWithNonEmailString", func(t *testing.T) {
 		testRegisterWithVeryLongUsername(t, originalWd, originalUserSettings)
 	})
 }
@@ -159,11 +159,15 @@ func testRegisterWithInvalidPubkeyFormat(t *testing.T, originalWd string, origin
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	invalidPubkeyText := "this-is-not-a-valid-public-key"
-	targetUser := "invaliduser"
+	targetUserEmail := "invaliduser@example.com"
+	targetUserUUID := "invalid-user-uuid-1234"
+
+	// Add the user to project config so the email lookup succeeds
+	addUserToProjectConfig(t, targetUserUUID, targetUserEmail)
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", invalidPubkeyText, "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", invalidPubkeyText, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -274,11 +278,11 @@ func testRegisterWithEmptyPubkeyText(t *testing.T, originalWd string, originalUs
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	targetUser := "emptyuser"
+	targetUserEmail := "emptyuser@example.com"
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--pubkey", "", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", "", "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -329,7 +333,7 @@ func testRegisterWithEmptyUsername(t *testing.T, originalWd string, originalUser
 	}
 }
 
-// testRegisterWithSpecialCharactersInUsername tests handling usernames with valid special characters.
+// testRegisterWithSpecialCharactersInUsername tests that invalid email formats are rejected.
 func testRegisterWithSpecialCharactersInUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-special-chars-*")
 	if err != nil {
@@ -346,35 +350,28 @@ func testRegisterWithSpecialCharactersInUsername(t *testing.T, originalWd string
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Test with underscores and hyphens (commonly valid in usernames)
-	targetUser := "user_with-special_chars"
-	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	// Test with invalid email format (not a valid email address)
+	invalidEmail := "user_with-special_chars"
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--user", invalidEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
-		t.Errorf("Command failed: %v", err)
-		t.Errorf("Output: %s", output)
+		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	if !strings.Contains(output, "✓") {
-		t.Errorf("Expected success message not found in output: %s", output)
+	if !strings.Contains(output, "✗") {
+		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	// Verify the .kanuka file was created for the target user
-	targetKanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
-	if _, err := os.Stat(targetKanukaFile); os.IsNotExist(err) {
-		t.Errorf("Target user's .kanuka file was not created at %s", targetKanukaFile)
+	if !strings.Contains(output, "Invalid email format") {
+		t.Errorf("Expected 'Invalid email format' message not found in output: %s", output)
 	}
-
-	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
-// testRegisterWithVeryLongUsername tests handling very long usernames (within limits).
+// testRegisterWithVeryLongUsername tests that invalid email formats (very long strings) are rejected.
 func testRegisterWithVeryLongUsername(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-long-user-*")
 	if err != nil {
@@ -391,30 +388,23 @@ func testRegisterWithVeryLongUsername(t *testing.T, originalWd string, originalU
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Create a long but reasonable username (64 characters)
-	targetUser := "verylongusernamethatisreasonablebutpushesthelimitsofwhatmightbevalid"
-	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	// Test with a long string that is not a valid email format
+	invalidEmail := "verylongusernamethatisreasonablebutpushesthelimitsofwhatmightbevalid"
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--user", invalidEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
-		t.Errorf("Command failed: %v", err)
-		t.Errorf("Output: %s", output)
+		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	if !strings.Contains(output, "✓") {
-		t.Errorf("Expected success message not found in output: %s", output)
+	if !strings.Contains(output, "✗") {
+		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
 
-	// Verify the .kanuka file was created for the target user
-	targetKanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
-	if _, err := os.Stat(targetKanukaFile); os.IsNotExist(err) {
-		t.Errorf("Target user's .kanuka file was not created at %s", targetKanukaFile)
+	if !strings.Contains(output, "Invalid email format") {
+		t.Errorf("Expected 'Invalid email format' message not found in output: %s", output)
 	}
-
-	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }

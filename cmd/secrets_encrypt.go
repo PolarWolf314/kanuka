@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -8,13 +9,38 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
+	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
+var encryptDryRun bool
+
+func init() {
+	encryptCmd.Flags().BoolVar(&encryptDryRun, "dry-run", false, "preview encryption without making changes")
+}
+
+func resetEncryptCommandState() {
+	encryptDryRun = false
+}
+
 var encryptCmd = &cobra.Command{
 	Use:   "encrypt",
 	Short: "Encrypts the .env file into .env.kanuka using your Kānuka key",
+	Long: `Encrypts all .env files in the project into .env.kanuka files.
+
+This command discovers all .env files in your project (recursively, excluding
+the .kanuka/ directory) and encrypts each one using the project's symmetric key.
+The encrypted files are saved with a .kanuka extension (e.g., .env → .env.kanuka).
+
+Use --dry-run to preview which files would be encrypted without making changes.
+
+Examples:
+  # Encrypt all .env files
+  kanuka secrets encrypt
+
+  # Preview which files would be encrypted
+  kanuka secrets encrypt --dry-run`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting encrypt command")
 		spinner, cleanup := startSpinner("Encrypting environment files...", verbose)
@@ -53,14 +79,26 @@ var encryptCmd = &cobra.Command{
 			Logger.Warnf("Processing %d environment files - this may take a moment", len(listOfEnvFiles))
 		}
 
-		username := configs.UserKanukaSettings.Username
-		userKeysPath := configs.UserKanukaSettings.UserKeysPath
-		Logger.Debugf("Username: %s, User keys path: %s", username, userKeysPath)
-
-		Logger.Debugf("Getting project kanuka key for user: %s", username)
-		encryptedSymKey, err := secrets.GetProjectKanukaKey(username)
+		// Load user config for user UUID
+		userConfig, err := configs.EnsureUserConfig()
 		if err != nil {
-			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", username, err)
+			return Logger.ErrorfAndReturn("failed to load user config: %v", err)
+		}
+		userUUID := userConfig.User.UUID
+
+		// Load project config for project UUID
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
+		}
+		projectUUID := projectConfig.Project.UUID
+
+		Logger.Debugf("User UUID: %s", userUUID)
+
+		Logger.Debugf("Getting project kanuka key for user: %s", userUUID)
+		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
+		if err != nil {
+			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
 			finalMessage := color.RedString("✗") + " Failed to get your " +
 				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
 				color.RedString("Error: ") + err.Error()
@@ -68,7 +106,7 @@ var encryptCmd = &cobra.Command{
 			return nil
 		}
 
-		privateKeyPath := filepath.Join(userKeysPath, projectName)
+		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 		Logger.Debugf("Loading private key from: %s", privateKeyPath)
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
@@ -103,6 +141,11 @@ var encryptCmd = &cobra.Command{
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
 
+		// If dry-run, print preview and exit early.
+		if encryptDryRun {
+			return printEncryptDryRun(spinner, listOfEnvFiles, projectPath)
+		}
+
 		Logger.Infof("Encrypting %d files", len(listOfEnvFiles))
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
 			Logger.Errorf("Failed to encrypt files: %v", err)
@@ -125,9 +168,36 @@ var encryptCmd = &cobra.Command{
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +
-			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control"
+			color.CyanString("→") + " You can now safely commit all " + color.YellowString(".kanuka") + " files to version control\n\n" +
+			color.YellowString("Note:") + " Encryption is non-deterministic for security reasons.\n" +
+			"       Re-encrypting unchanged files will produce different output."
 
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+func printEncryptDryRun(spinner *spinner.Spinner, envFiles []string, projectPath string) error {
+	spinner.Stop()
+
+	fmt.Println()
+	fmt.Println(color.YellowString("[dry-run]") + fmt.Sprintf(" Would encrypt %d environment file(s)", len(envFiles)))
+	fmt.Println()
+
+	fmt.Println("Files that would be created:")
+	for _, envFile := range envFiles {
+		// Get relative path for cleaner output.
+		relPath, err := filepath.Rel(projectPath, envFile)
+		if err != nil {
+			relPath = envFile
+		}
+		kanukaFile := relPath + ".kanuka"
+		fmt.Printf("  %s → %s\n", color.CyanString(relPath), color.GreenString(kanukaFile))
+	}
+	fmt.Println()
+
+	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+
+	spinner.FinalMSG = ""
+	return nil
 }

@@ -95,14 +95,16 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 	}
 
 	// Verify no user keys exist yet
-	projectName := filepath.Base(tempDir)
-	username := configs.UserKanukaSettings.Username
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	// Remove any existing keys from init (if any)
-	os.Remove(privateKeyPath)
-	os.Remove(privateKeyPath + ".pub")
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 
 	output, err := shared.CaptureOutput(func() error {
@@ -114,7 +116,7 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 		t.Errorf("Output: %s", output)
 	}
 
-	if !strings.Contains(output, "✓") || !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "✓") || !strings.Contains(output, "Keys created for") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
@@ -130,7 +132,6 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 		t.Errorf("Private key was not created at %s", privateKeyPath)
 	}
 
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
 	if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
 		t.Errorf("Public key was not created at %s", publicKeyPath)
 	}
@@ -172,10 +173,10 @@ func testCreateWhenUserAlreadyHasKeys(t *testing.T, originalWd string, originalU
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	username := configs.UserKanukaSettings.Username
+	userUUID := shared.GetUserUUID(t)
 	// With the new implementation, the command should show "already exists" message
 	// but may succeed if it can still complete the operation
-	if !strings.Contains(output, username+".pub already exists") && !strings.Contains(output, "already exists") {
+	if !strings.Contains(output, userUUID+".pub already exists") && !strings.Contains(output, "already exists") {
 		t.Errorf("Expected 'already exists' message not found in output: %s", output)
 	}
 
@@ -209,8 +210,8 @@ func testCreateWithForceFlag(t *testing.T, originalWd string, originalUserSettin
 		t.Fatalf("First create command failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	originalKeyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {
@@ -227,7 +228,7 @@ func testCreateWithForceFlag(t *testing.T, originalWd string, originalUserSettin
 		t.Errorf("Output: %s", output)
 	}
 
-	if !strings.Contains(output, "✓") || !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "✓") || !strings.Contains(output, "Keys created for") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 

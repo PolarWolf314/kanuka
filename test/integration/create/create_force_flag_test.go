@@ -62,12 +62,13 @@ func testForceWithExistingKeys(t *testing.T, originalWd string, originalUserSett
 		t.Fatalf("Initial create failed: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	username := configs.UserKanukaSettings.Username
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
 
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	// Read original keys
 	originalPrivateKey, err := os.ReadFile(privateKeyPath)
@@ -159,8 +160,8 @@ func testForceWithExistingAccess(t *testing.T, originalWd string, originalUserSe
 		t.Fatalf("Initial create failed: %v", err)
 	}
 
-	username := configs.UserKanukaSettings.Username
-	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
+	userUUID := shared.GetUserUUID(t)
+	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 
 	// Create a .kanuka file (simulating existing access)
 	if err := os.WriteFile(kanukaFilePath, []byte("existing access data"), 0600); err != nil {
@@ -212,15 +213,16 @@ func testForceWithoutExistingKeys(t *testing.T, originalWd string, originalUserS
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
 	// Remove any existing keys from init to ensure clean state
-	projectName := filepath.Base(tempDir)
-	username := configs.UserKanukaSettings.Username
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
-	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", username+".kanuka")
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	keyDir := shared.GetKeyDirPath(keysDir, projectUUID)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
+	kanukaFilePath := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 
-	os.Remove(privateKeyPath)
-	os.Remove(publicKeyPath)
+	os.RemoveAll(keyDir)
 	os.Remove(projectPublicKeyPath)
 	os.Remove(kanukaFilePath)
 
@@ -236,7 +238,7 @@ func testForceWithoutExistingKeys(t *testing.T, originalWd string, originalUserS
 	}
 
 	// Should work exactly like normal create
-	if !strings.Contains(output, "✓") || !strings.Contains(output, "The following changes were made") {
+	if !strings.Contains(output, "✓") || !strings.Contains(output, "Keys created for") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
 
@@ -306,8 +308,8 @@ func testForceFlagWarnings(t *testing.T, originalWd string, originalUserSettings
 	}
 
 	// Verify that the command completed successfully despite overwriting
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key was not created after force")
 	}

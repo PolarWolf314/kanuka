@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
@@ -67,7 +66,7 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 			}
 			defer os.RemoveAll(tempUserDir)
 
-			// Setup test environment with custom username
+			// Setup test environment with custom username and email
 			if err := os.Chdir(tempDir); err != nil {
 				t.Fatalf("Failed to change to temp directory: %v", err)
 			}
@@ -83,13 +82,31 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 					ProjectPublicKeyPath: "",
 					ProjectSecretsPath:   "",
 				}
+				configs.GlobalUserConfig = nil
 			})
 
 			// Override user settings with custom username
+			userConfigsPath := filepath.Join(tempUserDir, "config")
+			if err := os.MkdirAll(userConfigsPath, 0755); err != nil {
+				t.Fatalf("Failed to create user config directory: %v", err)
+			}
+
 			configs.UserKanukaSettings = &configs.UserSettings{
 				UserKeysPath:    filepath.Join(tempUserDir, "keys"),
-				UserConfigsPath: filepath.Join(tempUserDir, "config"),
+				UserConfigsPath: userConfigsPath,
 				Username:        tc.username,
+			}
+
+			// Create user config with email to avoid email prompt
+			userConfig := &configs.UserConfig{
+				User: configs.User{
+					UUID:  shared.TestUserUUID,
+					Email: tc.username + "@example.com",
+				},
+				Projects: make(map[string]configs.UserProjectEntry),
+			}
+			if err := configs.SaveUserConfig(userConfig); err != nil {
+				t.Fatalf("Failed to save user config: %v", err)
 			}
 
 			// Initialize project with the custom username
@@ -114,16 +131,17 @@ func testUsernameDetection(t *testing.T, originalWd string, originalUserSettings
 			}
 
 			if tc.valid {
-				// Verify files were created with correct username
-				publicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", tc.username+".pub")
+				// Get UUIDs for path verification
+				userUUID := shared.GetUserUUID(t)
+
+				// Verify files were created with correct userUUID
+				publicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 				if _, err := os.Stat(publicKeyPath); os.IsNotExist(err) {
 					t.Errorf("Public key not created for username %s", tc.username)
 				}
 
-				// Verify output contains username
-				if !strings.Contains(output, tc.username) {
-					t.Errorf("Output doesn't contain username %s: %s", tc.username, output)
-				}
+				// Note: We no longer check for username in output since UUIDs are now used
+				// for file naming. The important verification is that files are created correctly.
 			}
 		})
 	}
@@ -156,9 +174,10 @@ func testCustomDataDirectories(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify keys were created in custom directory
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(customDataDir, "keys", projectName)
-	publicKeyPath := filepath.Join(customDataDir, "keys", projectName+".pub")
+	projectUUID := shared.GetProjectUUID(t)
+	keysDir := filepath.Join(customDataDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created in custom data directory")
@@ -168,7 +187,6 @@ func testCustomDataDirectories(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify directory structure was created
-	keysDir := filepath.Join(customDataDir, "keys")
 	configDir := filepath.Join(customDataDir, "config")
 
 	if _, err := os.Stat(keysDir); os.IsNotExist(err) {
@@ -212,8 +230,8 @@ func testUserDirectoryPermissions(t *testing.T, originalWd string, originalUserS
 	}
 
 	// Verify keys were created
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(keysDir, projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created with proper permissions")
 	}

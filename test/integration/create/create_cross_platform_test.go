@@ -59,6 +59,9 @@ func testWindowsPathHandling(t *testing.T, originalWd string, originalUserSettin
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Get the project UUID after initialization
+	projectUUID := shared.GetProjectUUID(t)
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -67,10 +70,10 @@ func testWindowsPathHandling(t *testing.T, originalWd string, originalUserSettin
 		t.Errorf("Command failed on Windows: %v", err)
 	}
 
-	// Verify keys were created with Windows path separators
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+	// Verify keys were created with Windows path separators (using project UUID)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created on Windows")
@@ -107,6 +110,9 @@ func testUnixPathHandling(t *testing.T, originalWd string, originalUserSettings 
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Get the project UUID after initialization
+	projectUUID := shared.GetProjectUUID(t)
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -115,10 +121,10 @@ func testUnixPathHandling(t *testing.T, originalWd string, originalUserSettings 
 		t.Errorf("Command failed on Unix: %v", err)
 	}
 
-	// Verify keys were created
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-	publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+	// Verify keys were created (using project UUID, not project name)
+	keysDir := filepath.Join(tempUserDir, "keys")
+	privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+	publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 		t.Errorf("Private key not created on Unix")
@@ -140,7 +146,6 @@ func testUnixPathHandling(t *testing.T, originalWd string, originalUserSettings 
 		}
 	}
 
-	keysDir := filepath.Join(tempUserDir, "keys")
 	keysDirInfo, err := os.Stat(keysDir)
 	if err != nil {
 		t.Errorf("Failed to stat keys directory: %v", err)
@@ -170,6 +175,10 @@ func testPathSeparatorHandling(t *testing.T, originalWd string, originalUserSett
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
+	// Get UUIDs after initialization
+	projectUUID := shared.GetProjectUUID(t)
+	userUUID := shared.GetUserUUID(t)
+
 	_, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
@@ -179,8 +188,7 @@ func testPathSeparatorHandling(t *testing.T, originalWd string, originalUserSett
 	}
 
 	// Verify that filepath.Join was used correctly by checking the created paths
-	projectName := filepath.Base(tempDir)
-	privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
+	privateKeyPath := shared.GetPrivateKeyPath(filepath.Join(tempUserDir, "keys"), projectUUID)
 
 	// The path should exist regardless of platform
 	if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
@@ -193,9 +201,8 @@ func testPathSeparatorHandling(t *testing.T, originalWd string, originalUserSett
 		t.Errorf("Path doesn't use correct separator (%s): %s", expectedSeparator, privateKeyPath)
 	}
 
-	// Test project public key path
-	username := configs.UserKanukaSettings.Username
-	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+	// Test project public key path (now uses user UUID)
+	projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 
 	if _, err := os.Stat(projectPublicKeyPath); os.IsNotExist(err) {
 		t.Errorf("Project public key not created with correct path separators")
@@ -234,6 +241,10 @@ func testSpecialCharactersInPaths(t *testing.T, originalWd string, originalUserS
 			shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 			shared.InitializeProject(t, tempDir, tempUserDir)
 
+			// Get UUIDs after initialization
+			projectUUID := shared.GetProjectUUID(t)
+			userUUID := shared.GetUserUUID(t)
+
 			output, err := shared.CaptureOutput(func() error {
 				cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 				return cmd.Execute()
@@ -247,10 +258,10 @@ func testSpecialCharactersInPaths(t *testing.T, originalWd string, originalUserS
 			}
 
 			if tc.shouldWork {
-				// Verify keys were created despite special characters
-				projectName := filepath.Base(tempDir)
-				privateKeyPath := filepath.Join(tempUserDir, "keys", projectName)
-				publicKeyPath := filepath.Join(tempUserDir, "keys", projectName+".pub")
+				// Verify keys were created despite special characters (using project UUID)
+				keysDir := filepath.Join(tempUserDir, "keys")
+				privateKeyPath := shared.GetPrivateKeyPath(keysDir, projectUUID)
+				publicKeyPath := shared.GetPublicKeyPath(keysDir, projectUUID)
 
 				if _, err := os.Stat(privateKeyPath); os.IsNotExist(err) {
 					t.Errorf("Private key not created for path with special characters: %s", tc.name)
@@ -259,9 +270,8 @@ func testSpecialCharactersInPaths(t *testing.T, originalWd string, originalUserS
 					t.Errorf("Public key not created for path with special characters: %s", tc.name)
 				}
 
-				// Verify project public key was copied correctly
-				username := configs.UserKanukaSettings.Username
-				projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", username+".pub")
+				// Verify project public key was copied correctly (using user UUID)
+				projectPublicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 				if _, err := os.Stat(projectPublicKeyPath); os.IsNotExist(err) {
 					t.Errorf("Project public key not created for path with special characters: %s", tc.name)
 				}

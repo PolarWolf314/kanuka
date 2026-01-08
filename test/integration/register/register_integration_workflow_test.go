@@ -43,8 +43,8 @@ func TestSecretsRegisterIntegrationWorkflow(t *testing.T) {
 		testChainedRegistrationWorkflow(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterAfterPurgeWorkflow", func(t *testing.T) {
-		testRegisterAfterPurgeWorkflow(t, originalWd, originalUserSettings)
+	t.Run("RegisterAfterManualReset", func(t *testing.T) {
+		testRegisterAfterManualReset(t, originalWd, originalUserSettings)
 	})
 }
 
@@ -91,10 +91,11 @@ func testInitCreateRegisterWorkflow(t *testing.T, originalWd string, originalUse
 	// Step 3: Register a new user
 	targetUser := "newuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -143,10 +144,11 @@ func testMultipleUserRegistrationWorkflow(t *testing.T, originalWd string, origi
 	for _, user := range users {
 		keyPair := createTestUserKeyPair(t, tempDir, user)
 		userKeyPairs[user] = keyPair
+		userKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", user+".pub")
 
 		output, err := shared.CaptureOutput(func() error {
 			cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-			cmd.SetArgs([]string{"secrets", "register", "--user", user})
+			cmd.SetArgs([]string{"secrets", "register", "--file", userKeyFile})
 			return cmd.Execute()
 		})
 		if err != nil {
@@ -191,10 +193,11 @@ func testRegisterThenEncryptDecryptWorkflow(t *testing.T, originalWd string, ori
 	// Register a new user
 	targetUser := "encryptuser"
 	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -242,8 +245,8 @@ func testRegisterThenEncryptDecryptWorkflow(t *testing.T, originalWd string, ori
 		t.Fatalf("Failed to create target user keys directory: %v", err)
 	}
 
-	projectName := filepath.Base(tempDir)
-	targetUserPrivateKeyPath := filepath.Join(targetUserKeysDir, projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	targetUserPrivateKeyPath := filepath.Join(targetUserKeysDir, projectUUID)
 	if err := savePrivateKeyToFile(targetUserKeyPair.privateKey, targetUserPrivateKeyPath); err != nil {
 		t.Fatalf("Failed to save target user's private key: %v", err)
 	}
@@ -307,10 +310,11 @@ func testRegisterThenRemoveWorkflow(t *testing.T, originalWd string, originalUse
 	// Register a new user
 	targetUser := "removeuser"
 	createTestUserKeyPair(t, tempDir, targetUser)
+	targetUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", targetUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", targetUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", targetUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -371,10 +375,11 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	// User A (testuser) registers User B
 	userB := "userB"
 	userBKeyPair := createTestUserKeyPair(t, tempDir, userB)
+	userBKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userB+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", userB})
+		cmd.SetArgs([]string{"secrets", "register", "--file", userBKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -389,6 +394,7 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	// Now simulate User B registering User C
 	userC := "userC"
 	userCKeyPair := createTestUserKeyPair(t, tempDir, userC)
+	userCKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userC+".pub")
 
 	// Set up User B's environment
 	tempUserBDir, err := os.MkdirTemp("", "kanuka-userB-*")
@@ -398,33 +404,59 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	defer os.RemoveAll(tempUserBDir)
 
 	userBKeysDir := filepath.Join(tempUserBDir, "keys")
+	userBConfigsDir := filepath.Join(tempUserBDir, "config")
 	if err := os.MkdirAll(userBKeysDir, 0755); err != nil {
 		t.Fatalf("Failed to create User B keys directory: %v", err)
 	}
+	if err := os.MkdirAll(userBConfigsDir, 0755); err != nil {
+		t.Fatalf("Failed to create User B config directory: %v", err)
+	}
 
-	projectName := filepath.Base(tempDir)
-	userBPrivateKeyPath := filepath.Join(userBKeysDir, projectName)
+	projectUUID := shared.GetProjectUUID(t)
+	userBKeyDir := shared.GetKeyDirPath(userBKeysDir, projectUUID)
+	if err := os.MkdirAll(userBKeyDir, 0700); err != nil {
+		t.Fatalf("Failed to create User B's key directory: %v", err)
+	}
+	userBPrivateKeyPath := shared.GetPrivateKeyPath(userBKeysDir, projectUUID)
 	if err := savePrivateKeyToFile(userBKeyPair.privateKey, userBPrivateKeyPath); err != nil {
 		t.Fatalf("Failed to save User B's private key: %v", err)
 	}
 
 	// Switch to User B's settings
 	originalUserSettingsBackup := configs.UserKanukaSettings
+	originalGlobalUserConfig := configs.GlobalUserConfig
 	configs.UserKanukaSettings = &configs.UserSettings{
 		UserKeysPath:    userBKeysDir,
-		UserConfigsPath: filepath.Join(tempUserBDir, "config"),
+		UserConfigsPath: userBConfigsDir,
 		Username:        userB,
 	}
+
+	// Create User B's user config with UUID matching the filename used in register
+	// The register command created files named "userB.kanuka" and "userB.pub"
+	// so User B's UUID must be "userB" for the lookup to work
+	userBConfig := &configs.UserConfig{
+		User: configs.User{
+			UUID:  userB, // UUID matches the filename
+			Email: "userB@example.com",
+		},
+		Projects: make(map[string]configs.UserProjectEntry),
+	}
+	if err := configs.SaveUserConfig(userBConfig); err != nil {
+		t.Fatalf("Failed to save User B's config: %v", err)
+	}
+	// Clear the cached global user config so EnsureUserConfig loads the new one
+	configs.GlobalUserConfig = nil
 
 	// User B registers User C
 	output, err = shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", userC})
+		cmd.SetArgs([]string{"secrets", "register", "--file", userCKeyFile})
 		return cmd.Execute()
 	})
 
 	// Restore original user settings
 	configs.UserKanukaSettings = originalUserSettingsBackup
+	configs.GlobalUserConfig = originalGlobalUserConfig
 
 	if err != nil {
 		t.Errorf("User B registering User C failed: %v", err)
@@ -451,9 +483,9 @@ func testChainedRegistrationWorkflow(t *testing.T, originalWd string, originalUs
 	verifyUserCanDecrypt(t, userC, userCKeyPair.privateKey)
 }
 
-// testRegisterAfterPurgeWorkflow tests register user after project purge.
-func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-after-purge-*")
+// testRegisterAfterManualReset tests register user after manual removal of all access.
+func testRegisterAfterManualReset(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-register-after-reset-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -471,10 +503,11 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 	// Register a user initially
 	initialUser := "initialuser"
 	createTestUserKeyPair(t, tempDir, initialUser)
+	initialUserKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", initialUser+".pub")
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--user", initialUser})
+		cmd.SetArgs([]string{"secrets", "register", "--file", initialUserKeyFile})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -497,7 +530,7 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 		t.Errorf("Encrypt command failed: %v", err)
 	}
 
-	// Purge the project manually since purge command is not implemented yet
+	// Manually remove all access by deleting all keys
 	// Remove all files in .kanuka/secrets/ and .kanuka/public_keys/
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
 	publicKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
@@ -529,9 +562,9 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 		t.Fatalf("Re-init command failed: %v", err)
 	}
 
-	// After purge, we need to create a new user first since there's no one with access to register others
+	// After resetting access, we need to create a new user first since there's no one with access to register others
 	// Create a new user using the create command instead of register
-	newUser := "newuserafterpurge"
+	newUser := "newuserafterreset"
 	createTestUserKeyPair(t, tempDir, newUser)
 
 	output, err = shared.CaptureOutput(func() error {
@@ -540,9 +573,9 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 		return cmd.Execute()
 	})
 	if err != nil {
-		t.Logf("Create after purge command failed (expected since no one has access): %v", err)
+		t.Logf("Create after reset failed (expected since no one has access): %v", err)
 		t.Logf("Output: %s", output)
-		// This is expected behavior - after purge, no one has access to register new users
+		// This is expected behavior - after reset, no one has access to register new users
 		// The test should verify that the system correctly prevents unauthorized access
 		return
 	}
@@ -550,13 +583,13 @@ func testRegisterAfterPurgeWorkflow(t *testing.T, originalWd string, originalUse
 	// If create succeeded, verify the new user's .kanuka file was created
 	newUserKanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", newUser+".kanuka")
 	if _, err := os.Stat(newUserKanukaFile); os.IsNotExist(err) {
-		t.Logf("New user's .kanuka file was not created after purge at %s - this may be expected behavior", newUserKanukaFile)
+		t.Logf("New user's .kanuka file was not created after reset at %s - this may be expected behavior", newUserKanukaFile)
 	}
 
 	// Verify the old user's files are gone
 	oldUserKanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", initialUser+".kanuka")
 	if _, err := os.Stat(oldUserKanukaFile); !os.IsNotExist(err) {
-		t.Logf("Old user's .kanuka file still exists after manual purge at %s - this is expected since we manually purged before re-init", oldUserKanukaFile)
+		t.Logf("Old user's .kanuka file still exists after manual reset at %s - this is expected since we manually removed all keys before re-init", oldUserKanukaFile)
 	}
 }
 

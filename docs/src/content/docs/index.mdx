@@ -1,9 +1,9 @@
 ---
 title: Welcome to Kānuka
-description: Managing secrets, made easy
+description: Unified development environments and secrets management
 template: splash
 hero:
-  tagline: No third parties. Just fast, resilient, and pleasant secrets management.
+  tagline: Secure secrets management in one powerful CLI tool.
   image:
     {
       light: "/public/assets/kanuka-light-circular.png",
@@ -23,18 +23,28 @@ hero:
 import { Card, CardGrid } from "@astrojs/starlight/components";
 
 <CardGrid stagger>
-  <Card title="“Hey, what's the API key?”" icon="warning">
-    Never again will you need to maintain a `.env.example`, or send an API key
-    over Slack. Let Kānuka handle secrets for you.
+  <Card title="End-to-End Encryption" icon="seti:lock">
+    Encrypt .env files with industry-standard encryption. 
+    Safely commit secrets to version control without exposing sensitive data.
   </Card>
-  <Card title="Powered by Go" icon="rocket">
-    Leverage the native speeds that Go provides, on any platform, anywhere.
+  <Card title="Team Access Management" icon="approve-check">
+    Grant and revoke access to secrets using public key encryption. 
+    Only authorized team members can decrypt your project's secrets.
   </Card>
-  <Card title="Secure by design" icon="approve-check">
-    Kānuka uses the same cryptographic technology that powers the internet —
-    2048-bit RSA encryption.
+  <Card title="Seamless Decryption" icon="pencil">
+    Decrypt encrypted secrets with a single command. 
+    Get back your original .env files instantly when you need them.
   </Card>
-  <Card title="Works on any project" icon="open-book">
-    As long as your project uses a `.env` file, Kānuka can handle it.
+  <Card title="Git-Friendly Secrets" icon="seti:git">
+    Commit encrypted .kanuka files to your repository. 
+    Share secrets securely without risking accidental exposure.
+  </Card>
+  <Card title="Secure by Default" icon="information">
+    Only users with registered keys can access your secrets. 
+    Automatic key management ensures secrets stay protected.
+  </Card>
+  <Card title="Simple Workflow" icon="heart">
+    Encrypt, register, and decrypt with minimal commands. 
+    No complex configuration required for secrets management.
   </Card>
 </CardGrid>

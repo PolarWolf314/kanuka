@@ -118,7 +118,8 @@ func testEncryptWithMissingPublicKey(t *testing.T, originalWd string, originalUs
 	}
 
 	// Remove the public key file
-	publicKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", "testuser.pub")
+	userUUID := shared.GetUserUUID(t)
+	publicKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 	if err := os.Remove(publicKeyFile); err != nil {
 		t.Fatalf("Failed to remove public key file: %v", err)
 	}
@@ -164,7 +165,8 @@ func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, origina
 	}
 
 	// Remove the symmetric key file
-	symmetricKeyFile := filepath.Join(tempDir, ".kanuka", "secrets", "testuser.kanuka")
+	userUUID := shared.GetUserUUID(t)
+	symmetricKeyFile := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	if err := os.Remove(symmetricKeyFile); err != nil {
 		t.Fatalf("Failed to remove symmetric key file: %v", err)
 	}
@@ -205,7 +207,8 @@ func testEncryptWithCorruptedPublicKey(t *testing.T, originalWd string, original
 	}
 
 	// Corrupt the public key file
-	publicKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", "testuser.pub")
+	userUUID := shared.GetUserUUID(t)
+	publicKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 	corruptedContent := "this is not a valid public key"
 	if err := os.WriteFile(publicKeyFile, []byte(corruptedContent), 0600); err != nil {
 		t.Fatalf("Failed to corrupt public key file: %v", err)
@@ -251,7 +254,8 @@ func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, origi
 	}
 
 	// Corrupt the symmetric key file
-	symmetricKeyFile := filepath.Join(tempDir, ".kanuka", "secrets", "testuser.kanuka")
+	userUUID := shared.GetUserUUID(t)
+	symmetricKeyFile := filepath.Join(tempDir, ".kanuka", "secrets", userUUID+".kanuka")
 	corruptedContent := "this is not a valid encrypted symmetric key"
 	if err := os.WriteFile(symmetricKeyFile, []byte(corruptedContent), 0600); err != nil {
 		t.Fatalf("Failed to corrupt symmetric key file: %v", err)
@@ -293,7 +297,8 @@ func testEncryptWithWrongKeyFormat(t *testing.T, originalWd string, originalUser
 	}
 
 	// Replace public key with wrong format (valid PEM but wrong key type)
-	publicKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", "testuser.pub")
+	userUUID := shared.GetUserUUID(t)
+	publicKeyFile := filepath.Join(tempDir, ".kanuka", "public_keys", userUUID+".pub")
 	wrongFormatKey := `-----BEGIN CERTIFICATE-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890abcdef
 -----END CERTIFICATE-----`

@@ -1,0 +1,324 @@
+package configs
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type UserConfig struct {
+	User     User                        `toml:"user"`
+	Projects map[string]UserProjectEntry `toml:"projects"`
+}
+
+// UserProjectEntry stores information about a project in the user's config.
+type UserProjectEntry struct {
+	DeviceName  string `toml:"device_name"`
+	ProjectName string `toml:"project_name"`
+}
+
+type User struct {
+	Email             string `toml:"email"`
+	Name              string `toml:"name,omitempty"`
+	UUID              string `toml:"user_uuid"`
+	DefaultDeviceName string `toml:"default_device_name,omitempty"`
+}
+
+type ProjectConfig struct {
+	Project Project                 `toml:"project"`
+	Users   map[string]string       `toml:"users"`
+	Devices map[string]DeviceConfig `toml:"devices"`
+}
+
+type Project struct {
+	UUID string `toml:"project_uuid"`
+	Name string `toml:"name"`
+}
+
+type DeviceConfig struct {
+	Email     string    `toml:"email"`
+	Name      string    `toml:"name"`
+	CreatedAt time.Time `toml:"created_at"`
+}
+
+// KeyMetadata stores metadata about a project's keys in the user's key directory.
+type KeyMetadata struct {
+	ProjectName    string    `toml:"project_name"`
+	ProjectPath    string    `toml:"project_path"`
+	CreatedAt      time.Time `toml:"created_at"`
+	LastAccessedAt time.Time `toml:"last_accessed_at"`
+}
+
+var (
+	GlobalUserConfig    *UserConfig
+	GlobalProjectConfig *ProjectConfig
+)
+
+// LoadUserConfig loads the user configuration from the config file.
+func LoadUserConfig() (*UserConfig, error) {
+	configPath := filepath.Join(UserKanukaSettings.UserConfigsPath, "config.toml")
+
+	config := &UserConfig{
+		Projects: make(map[string]UserProjectEntry),
+	}
+
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return config, nil
+	}
+
+	if err := LoadTOML(configPath, config); err != nil {
+		return nil, fmt.Errorf("failed to load user config: %w", err)
+	}
+
+	return config, nil
+}
+
+// SaveUserConfig saves the user configuration to the config file.
+func SaveUserConfig(config *UserConfig) error {
+	configPath := filepath.Join(UserKanukaSettings.UserConfigsPath, "config.toml")
+
+	if err := SaveTOML(configPath, config); err != nil {
+		return fmt.Errorf("failed to save user config: %w", err)
+	}
+
+	return nil
+}
+
+// GenerateUserUUID generates a new UUID for the user.
+func GenerateUserUUID() string {
+	return uuid.New().String()
+}
+
+// EnsureUserConfig ensures the user configuration exists and has a UUID.
+func EnsureUserConfig() (*UserConfig, error) {
+	config, err := LoadUserConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load user config: %w", err)
+	}
+
+	if config.User.UUID == "" {
+		config.User.UUID = GenerateUserUUID()
+		if err := SaveUserConfig(config); err != nil {
+			return nil, fmt.Errorf("failed to save user config: %w", err)
+		}
+	}
+
+	return config, nil
+}
+
+// LoadProjectConfig loads the project configuration from the config file.
+// Note: Caller should ensure InitProjectSettings is called before calling this function.
+func LoadProjectConfig() (*ProjectConfig, error) {
+	configPath := filepath.Join(ProjectKanukaSettings.ProjectPath, ".kanuka", "config.toml")
+
+	config := &ProjectConfig{
+		Users:   make(map[string]string),
+		Devices: make(map[string]DeviceConfig),
+	}
+
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return config, nil
+	}
+
+	if err := LoadTOML(configPath, config); err != nil {
+		return nil, fmt.Errorf("failed to load project config: %w", err)
+	}
+
+	return config, nil
+}
+
+// SaveProjectConfig saves the project configuration to the config file.
+// Note: Caller should ensure InitProjectSettings is called before calling this function.
+func SaveProjectConfig(config *ProjectConfig) error {
+	configPath := filepath.Join(ProjectKanukaSettings.ProjectPath, ".kanuka", "config.toml")
+
+	if err := SaveTOML(configPath, config); err != nil {
+		return fmt.Errorf("failed to save project config: %w", err)
+	}
+
+	return nil
+}
+
+// GenerateProjectUUID generates a new UUID for the project.
+func GenerateProjectUUID() string {
+	return uuid.New().String()
+}
+
+// GetKeyDirPath returns the path to the key directory for a given project UUID.
+func GetKeyDirPath(projectUUID string) string {
+	return filepath.Join(UserKanukaSettings.UserKeysPath, projectUUID)
+}
+
+// GetPrivateKeyPath returns the path to the private key for a given project UUID.
+func GetPrivateKeyPath(projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(projectUUID), "privkey")
+}
+
+// GetPublicKeyPath returns the path to the public key for a given project UUID.
+func GetPublicKeyPath(projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(projectUUID), "pubkey.pub")
+}
+
+// GetKeyMetadataPath returns the path to the metadata file for a given project UUID.
+func GetKeyMetadataPath(projectUUID string) string {
+	return filepath.Join(GetKeyDirPath(projectUUID), "metadata.toml")
+}
+
+// SaveKeyMetadata saves the key metadata to the project's key directory.
+func SaveKeyMetadata(projectUUID string, metadata *KeyMetadata) error {
+	metadataPath := GetKeyMetadataPath(projectUUID)
+
+	if err := SaveTOML(metadataPath, metadata); err != nil {
+		return fmt.Errorf("failed to save key metadata: %w", err)
+	}
+
+	return nil
+}
+
+// LoadKeyMetadata loads the key metadata from the project's key directory.
+func LoadKeyMetadata(projectUUID string) (*KeyMetadata, error) {
+	metadataPath := GetKeyMetadataPath(projectUUID)
+
+	metadata := &KeyMetadata{}
+
+	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("key metadata not found for project %s", projectUUID)
+	}
+
+	if err := LoadTOML(metadataPath, metadata); err != nil {
+		return nil, fmt.Errorf("failed to load key metadata: %w", err)
+	}
+
+	return metadata, nil
+}
+
+// UpdateKeyMetadataAccessTime updates the last accessed timestamp in the key metadata.
+// This should be called whenever a command runs inside a kanuka project.
+// Returns nil if the metadata doesn't exist (project not fully initialized).
+func UpdateKeyMetadataAccessTime(projectUUID string) error {
+	if projectUUID == "" {
+		return nil
+	}
+
+	metadataPath := GetKeyMetadataPath(projectUUID)
+
+	// Check if metadata file exists.
+	if _, err := os.Stat(metadataPath); os.IsNotExist(err) {
+		// Metadata doesn't exist yet - project may not be fully initialized.
+		return nil
+	}
+
+	metadata, err := LoadKeyMetadata(projectUUID)
+	if err != nil {
+		return fmt.Errorf("failed to load key metadata: %w", err)
+	}
+
+	metadata.LastAccessedAt = time.Now()
+
+	if err := SaveKeyMetadata(projectUUID, metadata); err != nil {
+		return fmt.Errorf("failed to save key metadata: %w", err)
+	}
+
+	return nil
+}
+
+// GetUserUUIDByEmail looks up a user UUID by their email in the project config.
+// Returns the UUID and true if found, empty string and false if not found.
+func (pc *ProjectConfig) GetUserUUIDByEmail(email string) (string, bool) {
+	for uuid, userEmail := range pc.Users {
+		if userEmail == email {
+			return uuid, true
+		}
+	}
+	return "", false
+}
+
+// GetAllUserUUIDsByEmail returns all user UUIDs that match the given email.
+// This handles the case where the same email might have multiple devices (UUIDs).
+func (pc *ProjectConfig) GetAllUserUUIDsByEmail(email string) []string {
+	var uuids []string
+	for uuid, userEmail := range pc.Users {
+		if userEmail == email {
+			uuids = append(uuids, uuid)
+		}
+	}
+	return uuids
+}
+
+// GetDevicesByEmail returns all devices for a given email address.
+func (pc *ProjectConfig) GetDevicesByEmail(email string) map[string]DeviceConfig {
+	devices := make(map[string]DeviceConfig)
+	for uuid, device := range pc.Devices {
+		if device.Email == email {
+			devices[uuid] = device
+		}
+	}
+	return devices
+}
+
+// GetUserUUIDByEmailAndDevice looks up a user UUID by email and device name.
+// Returns the UUID and true if found, empty string and false if not found.
+func (pc *ProjectConfig) GetUserUUIDByEmailAndDevice(email, deviceName string) (string, bool) {
+	for uuid, device := range pc.Devices {
+		if device.Email == email && device.Name == deviceName {
+			return uuid, true
+		}
+	}
+	return "", false
+}
+
+// GetDeviceNamesByEmail returns a slice of device names for a given email address.
+func (pc *ProjectConfig) GetDeviceNamesByEmail(email string) []string {
+	var names []string
+	for _, device := range pc.Devices {
+		if device.Email == email {
+			names = append(names, device.Name)
+		}
+	}
+	return names
+}
+
+// IsDeviceNameTakenByEmail checks if a device name is already used by a given email.
+func (pc *ProjectConfig) IsDeviceNameTakenByEmail(email, deviceName string) bool {
+	for _, device := range pc.Devices {
+		if device.Email == email && device.Name == deviceName {
+			return true
+		}
+	}
+	return false
+}
+
+// RemoveDevice removes a device by UUID from the project config.
+// It removes the device from both Users and Devices maps.
+func (pc *ProjectConfig) RemoveDevice(uuid string) {
+	delete(pc.Users, uuid)
+	delete(pc.Devices, uuid)
+}
+
+// RemoveDevicesByEmail removes all devices for a given email from the project config.
+// Returns the list of UUIDs that were removed.
+func (pc *ProjectConfig) RemoveDevicesByEmail(email string) []string {
+	var removedUUIDs []string
+	for uuid, userEmail := range pc.Users {
+		if userEmail == email {
+			removedUUIDs = append(removedUUIDs, uuid)
+		}
+	}
+	for _, uuid := range removedUUIDs {
+		pc.RemoveDevice(uuid)
+	}
+	return removedUUIDs
+}
+
+// HasOtherDevicesForEmail checks if an email has other devices besides the given UUID.
+func (pc *ProjectConfig) HasOtherDevicesForEmail(email, excludeUUID string) bool {
+	for uuid, device := range pc.Devices {
+		if device.Email == email && uuid != excludeUUID {
+			return true
+		}
+	}
+	return false
+}
