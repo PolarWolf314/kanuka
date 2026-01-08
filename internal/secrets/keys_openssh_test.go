@@ -3,8 +3,11 @@ package secrets
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"golang.org/x/crypto/ssh"
@@ -184,4 +187,268 @@ func TestErrPassphraseRequired(t *testing.T) {
 	if ErrPassphraseRequired.Error() != expectedMsg {
 		t.Errorf("expected error message %q, got %q", expectedMsg, ErrPassphraseRequired.Error())
 	}
+}
+
+// Tests for ParsePrivateKeyBytes - the main entry point for parsing private keys
+
+func TestParsePrivateKeyBytes_PKCS1(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Encode in PKCS#1 PEM format (traditional "RSA PRIVATE KEY")
+	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	pemBlock := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse using ParsePrivateKeyBytes
+	parsed, err := ParsePrivateKeyBytes(pemBytes)
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytes failed for PKCS#1: %v", err)
+	}
+
+	// Verify the parsed key matches the original
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+	if parsed.E != privateKey.E {
+		t.Error("parsed key exponent does not match original")
+	}
+}
+
+func TestParsePrivateKeyBytes_PKCS8(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Encode in PKCS#8 PEM format ("PRIVATE KEY")
+	privBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("failed to marshal PKCS#8 private key: %v", err)
+	}
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	// Parse using ParsePrivateKeyBytes
+	parsed, err := ParsePrivateKeyBytes(pemBytes)
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytes failed for PKCS#8: %v", err)
+	}
+
+	// Verify the parsed key matches the original
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+	if parsed.E != privateKey.E {
+		t.Error("parsed key exponent does not match original")
+	}
+}
+
+func TestParsePrivateKeyBytes_OpenSSH(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Marshal to OpenSSH format
+	sshPemBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		t.Fatalf("failed to marshal private key to OpenSSH format: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(sshPemBlock)
+
+	// Parse using ParsePrivateKeyBytes
+	parsed, err := ParsePrivateKeyBytes(pemBytes)
+	if err != nil {
+		t.Fatalf("ParsePrivateKeyBytes failed for OpenSSH: %v", err)
+	}
+
+	// Verify the parsed key matches the original
+	if parsed.N.Cmp(privateKey.N) != 0 {
+		t.Error("parsed key modulus does not match original")
+	}
+	if parsed.E != privateKey.E {
+		t.Error("parsed key exponent does not match original")
+	}
+}
+
+func TestParsePrivateKeyBytes_InvalidFormats(t *testing.T) {
+	testCases := []struct {
+		name        string
+		data        []byte
+		expectError string
+	}{
+		{
+			name:        "EmptyData",
+			data:        []byte{},
+			expectError: "failed to decode PEM block",
+		},
+		{
+			name:        "NotPEM",
+			data:        []byte("not a PEM encoded key"),
+			expectError: "failed to decode PEM block",
+		},
+		{
+			name: "UnsupportedPEMType",
+			data: pem.EncodeToMemory(&pem.Block{
+				Type:  "UNSUPPORTED KEY TYPE",
+				Bytes: []byte("fake key data"),
+			}),
+			expectError: "unsupported private key format",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ParsePrivateKeyBytes(tc.data)
+			if err == nil {
+				t.Fatalf("expected error containing %q, got nil", tc.expectError)
+			}
+			if !containsString(err.Error(), tc.expectError) {
+				t.Errorf("expected error containing %q, got %q", tc.expectError, err.Error())
+			}
+		})
+	}
+}
+
+// Tests for LoadPrivateKey - loading from file
+
+func TestLoadPrivateKey_PKCS1File(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Create a temp file with PKCS#1 PEM format
+	tempDir := t.TempDir()
+	keyPath := filepath.Join(tempDir, "privkey")
+
+	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	pemBlock := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	if err := os.WriteFile(keyPath, pemBytes, 0600); err != nil {
+		t.Fatalf("failed to write test key file: %v", err)
+	}
+
+	// Load using LoadPrivateKey
+	loaded, err := LoadPrivateKey(keyPath)
+	if err != nil {
+		t.Fatalf("LoadPrivateKey failed: %v", err)
+	}
+
+	// Verify the loaded key matches the original
+	if loaded.N.Cmp(privateKey.N) != 0 {
+		t.Error("loaded key modulus does not match original")
+	}
+}
+
+func TestLoadPrivateKey_OpenSSHFile(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Create a temp file with OpenSSH format
+	tempDir := t.TempDir()
+	keyPath := filepath.Join(tempDir, "privkey")
+
+	sshPemBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		t.Fatalf("failed to marshal private key to OpenSSH format: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(sshPemBlock)
+
+	if err := os.WriteFile(keyPath, pemBytes, 0600); err != nil {
+		t.Fatalf("failed to write test key file: %v", err)
+	}
+
+	// Load using LoadPrivateKey
+	loaded, err := LoadPrivateKey(keyPath)
+	if err != nil {
+		t.Fatalf("LoadPrivateKey failed: %v", err)
+	}
+
+	// Verify the loaded key matches the original
+	if loaded.N.Cmp(privateKey.N) != 0 {
+		t.Error("loaded key modulus does not match original")
+	}
+}
+
+func TestLoadPrivateKey_PKCS8File(t *testing.T) {
+	// Generate a test key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
+	}
+
+	// Create a temp file with PKCS#8 PEM format
+	tempDir := t.TempDir()
+	keyPath := filepath.Join(tempDir, "privkey")
+
+	privBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		t.Fatalf("failed to marshal PKCS#8 private key: %v", err)
+	}
+	pemBlock := &pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	pemBytes := pem.EncodeToMemory(pemBlock)
+
+	if err := os.WriteFile(keyPath, pemBytes, 0600); err != nil {
+		t.Fatalf("failed to write test key file: %v", err)
+	}
+
+	// Load using LoadPrivateKey
+	loaded, err := LoadPrivateKey(keyPath)
+	if err != nil {
+		t.Fatalf("LoadPrivateKey failed: %v", err)
+	}
+
+	// Verify the loaded key matches the original
+	if loaded.N.Cmp(privateKey.N) != 0 {
+		t.Error("loaded key modulus does not match original")
+	}
+}
+
+func TestLoadPrivateKey_FileNotFound(t *testing.T) {
+	_, err := LoadPrivateKey("/nonexistent/path/to/key")
+	if err == nil {
+		t.Fatal("expected error for nonexistent file, got nil")
+	}
+	if !os.IsNotExist(err) {
+		t.Logf("Got error: %v", err)
+	}
+}
+
+// Helper function for string contains check.
+func containsString(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

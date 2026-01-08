@@ -60,16 +60,49 @@ func parseOpenSSHPrivateKey(data []byte, passphrase []byte) (*rsa.PrivateKey, er
 }
 
 // LoadPrivateKey loads an RSA private key from disk.
+// Supports PEM (PKCS#1, PKCS#8) and OpenSSH formats.
 func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+	return ParsePrivateKeyBytes(data)
+}
+
+// ParsePrivateKeyBytes parses an RSA private key from bytes.
+// Supports PEM (PKCS#1, PKCS#8) and OpenSSH formats.
+func ParsePrivateKeyBytes(data []byte) (*rsa.PrivateKey, error) {
+	// Try to decode as PEM
 	block, _ := pem.Decode(data)
-	if block == nil || block.Type != "RSA PRIVATE KEY" {
-		return nil, fmt.Errorf("failed to decode PEM block containing private key")
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block from private key data")
 	}
-	return x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	// Check the PEM block type to determine format
+	switch block.Type {
+	case "RSA PRIVATE KEY":
+		// Traditional PEM format (PKCS#1)
+		return x509.ParsePKCS1PrivateKey(block.Bytes)
+
+	case "PRIVATE KEY":
+		// PKCS#8 format
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse PKCS#8 private key: %w", err)
+		}
+		rsaKey, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("PKCS#8 key is not an RSA key, got %T", key)
+		}
+		return rsaKey, nil
+
+	case "OPENSSH PRIVATE KEY":
+		// OpenSSH format - pass the full data (including PEM wrapper)
+		return parseOpenSSHPrivateKey(data, nil)
+
+	default:
+		return nil, fmt.Errorf("unsupported private key format: %s", block.Type)
+	}
 }
 
 // LoadPublicKey loads the user's public key from the project directory.

@@ -264,13 +264,13 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 
 ### Acceptance Criteria
 
-- [ ] `LoadPrivateKey()` successfully loads PEM format keys (backward compatible)
-- [ ] `LoadPrivateKey()` successfully loads OpenSSH format keys
-- [ ] Error messages clearly indicate the issue (wrong format, encrypted, wrong type)
-- [ ] All existing tests continue to pass
-- [ ] `secrets decrypt` works with OpenSSH format keys
-- [ ] `secrets encrypt` works with OpenSSH format keys
-- [ ] Integration tests added for OpenSSH key loading
+- [x] `LoadPrivateKey()` successfully loads PEM format keys (backward compatible)
+- [x] `LoadPrivateKey()` successfully loads OpenSSH format keys
+- [x] Error messages clearly indicate the issue (wrong format, encrypted, wrong type)
+- [x] All existing tests continue to pass
+- [x] `secrets decrypt` works with OpenSSH format keys
+- [x] `secrets encrypt` works with OpenSSH format keys
+- [x] Integration tests added for OpenSSH key loading
 
 ### Implementation Steps
 
