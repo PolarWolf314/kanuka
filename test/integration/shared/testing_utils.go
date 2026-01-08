@@ -19,7 +19,9 @@ import (
 	"github.com/PolarWolf314/kanuka/cmd"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
+
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
 )
 
 // TestUserUUID is a fixed UUID used for testing purposes.
@@ -565,4 +567,171 @@ func GetPublicKeyPath(keysDir, projectUUID string) string {
 // This follows the new directory structure: {keysDir}/{projectUUID}/metadata.toml.
 func GetMetadataPath(keysDir, projectUUID string) string {
 	return filepath.Join(GetKeyDirPath(keysDir, projectUUID), "metadata.toml")
+}
+
+// GenerateOpenSSHKeyPair creates an RSA key pair and saves the private key in OpenSSH format.
+// The public key is saved in SSH authorized_keys format.
+func GenerateOpenSSHKeyPair(privatePath, publicPath string) error {
+	return GenerateOpenSSHKeyPairWithPassphrase(privatePath, publicPath, nil)
+}
+
+// GenerateOpenSSHKeyPairWithPassphrase creates an RSA key pair with optional passphrase.
+// The private key is saved in OpenSSH format (with encryption if passphrase provided).
+// The public key is saved in SSH authorized_keys format.
+func GenerateOpenSSHKeyPairWithPassphrase(privatePath, publicPath string, passphrase []byte) error {
+	// Generate private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return fmt.Errorf("failed to generate private key: %w", err)
+	}
+
+	// Marshal private key to OpenSSH format
+	var pemBlock *pem.Block
+	if len(passphrase) > 0 {
+		pemBlock, err = ssh.MarshalPrivateKeyWithPassphrase(privateKey, "", passphrase)
+	} else {
+		pemBlock, err = ssh.MarshalPrivateKey(privateKey, "")
+	}
+	if err != nil {
+		return fmt.Errorf("failed to marshal private key to OpenSSH format: %w", err)
+	}
+
+	// Write private key to file
+	if err := os.WriteFile(privatePath, pem.EncodeToMemory(pemBlock), 0600); err != nil {
+		return fmt.Errorf("failed to write private key: %w", err)
+	}
+
+	// Create public key in SSH authorized_keys format
+	sshPubKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to create SSH public key: %w", err)
+	}
+	pubKeyBytes := ssh.MarshalAuthorizedKey(sshPubKey)
+
+	// Write public key to file
+	// #nosec G306 -- Public keys are intended to be world-readable
+	if err := os.WriteFile(publicPath, pubKeyBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write public key: %w", err)
+	}
+
+	return nil
+}
+
+// CaptureOutputWithStdin captures both stdout and stderr during function execution,
+// while also providing data on stdin. This is useful for testing commands that read from stdin.
+func CaptureOutputWithStdin(stdinData []byte, fn func() error) (string, error) {
+	// Save original stdin, stdout, and stderr
+	originalStdin := os.Stdin
+	originalStdout := os.Stdout
+	originalStderr := os.Stderr
+
+	// Create a pipe for stdin
+	stdinReader, stdinWriter, err := os.Pipe()
+	if err != nil {
+		return "", fmt.Errorf("failed to create stdin pipe: %w", err)
+	}
+
+	// Create pipes to capture output
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		stdinReader.Close()
+		stdinWriter.Close()
+		return "", fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
+		stdinReader.Close()
+		stdinWriter.Close()
+		stdoutReader.Close()
+		stdoutWriter.Close()
+		return "", fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	// Replace stdin, stdout, and stderr
+	os.Stdin = stdinReader
+	os.Stdout = stdoutWriter
+	os.Stderr = stderrWriter
+
+	// Write data to stdin in a goroutine
+	go func() {
+		defer stdinWriter.Close()
+		_, _ = stdinWriter.Write(stdinData)
+	}()
+
+	// Channel to collect output
+	outputChan := make(chan string, 2)
+
+	// Start goroutines to read from pipes
+	go func() {
+		var buf bytes.Buffer
+		_, copyErr := io.Copy(&buf, stdoutReader)
+		if copyErr != nil {
+			log.Printf("Failed to copy stdout: %s", copyErr)
+		}
+		outputChan <- buf.String()
+	}()
+
+	go func() {
+		var buf bytes.Buffer
+		_, copyErr := io.Copy(&buf, stderrReader)
+		if copyErr != nil {
+			log.Printf("Failed to copy stderr: %s", copyErr)
+		}
+		outputChan <- buf.String()
+	}()
+
+	// Execute the function
+	fnErr := fn()
+
+	// Close writers to signal EOF
+	stdoutWriter.Close()
+	stderrWriter.Close()
+	stdinReader.Close()
+
+	// Restore original stdin, stdout, and stderr
+	os.Stdin = originalStdin
+	os.Stdout = originalStdout
+	os.Stderr = originalStderr
+
+	// Collect output
+	stdout := <-outputChan
+	stderr := <-outputChan
+
+	return stdout + stderr, fnErr
+}
+
+// ConvertPKCS1ToOpenSSH reads a PKCS#1 format private key and converts it to OpenSSH format.
+// This is useful for tests that need to convert existing keys to OpenSSH format.
+func ConvertPKCS1ToOpenSSH(pkcs1Path, opensshPath string) error {
+	// Read the PKCS#1 key
+	keyData, err := os.ReadFile(pkcs1Path)
+	if err != nil {
+		return fmt.Errorf("failed to read PKCS#1 key: %w", err)
+	}
+
+	// Decode PEM
+	block, _ := pem.Decode(keyData)
+	if block == nil || block.Type != "RSA PRIVATE KEY" {
+		return fmt.Errorf("failed to decode PKCS#1 PEM block")
+	}
+
+	// Parse PKCS#1 key
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse PKCS#1 key: %w", err)
+	}
+
+	// Marshal to OpenSSH format
+	sshPemBlock, err := ssh.MarshalPrivateKey(privateKey, "")
+	if err != nil {
+		return fmt.Errorf("failed to marshal to OpenSSH format: %w", err)
+	}
+
+	// Write OpenSSH format key
+	if err := os.WriteFile(opensshPath, pem.EncodeToMemory(sshPemBlock), 0600); err != nil {
+		return fmt.Errorf("failed to write OpenSSH key: %w", err)
+	}
+
+	return nil
 }

@@ -16,10 +16,14 @@ import (
 )
 
 var (
-	registerUserEmail string
-	customFilePath    string
-	publicKeyText     string
-	registerDryRun    bool
+	registerUserEmail       string
+	customFilePath          string
+	publicKeyText           string
+	registerDryRun          bool
+	registerPrivateKeyStdin bool
+	// privateKeyData holds the private key data read from stdin (if --private-key-stdin is used).
+	// This is stored so it can be used by multiple functions without re-reading stdin.
+	registerPrivateKeyData []byte
 )
 
 // resetRegisterCommandState resets all register command global variables to their default values for testing.
@@ -28,6 +32,18 @@ func resetRegisterCommandState() {
 	customFilePath = ""
 	publicKeyText = ""
 	registerDryRun = false
+	registerPrivateKeyStdin = false
+	registerPrivateKeyData = nil
+}
+
+// loadRegisterPrivateKey loads the private key for the register command.
+// If --private-key-stdin was used, it uses the stored key data; otherwise loads from disk.
+func loadRegisterPrivateKey(projectUUID string) (*rsa.PrivateKey, error) {
+	if registerPrivateKeyStdin {
+		return secrets.LoadPrivateKeyFromBytesWithTTYPrompt(registerPrivateKeyData)
+	}
+	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
+	return secrets.LoadPrivateKey(privateKeyPath)
 }
 
 func init() {
@@ -35,6 +51,7 @@ func init() {
 	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
 	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified user email")
 	RegisterCmd.Flags().BoolVar(&registerDryRun, "dry-run", false, "preview registration without making changes")
+	RegisterCmd.Flags().BoolVar(&registerPrivateKeyStdin, "private-key-stdin", false, "read private key from stdin instead of from disk")
 }
 
 var RegisterCmd = &cobra.Command{
@@ -56,6 +73,9 @@ secrets once they pull the latest changes from the repository.
 
 Use --dry-run to preview what would be created without making changes.
 
+Use --private-key-stdin to read your private key from stdin instead of from disk.
+This is useful for piping keys from secret managers (e.g., HashiCorp Vault, 1Password).
+
 Examples:
   # Register a user by their email address
   kanuka secrets register --user alice@example.com
@@ -67,7 +87,10 @@ Examples:
   kanuka secrets register --user alice@example.com --pubkey "ssh-rsa AAAA..."
 
   # Preview registration without making changes
-  kanuka secrets register --user alice@example.com --dry-run`,
+  kanuka secrets register --user alice@example.com --dry-run
+
+  # Register using a key piped from a secret manager
+  vault read -field=private_key secret/kanuka | kanuka secrets register --user alice@example.com --private-key-stdin`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting register command")
 		spinner, cleanup := startSpinner("Registering user for access...", verbose)
@@ -113,6 +136,21 @@ Examples:
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
 			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
+		}
+
+		// If --private-key-stdin is set, read the key data now (before it gets consumed elsewhere)
+		if registerPrivateKeyStdin {
+			Logger.Debugf("Reading private key from stdin")
+			keyData, err := utils.ReadStdin()
+			if err != nil {
+				Logger.Errorf("Failed to read private key from stdin: %v", err)
+				finalMessage := color.RedString("✗") + " Failed to read private key from stdin\n" +
+					color.RedString("Error: ") + err.Error()
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			registerPrivateKeyData = keyData
+			Logger.Infof("Private key data read from stdin (%d bytes)", len(keyData))
 		}
 
 		switch {
@@ -192,9 +230,13 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	}
 
 	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
-	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+	privateKey, err := loadRegisterPrivateKey(projectUUID)
 	if err != nil {
-		finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
+		errorSource := "from " + color.YellowString(privateKeyPath)
+		if registerPrivateKeyStdin {
+			errorSource = "from stdin"
+		}
+		finalMessage := color.RedString("✗") + " Couldn't get your private key " + errorSource + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
@@ -279,9 +321,9 @@ func registerUserWithPublicKey(targetUserUUID string, targetPublicKey *rsa.Publi
 	// Get current user's private key using project UUID
 	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 	Logger.Debugf("Loading private key from: %s", privateKeyPath)
-	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+	privateKey, err := loadRegisterPrivateKey(projectUUID)
 	if err != nil {
-		Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
+		Logger.Errorf("Failed to load private key: %v", err)
 		return err
 	}
 
@@ -383,10 +425,14 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 	Logger.Debugf("Loading private key from: %s", privateKeyPath)
 
-	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+	privateKey, err := loadRegisterPrivateKey(projectUUID)
 	if err != nil {
-		Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-		finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
+		Logger.Errorf("Failed to load private key: %v", err)
+		errorSource := "from " + color.YellowString(privateKeyPath)
+		if registerPrivateKeyStdin {
+			errorSource = "from stdin"
+		}
+		finalMessage := color.RedString("✗") + " Couldn't get your private key " + errorSource + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
@@ -505,9 +551,13 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// Get current user's private key using project UUID
 	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
 
-	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
+	privateKey, err := loadRegisterPrivateKey(projectUUID)
 	if err != nil {
-		finalMessage := color.RedString("✗") + " Couldn't get your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
+		errorSource := "from " + color.YellowString(privateKeyPath)
+		if registerPrivateKeyStdin {
+			errorSource = "from stdin"
+		}
+		finalMessage := color.RedString("✗") + " Couldn't get your private key " + errorSource + "\n\n" +
 			"Are you sure you have access?\n\n" +
 			color.RedString("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
