@@ -26,7 +26,7 @@ KAN-013 (Audit Log)                 ─── DONE
 
 KAN-015 (Selective Encryption)      ─── DONE
      │
-     └── KAN-016 (Init Monorepo)    ─── Logically follows KAN-015
+     └── KAN-016 (Init Monorepo)    ─── DONE
 
 KAN-017 (Documentation)             ─── Do last, covers all new features
 ```
@@ -1216,10 +1216,10 @@ However, this adds complexity. Recommendation: Always show the tip. It's useful 
 
 ### Acceptance Criteria
 
-- [ ] Init success message updated with monorepo guidance
-- [ ] Message includes both monorepo workflow options
-- [ ] Examples use `color.YellowString` for commands (consistent with existing style)
-- [ ] Message is not overly long or cluttered
+- [x] Init success message updated with monorepo guidance
+- [x] Message includes both monorepo workflow options
+- [x] Examples use `color.YellowString` for commands (consistent with existing style)
+- [x] Message is not overly long or cluttered
 
 ### Testing Requirements
 
@@ -1233,10 +1233,10 @@ Update `test/integration/init/init_test.go`:
 
 ### Definition of Done
 
-- [ ] `cmd/secrets_init.go` updated
-- [ ] Success message includes monorepo options
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `cmd/secrets_init.go` updated
+- [x] Success message includes monorepo options
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 

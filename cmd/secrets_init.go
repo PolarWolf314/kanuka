@@ -237,8 +237,13 @@ var initCmd = &cobra.Command{
 		Logger.WarnfUser("Remember to never commit .env files to version control - only commit .kanuka files")
 		spinner.Restart()
 
-		finalMessage := color.GreenString("✓") + " Kānuka initialized successfully!\n" +
-			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files"
+		finalMessage := color.GreenString("✓") + " Kānuka initialized successfully!\n\n" +
+			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files\n\n" +
+			color.CyanString("Tip:") + " Working in a monorepo? You have two options:\n" +
+			"  1. Keep this single .kanuka at the root and use selective encryption:\n" +
+			"     " + color.YellowString("kanuka secrets encrypt services/api/.env") + "\n" +
+			"  2. Initialize separate .kanuka stores in each service:\n" +
+			"     " + color.YellowString("cd services/api && kanuka secrets init")
 
 		spinner.FinalMSG = finalMessage
 		return nil
