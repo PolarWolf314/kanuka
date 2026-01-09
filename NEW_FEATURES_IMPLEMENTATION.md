@@ -18,13 +18,13 @@ This document contains detailed implementation tickets for Kanuka's next set of 
 ## Implementation Order & Dependencies
 
 ```
-KAN-012 (Remove KANUKA_DATA_DIR)    ─── Quick docs fix, do first
-
-KAN-013 (Audit Log)                 ─── Core feature
+KAN-012 (Remove KANUKA_DATA_DIR)    ─── DONE
      │
-     └── KAN-014 (Log Command)      ─── Depends on KAN-013
+KAN-013 (Audit Log)                 ─── DONE
+     │
+     └── KAN-014 (Log Command)      ─── DONE
 
-KAN-015 (Selective Encryption)      ─── Independent
+KAN-015 (Selective Encryption)      ─── DONE
      │
      └── KAN-016 (Init Monorepo)    ─── Logically follows KAN-015
 
@@ -1037,21 +1037,42 @@ func runEncrypt(cmd *cobra.Command, args []string) error {
 
 ### Acceptance Criteria
 
-- [ ] `encrypt` command accepts positional file arguments
-- [ ] `decrypt` command accepts positional file arguments
-- [ ] No arguments = default behavior (all files)
-- [ ] Single file argument works
-- [ ] Multiple file arguments work
-- [ ] Glob patterns work (including `**`)
-- [ ] Directory arguments work (recursive)
-- [ ] Patterns are deduplicated (no file processed twice)
-- [ ] Non-existent files show clear error
-- [ ] Invalid glob patterns show clear error
-- [ ] `--dry-run` works with specific files
-- [ ] Help text updated with examples
-- [ ] `.kanuka/` directory contents are never included
+- [x] `encrypt` command accepts positional file arguments
+- [x] `decrypt` command accepts positional file arguments
+- [x] No arguments = default behavior (all files)
+- [x] Single file argument works
+- [x] Multiple file arguments work
+- [x] Glob patterns work (including `**`)
+- [x] Directory arguments work (recursive)
+- [x] Patterns are deduplicated (no file processed twice)
+- [x] Non-existent files show clear error
+- [x] Invalid glob patterns show clear error
+- [x] `--dry-run` works with specific files
+- [x] Help text updated with examples
+- [x] `.kanuka/` directory contents are never included
 
 ### Testing Requirements
+
+#### Unit Tests
+
+Created `internal/secrets/files_test.go` with tests for:
+
+| Test Case | Description |
+|-----------|-------------|
+| `TestResolveFiles_EmptyPatterns` | Empty patterns return nil |
+| `TestResolveFiles_SingleFile` | Single file works |
+| `TestResolveFiles_MultipleFiles` | Multiple files work |
+| `TestResolveFiles_Directory` | Directory resolves files within |
+| `TestResolveFiles_GlobPattern` | Glob patterns expand correctly |
+| `TestResolveFiles_DoubleStarGlob` | `**` pattern works recursively |
+| `TestResolveFiles_NonExistentFile` | Shows error for non-existent |
+| `TestResolveFiles_Deduplication` | Files are deduplicated |
+| `TestResolveFiles_ExcludesKanukaDir` | Never processes .kanuka/ contents |
+| `TestResolveFiles_ForDecryption` | Works for .kanuka files |
+| `TestResolveFiles_WrongFileType` | Rejects wrong file types |
+| `TestIsEnvFile` | Helper function tests |
+| `TestIsKanukaFile` | Helper function tests |
+| `TestIsInKanukaDir` | Helper function tests |
 
 #### Integration Tests
 
@@ -1081,14 +1102,14 @@ Create `test/integration/decrypt/decrypt_selective_test.go`:
 
 ### Definition of Done
 
-- [ ] `encrypt` command accepts file arguments
-- [ ] `decrypt` command accepts file arguments
-- [ ] `ResolveFiles()` function implemented
-- [ ] Glob support with `**` works
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
-- [ ] Help text updated
-- [ ] `doublestar` dependency added to go.mod
+- [x] `encrypt` command accepts file arguments
+- [x] `decrypt` command accepts file arguments
+- [x] `ResolveFiles()` function implemented
+- [x] Glob support with `**` works
+- [x] Unit tests pass
+- [x] `golangci-lint run` passes
+- [x] Help text updated
+- [x] `doublestar` dependency added to go.mod
 
 ---
 
