@@ -1054,13 +1054,13 @@ $ kanuka secrets clean
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets clean` command implemented
-- [ ] Finds and removes orphaned `.kanuka` files (those without corresponding public keys)
-- [ ] Confirmation prompt before deletion (unless `--force` is provided)
-- [ ] `--force` flag to skip confirmation
-- [ ] `--dry-run` flag to show what would be deleted without making changes
-- [ ] Clear output showing which files will be/were removed
-- [ ] Works in non-initialized projects (shows helpful error)
+- [x] `kanuka secrets clean` command implemented
+- [x] Finds and removes orphaned `.kanuka` files (those without corresponding public keys)
+- [x] Confirmation prompt before deletion (unless `--force` is provided)
+- [x] `--force` flag to skip confirmation
+- [x] `--dry-run` flag to show what would be deleted without making changes
+- [x] Clear output showing which files will be/were removed
+- [x] Works in non-initialized projects (shows helpful error)
 
 ### Technical Details
 
@@ -1245,15 +1245,15 @@ func createOrphanedEntry(t *testing.T, secretsDir, uuid string) {
 
 ### Definition of Done
 
-- [ ] `kanuka secrets clean` command implemented
-- [ ] Finds orphaned entries correctly
-- [ ] Confirmation prompt works
-- [ ] `--force` flag skips confirmation
-- [ ] `--dry-run` flag shows preview without changes
-- [ ] Help text is clear and complete
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
-- [ ] Access command updated to suggest clean when orphans found
+- [x] `kanuka secrets clean` command implemented
+- [x] Finds orphaned entries correctly
+- [x] Confirmation prompt works
+- [x] `--force` flag skips confirmation
+- [x] `--dry-run` flag shows preview without changes
+- [x] Help text is clear and complete
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
+- [x] Access command updated to suggest clean when orphans found
 
 ---
 
