@@ -66,10 +66,6 @@ export default defineConfig({
           ],
         },
         {
-          label: "Tool Configuration",
-          autogenerate: { directory: "configuration" },
-        },
-        {
           label: "Reference",
           items: ["reference/references", "reference/faq", "reference/credits"],
         },
