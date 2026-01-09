@@ -233,3 +233,114 @@ stdin, when stdin is used for the key.
 
 If running in a container or environment without a TTY, consider using an
 unencrypted key stored in a secrets manager.
+
+## How do I check who has access to my project's secrets?
+
+Use the `access` command to see all users with access:
+
+```bash
+kanuka secrets access
+```
+
+This shows each user's UUID, email, and status (active, pending, or orphan).
+For machine-readable output, add the `--json` flag.
+
+See the [access guide](/guides/access/) for more details.
+
+## How often should I rotate encryption keys?
+
+Key rotation frequency depends on your security requirements:
+
+- **After revoking a user** - Automatic, happens as part of revoke
+- **Periodic rotation** - Recommended every 3-6 months for high-security projects
+- **After suspected compromise** - Immediately
+
+To manually rotate the project's symmetric key:
+
+```bash
+kanuka secrets sync
+```
+
+To rotate your personal keypair:
+
+```bash
+kanuka secrets rotate
+```
+
+See the [sync guide](/guides/sync/) and [rotate guide](/guides/rotate/) for details.
+
+## What's the difference between sync and rotate?
+
+| Command | What it rotates | Who is affected |
+|---------|-----------------|-----------------|
+| `sync` | Project's symmetric key | All users |
+| `rotate` | Your personal RSA keypair | Only you |
+
+Use `sync` for project-wide key rotation. Use `rotate` for your personal keypair.
+
+## How do I backup my project's secrets?
+
+Use the export command to create a backup archive:
+
+```bash
+kanuka secrets export -o backup.tar.gz
+```
+
+This creates a gzip-compressed archive containing all encrypted secrets and
+configuration. Private keys and plaintext files are NOT included.
+
+To restore from backup:
+
+```bash
+kanuka secrets import backup.tar.gz --replace
+```
+
+See the [export guide](/guides/export/) and [import guide](/guides/import/) for details.
+
+## What does the "orphan" status mean?
+
+An orphaned entry is an encrypted symmetric key file (`.kanuka`) that has no
+corresponding public key. This inconsistent state can occur when:
+
+- A public key was manually deleted
+- A revoke operation was interrupted
+- Files were partially restored from backup
+
+To clean up orphaned entries:
+
+```bash
+kanuka secrets clean
+```
+
+See the [clean guide](/guides/clean/) for more details.
+
+## How do I check if my project is healthy?
+
+Use the doctor command to run health checks:
+
+```bash
+kanuka secrets doctor
+```
+
+This checks for common issues like missing keys, incorrect permissions,
+unencrypted files, and inconsistent state. It provides actionable suggestions
+for any issues found.
+
+See the [doctor guide](/guides/doctor/) for details.
+
+## Can I see which .env files need to be encrypted?
+
+Yes, use the status command:
+
+```bash
+kanuka secrets status
+```
+
+This shows all secret files and their encryption status:
+- **up to date** - Encrypted and current
+- **stale** - Plaintext modified after encryption
+- **not encrypted** - No encrypted version exists
+- **encrypted only** - Encrypted file with no plaintext
+
+See the [status guide](/guides/status/) for more details.
+

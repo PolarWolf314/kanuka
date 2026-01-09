@@ -55,12 +55,20 @@ Usage:
   kanuka secrets [command]
 
   Available Commands:
+  access      List users with access to the project's secrets
+  clean       Remove orphaned keys and inconsistent state
   create      Creates and adds your public key, and gives instructions on how to gain access
   decrypt     Decrypts the .env.kanuka file back into .env using your Kānuka key
+  doctor      Run health checks on the project
   encrypt     Encrypts the .env file into .env.kanuka using your Kānuka key
+  export      Create a backup archive of encrypted secrets
+  import      Restore secrets from a backup archive
   init        Initializes the secrets store
   register    Registers a new user to be given access to the repository's secrets
   revoke      Revokes access to the secret store
+  rotate      Rotate your personal keypair
+  status      Show encryption status of secret files
+  sync        Re-encrypt all secrets with a new symmetric key
 
 Flags:
   -h, --help   help for secrets
@@ -150,12 +158,14 @@ Usage:
   kanuka secrets register [flags]
 
 Flags:
-      --dry-run         preview registration without making changes
-  -f, --file string     the path to a custom public key — will add public key to the project
-  -h, --help            help for register
-      --pubkey string   OpenSSH or PEM public key content to be saved with the specified username
-  -u, --user string     username to register for access
-  -v, --verbose         enable verbose output
+      --dry-run                  preview registration without making changes
+  -f, --file string              the path to a custom public key — will add public key to the project
+      --force                    skip confirmation when updating existing user
+  -h, --help                     help for register
+      --private-key-stdin        read private key from stdin
+      --pubkey string            OpenSSH or PEM public key content to be saved with the specified username
+  -u, --user string              username to register for access
+  -v, --verbose                  enable verbose output
 ```
 
 **Examples:**
@@ -167,8 +177,11 @@ kanuka secrets register --user alice@example.com --dry-run
 # Register a user by email
 kanuka secrets register --user alice@example.com
 
+# Re-register existing user (skip confirmation)
+kanuka secrets register --user alice@example.com --force
+
 # Register using a public key file
-kanuka secrets register --file path/to/key.pub --dry-run
+kanuka secrets register --file path/to/key.pub
 ```
 
 ### `kanuka secrets revoke`
@@ -203,6 +216,220 @@ kanuka secrets revoke --user alice@example.com --device old-laptop --dry-run
 
 # Revoke by file path
 kanuka secrets revoke --file .kanuka/secrets/uuid.kanuka
+```
+
+### `kanuka secrets sync`
+
+Re-encrypts all secrets with a newly generated symmetric key.
+
+```
+Usage:
+  kanuka secrets sync [flags]
+
+Flags:
+      --dry-run             preview sync without making changes
+  -h, --help                help for sync
+      --private-key-stdin   read private key from stdin
+  -v, --verbose             enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Preview what would happen
+kanuka secrets sync --dry-run
+
+# Rotate encryption key and re-encrypt all secrets
+kanuka secrets sync
+
+# Use in CI/CD with piped private key
+echo "$KANUKA_PRIVATE_KEY" | kanuka secrets sync --private-key-stdin
+```
+
+### `kanuka secrets rotate`
+
+Rotates your personal keypair, generating a new RSA key pair and updating your access.
+
+```
+Usage:
+  kanuka secrets rotate [flags]
+
+Flags:
+      --force               skip confirmation prompt
+  -h, --help                help for rotate
+      --private-key-stdin   read private key from stdin
+  -v, --verbose             enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Rotate keypair with confirmation
+kanuka secrets rotate
+
+# Rotate keypair without confirmation
+kanuka secrets rotate --force
+```
+
+### `kanuka secrets access`
+
+Lists all users who have access to the project's secrets.
+
+```
+Usage:
+  kanuka secrets access [flags]
+
+Flags:
+  -h, --help      help for access
+      --json      output in JSON format
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# View all users with access
+kanuka secrets access
+
+# JSON output for scripting
+kanuka secrets access --json
+```
+
+### `kanuka secrets status`
+
+Shows the encryption status of all secret files in the project.
+
+```
+Usage:
+  kanuka secrets status [flags]
+
+Flags:
+  -h, --help      help for status
+      --json      output in JSON format
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# View status of all secret files
+kanuka secrets status
+
+# JSON output for scripting
+kanuka secrets status --json
+```
+
+### `kanuka secrets clean`
+
+Removes orphaned keys and inconsistent state.
+
+```
+Usage:
+  kanuka secrets clean [flags]
+
+Flags:
+      --dry-run     preview cleanup without making changes
+      --force       skip confirmation prompt
+  -h, --help        help for clean
+  -v, --verbose     enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Preview what would be cleaned
+kanuka secrets clean --dry-run
+
+# Clean with confirmation
+kanuka secrets clean
+
+# Clean without confirmation
+kanuka secrets clean --force
+```
+
+### `kanuka secrets doctor`
+
+Runs health checks on the project and provides actionable suggestions.
+
+```
+Usage:
+  kanuka secrets doctor [flags]
+
+Flags:
+  -h, --help      help for doctor
+      --json      output in JSON format
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Run all health checks
+kanuka secrets doctor
+
+# JSON output for CI/CD
+kanuka secrets doctor --json
+```
+
+**Exit codes:**
+- `0` - All checks passed
+- `1` - Warnings found
+- `2` - Errors found
+
+### `kanuka secrets export`
+
+Creates a backup archive of encrypted secrets.
+
+```
+Usage:
+  kanuka secrets export [flags]
+
+Flags:
+  -h, --help            help for export
+  -o, --output string   output file path (default: kanuka-secrets-YYYY-MM-DD.tar.gz)
+  -v, --verbose         enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Export with default filename
+kanuka secrets export
+
+# Export to custom path
+kanuka secrets export -o /backups/project-secrets.tar.gz
+```
+
+### `kanuka secrets import`
+
+Restores secrets from a backup archive.
+
+```
+Usage:
+  kanuka secrets import [archive] [flags]
+
+Flags:
+      --dry-run     preview import without making changes
+  -h, --help        help for import
+      --merge       add new files, keep existing
+      --replace     delete existing, use backup
+  -v, --verbose     enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Import with interactive prompt
+kanuka secrets import backup.tar.gz
+
+# Merge new files, keep existing
+kanuka secrets import backup.tar.gz --merge
+
+# Replace all with backup
+kanuka secrets import backup.tar.gz --replace
+
+# Preview import
+kanuka secrets import backup.tar.gz --dry-run
 ```
 
 ## Configuration Management

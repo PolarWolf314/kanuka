@@ -23,6 +23,29 @@ This command:
 
 Commit these changes and they'll have access after pulling.
 
+### Re-registering existing users
+
+If you try to register a user who already has access, Kanuka will warn you:
+
+```bash
+$ kanuka secrets register --user alice@example.com
+Warning: alice@example.com already has access to this project.
+  Continuing will replace their existing key.
+  If they generated a new keypair, this is expected.
+  If not, they may lose access.
+
+Do you want to continue? [y/N]:
+```
+
+This is useful when a user has generated a new keypair (e.g., on a new machine)
+and needs their access updated.
+
+To skip the confirmation prompt, use the `--force` flag:
+
+```bash
+kanuka secrets register --user alice@example.com --force
+```
+
 ### Previewing registration
 
 Use the `--dry-run` flag to preview what would be created without making changes:
