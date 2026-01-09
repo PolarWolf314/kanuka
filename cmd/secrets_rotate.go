@@ -15,9 +15,9 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 
 	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +39,7 @@ func resetRotateCommandState() {
 func confirmRotate(s *spinner.Spinner) bool {
 	s.Stop()
 
-	fmt.Printf("\n%s This will generate a new keypair and replace your current one.\n", color.YellowString("Warning:"))
+	fmt.Printf("\n%s This will generate a new keypair and replace your current one.\n", ui.Warning.Sprint("Warning:"))
 	fmt.Println("  Your old private key will no longer work for this project.")
 	fmt.Println()
 
@@ -97,8 +97,8 @@ Examples:
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -126,8 +126,8 @@ Examples:
 		userKanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
 
 		if _, err := os.Stat(userKanukaKeyPath); os.IsNotExist(err) {
-			finalMessage := color.RedString("✗") + " You don't have access to this project\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets create") + " and ask someone to register you"
+			finalMessage := ui.Error.Sprint("✗") + " You don't have access to this project\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " and ask someone to register you"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -138,8 +138,8 @@ Examples:
 
 		oldPrivateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
-			finalMessage := color.RedString("✗") + " Couldn't load your private key from " + color.YellowString(privateKeyPath) + "\n\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Couldn't load your private key from " + ui.Path.Sprint(privateKeyPath) + "\n\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -149,8 +149,8 @@ Examples:
 		Logger.Debugf("Getting encrypted symmetric key")
 		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
 		if err != nil {
-			finalMessage := color.RedString("✗") + " Couldn't get your Kanuka key from " + color.YellowString(userKanukaKeyPath) + "\n\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kanuka key from " + ui.Path.Sprint(userKanukaKeyPath) + "\n\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -158,8 +158,8 @@ Examples:
 		Logger.Debugf("Decrypting symmetric key with old private key")
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, oldPrivateKey)
 		if err != nil {
-			finalMessage := color.RedString("✗") + " Failed to decrypt your Kanuka key\n\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kanuka key\n\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -168,7 +168,7 @@ Examples:
 		// Confirmation prompt (unless --force)
 		if !rotateForce {
 			if !confirmRotate(spinner) {
-				spinner.FinalMSG = color.YellowString("⚠") + " Keypair rotation cancelled.\n"
+				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Keypair rotation cancelled.\n"
 				return nil
 			}
 		}
@@ -239,10 +239,10 @@ Examples:
 		auditEntry := audit.LogWithUser("rotate")
 		audit.Log(auditEntry)
 
-		finalMessage := color.GreenString("✓") + " Keypair rotated successfully\n\n" +
+		finalMessage := ui.Success.Sprint("✓") + " Keypair rotated successfully\n\n" +
 			"Your new public key has been added to the project.\n" +
 			"Other users do not need to take any action.\n\n" +
-			color.CyanString("→") + " Commit the updated " + color.YellowString(".kanuka/public_keys/"+userUUID+".pub") + " file"
+			ui.Info.Sprint("→") + " Commit the updated " + ui.Path.Sprint(".kanuka/public_keys/"+userUUID+".pub") + " file"
 		spinner.FinalMSG = finalMessage
 		return nil
 	},

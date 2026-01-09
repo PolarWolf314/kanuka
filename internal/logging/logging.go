@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 )
 
 type Logger struct {
@@ -15,40 +15,40 @@ type Logger struct {
 
 func (l Logger) Infof(msg string, args ...any) {
 	if l.Verbose || l.Debug {
-		fmt.Fprintf(os.Stdout, color.GreenString("[info] ")+msg+"\n", args...)
+		fmt.Fprintf(os.Stdout, ui.Success.Sprint("[info] ")+msg+"\n", args...)
 	}
 }
 
 func (l Logger) Debugf(msg string, args ...any) {
 	if l.Debug {
-		fmt.Fprintf(os.Stdout, color.CyanString("[debug] ")+msg+"\n", args...)
+		fmt.Fprintf(os.Stdout, ui.Info.Sprint("[debug] ")+msg+"\n", args...)
 	}
 }
 
 func (l Logger) Warnf(msg string, args ...any) {
 	// Show in verbose or debug mode
 	if l.Verbose || l.Debug {
-		fmt.Fprintf(os.Stderr, color.YellowString("[warn] ")+msg+"\n", args...)
+		fmt.Fprintf(os.Stderr, ui.Warning.Sprint("[warn] ")+msg+"\n", args...)
 	}
 }
 
 func (l Logger) WarnfAlways(msg string, args ...any) {
 	// Always show critical warnings
-	fmt.Fprintf(os.Stderr, color.YellowString("⚠️  ")+msg+"\n", args...)
+	fmt.Fprintf(os.Stderr, ui.Warning.Sprint("⚠️  ")+msg+"\n", args...)
 }
 
 func (l Logger) WarnfUser(msg string, args ...any) {
 	// Show user-facing warnings (not just debug info)
 	if !l.Debug { // Don't duplicate with debug logs
-		fmt.Fprintf(os.Stderr, color.YellowString("Warning: ")+msg+"\n", args...)
+		fmt.Fprintf(os.Stderr, ui.Warning.Sprint("Warning: ")+msg+"\n", args...)
 	} else {
-		fmt.Fprintf(os.Stderr, color.YellowString("[warn] ")+msg+"\n", args...)
+		fmt.Fprintf(os.Stderr, ui.Warning.Sprint("[warn] ")+msg+"\n", args...)
 	}
 }
 
 func (l Logger) Errorf(msg string, args ...any) {
 	if l.Debug {
-		fmt.Fprintf(os.Stderr, color.RedString("[error] ")+msg+"\n", args...)
+		fmt.Fprintf(os.Stderr, ui.Error.Sprint("[error] ")+msg+"\n", args...)
 	}
 }
 

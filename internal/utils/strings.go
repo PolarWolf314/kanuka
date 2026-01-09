@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 )
 
 // emailRegex is a simple regex for validating email format.
@@ -17,7 +17,7 @@ func FormatPaths(paths []string) string {
 	b.WriteString("\n")
 	for _, path := range paths {
 		b.WriteString("    - ")
-		b.WriteString(color.YellowString(path))
+		b.WriteString(ui.Path.Sprint(path))
 		b.WriteString("\n")
 	}
 	return b.String()

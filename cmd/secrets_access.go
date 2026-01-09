@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -84,8 +84,8 @@ Use --json for machine-readable output.`,
 				fmt.Println(`{"error": "Kanuka has not been initialized"}`)
 				return nil
 			}
-			fmt.Println(color.RedString("✗") + " Kanuka has not been initialized")
-			fmt.Println(color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first")
+			fmt.Println(ui.Error.Sprint("✗") + " Kanuka has not been initialized")
+			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
 
@@ -269,7 +269,7 @@ func outputJSON(result AccessResult) error {
 
 // printAccessTable prints a formatted table of users with access.
 func printAccessTable(result AccessResult) {
-	fmt.Printf("Project: %s\n", color.CyanString(result.ProjectName))
+	fmt.Printf("Project: %s\n", ui.Highlight.Sprint(result.ProjectName))
 	fmt.Println()
 
 	if len(result.Users) == 0 {
@@ -300,7 +300,7 @@ func printAccessTable(result AccessResult) {
 	for _, user := range result.Users {
 		displayEmail := user.Email
 		if displayEmail == "" {
-			displayEmail = color.HiBlackString("(unknown)")
+			displayEmail = ui.Muted.Sprint("unknown")
 		} else if user.DeviceName != "" {
 			displayEmail = fmt.Sprintf("%s (%s)", user.Email, user.DeviceName)
 		}
@@ -308,11 +308,11 @@ func printAccessTable(result AccessResult) {
 		var statusStr string
 		switch user.Status {
 		case StatusActive:
-			statusStr = color.GreenString("✓") + " active"
+			statusStr = ui.Success.Sprint("✓") + " active"
 		case StatusPending:
-			statusStr = color.YellowString("⚠") + " pending"
+			statusStr = ui.Warning.Sprint("⚠") + " pending"
 		case StatusOrphan:
-			statusStr = color.RedString("✗") + " orphan"
+			statusStr = ui.Error.Sprint("✗") + " orphan"
 		}
 
 		fmt.Printf("  %-*s  %-*s  %s\n", uuidWidth, user.UUID, emailWidth, displayEmail, statusStr)
@@ -321,9 +321,9 @@ func printAccessTable(result AccessResult) {
 	// Print legend.
 	fmt.Println()
 	fmt.Println("Legend:")
-	fmt.Printf("  %s active  - User has public key and encrypted symmetric key\n", color.GreenString("✓"))
-	fmt.Printf("  %s pending - User has public key but no encrypted symmetric key (run 'sync')\n", color.YellowString("⚠"))
-	fmt.Printf("  %s orphan  - Encrypted symmetric key exists but no public key (inconsistent)\n", color.RedString("✗"))
+	fmt.Printf("  %s active  - User has public key and encrypted symmetric key\n", ui.Success.Sprint("✓"))
+	fmt.Printf("  %s pending - User has public key but no encrypted symmetric key (run 'sync')\n", ui.Warning.Sprint("⚠"))
+	fmt.Printf("  %s orphan  - Encrypted symmetric key exists but no public key (inconsistent)\n", ui.Error.Sprint("✗"))
 
 	// Print summary.
 	fmt.Println()
@@ -348,6 +348,6 @@ func printAccessTable(result AccessResult) {
 	// Print tip for orphans if any exist.
 	if result.Summary.Orphan > 0 {
 		fmt.Println()
-		fmt.Println(color.CyanString("Tip:") + " Run '" + color.YellowString("kanuka secrets clean") + "' to remove orphaned entries.")
+		fmt.Println(ui.Info.Sprint("Tip:") + " Run '" + ui.Code.Sprint("kanuka secrets clean") + "' to remove orphaned entries.")
 	}
 }

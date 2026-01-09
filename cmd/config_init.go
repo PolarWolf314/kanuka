@@ -10,7 +10,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -71,7 +71,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	// Need to run setup.
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println(color.CyanString("Welcome to Kanuka!") + " Let's set up your identity.\n")
+	fmt.Println(ui.Info.Sprint("Welcome to Kanuka!") + " Let's set up your identity.\n")
 
 	// Prompt for email.
 	var email string
@@ -169,15 +169,15 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 
 	// Display summary.
 	fmt.Println()
-	fmt.Println(color.GreenString("✓") + " User configuration saved to " + color.YellowString(configs.UserKanukaSettings.UserConfigsPath+"/config.toml"))
+	fmt.Println(ui.Success.Sprint("✓") + " User configuration saved to " + ui.Path.Sprint(configs.UserKanukaSettings.UserConfigsPath+"/config.toml"))
 	fmt.Println()
 	fmt.Println("Your settings:")
-	fmt.Println("  Email:   " + color.CyanString(email))
+	fmt.Println("  Email:   " + ui.Highlight.Sprint(email))
 	if displayName != "" {
-		fmt.Println("  Name:    " + color.CyanString(displayName))
+		fmt.Println("  Name:    " + ui.Highlight.Sprint(displayName))
 	}
-	fmt.Println("  Device:  " + color.CyanString(deviceName))
-	fmt.Println("  User ID: " + color.YellowString(userConfig.User.UUID))
+	fmt.Println("  Device:  " + ui.Highlight.Sprint(deviceName))
+	fmt.Println("  User ID: " + ui.Highlight.Sprint(userConfig.User.UUID))
 	fmt.Println()
 
 	return true, nil
@@ -242,18 +242,18 @@ Examples:
 				return ConfigLogger.ErrorfAndReturn("Failed to load user config: %v", err)
 			}
 
-			fmt.Println(color.GreenString("✓") + " User configuration already exists\n")
+			fmt.Println(ui.Success.Sprint("✓") + " User configuration already exists\n")
 			fmt.Println("Your settings:")
-			fmt.Println("  Email:   " + color.CyanString(userConfig.User.Email))
+			fmt.Println("  Email:   " + ui.Highlight.Sprint(userConfig.User.Email))
 			if userConfig.User.Name != "" {
-				fmt.Println("  Name:    " + color.CyanString(userConfig.User.Name))
+				fmt.Println("  Name:    " + ui.Highlight.Sprint(userConfig.User.Name))
 			}
 			if userConfig.User.DefaultDeviceName != "" {
-				fmt.Println("  Device:  " + color.CyanString(userConfig.User.DefaultDeviceName))
+				fmt.Println("  Device:  " + ui.Highlight.Sprint(userConfig.User.DefaultDeviceName))
 			}
-			fmt.Println("  User ID: " + color.YellowString(userConfig.User.UUID))
+			fmt.Println("  User ID: " + ui.Highlight.Sprint(userConfig.User.UUID))
 			fmt.Println()
-			fmt.Println(color.CyanString("→") + " Run with flags to update: " + color.YellowString("kanuka config init --email new@email.com"))
+			fmt.Println(ui.Info.Sprint("→") + " Run with flags to update: " + ui.Code.Sprint("kanuka config init --email new@email.com"))
 			return nil
 		}
 
@@ -269,7 +269,7 @@ Examples:
 			// Update only provided fields.
 			if configInitEmail != "" {
 				if !utils.IsValidEmail(configInitEmail) {
-					fmt.Println(color.RedString("✗") + " Invalid email format: " + color.YellowString(configInitEmail))
+					fmt.Println(ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(configInitEmail))
 					return nil
 				}
 				ConfigLogger.Infof("Updating email to: %s", configInitEmail)
@@ -284,7 +284,7 @@ Examples:
 			if configInitDeviceName != "" {
 				deviceName := utils.SanitizeDeviceName(configInitDeviceName)
 				if !isValidDeviceName(deviceName) {
-					fmt.Println(color.RedString("✗") + " Invalid device name: " + color.YellowString(configInitDeviceName))
+					fmt.Println(ui.Error.Sprint("✗") + " Invalid device name: " + ui.Highlight.Sprint(configInitDeviceName))
 					return nil
 				}
 				ConfigLogger.Infof("Updating device name to: %s", deviceName)
@@ -309,16 +309,16 @@ Examples:
 			}
 			ConfigLogger.Infof("User config saved successfully")
 
-			fmt.Println(color.GreenString("✓") + " User configuration updated\n")
+			fmt.Println(ui.Success.Sprint("✓") + " User configuration updated\n")
 			fmt.Println("Your settings:")
-			fmt.Println("  Email:   " + color.CyanString(userConfig.User.Email))
+			fmt.Println("  Email:   " + ui.Highlight.Sprint(userConfig.User.Email))
 			if userConfig.User.Name != "" {
-				fmt.Println("  Name:    " + color.CyanString(userConfig.User.Name))
+				fmt.Println("  Name:    " + ui.Highlight.Sprint(userConfig.User.Name))
 			}
 			if userConfig.User.DefaultDeviceName != "" {
-				fmt.Println("  Device:  " + color.CyanString(userConfig.User.DefaultDeviceName))
+				fmt.Println("  Device:  " + ui.Highlight.Sprint(userConfig.User.DefaultDeviceName))
 			}
-			fmt.Println("  User ID: " + color.YellowString(userConfig.User.UUID))
+			fmt.Println("  User ID: " + ui.Highlight.Sprint(userConfig.User.UUID))
 			return nil
 		}
 
@@ -326,7 +326,7 @@ Examples:
 		ConfigLogger.Infof("Running interactive setup")
 		_, err = RunConfigInit(configVerbose, configDebug)
 		if err != nil {
-			fmt.Println(color.RedString("✗") + " " + err.Error())
+			fmt.Println(ui.Error.Sprint("✗") + " " + err.Error())
 			return nil
 		}
 

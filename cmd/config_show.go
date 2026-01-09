@@ -8,7 +8,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -81,9 +81,9 @@ func showUserConfig() error {
 			fmt.Println("{}")
 			return nil
 		}
-		fmt.Println(color.YellowString("⚠") + " No user configuration found.")
+		fmt.Println(ui.Warning.Sprint("⚠") + " No user configuration found.")
 		fmt.Println()
-		fmt.Println(color.CyanString("→") + " Run " + color.YellowString("kanuka config init") + " to set up your identity")
+		fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka config init") + " to set up your identity")
 		return nil
 	}
 
@@ -110,20 +110,20 @@ func outputUserConfigJSON(config *configs.UserConfig) error {
 
 // outputUserConfigText outputs user config in human-readable format.
 func outputUserConfigText(config *configs.UserConfig) error {
-	fmt.Println(color.CyanString("User Configuration") + " (~/.config/kanuka/config.toml):")
+	fmt.Println(ui.Info.Sprint("User Configuration") + " (~/.config/kanuka/config.toml):")
 	fmt.Println()
-	fmt.Printf("  %-14s %s\n", "Email:", color.GreenString(config.User.Email))
+	fmt.Printf("  %-14s %s\n", "Email:", ui.Highlight.Sprint(config.User.Email))
 	if config.User.Name != "" {
-		fmt.Printf("  %-14s %s\n", "Name:", color.GreenString(config.User.Name))
+		fmt.Printf("  %-14s %s\n", "Name:", ui.Highlight.Sprint(config.User.Name))
 	}
-	fmt.Printf("  %-14s %s\n", "User ID:", color.YellowString(config.User.UUID))
+	fmt.Printf("  %-14s %s\n", "User ID:", ui.Highlight.Sprint(config.User.UUID))
 	if config.User.DefaultDeviceName != "" {
-		fmt.Printf("  %-14s %s\n", "Default Device:", color.GreenString(config.User.DefaultDeviceName))
+		fmt.Printf("  %-14s %s\n", "Default Device:", ui.Highlight.Sprint(config.User.DefaultDeviceName))
 	}
 
 	if len(config.Projects) > 0 {
 		fmt.Println()
-		fmt.Println(color.CyanString("Projects:"))
+		fmt.Println(ui.Info.Sprint("Projects:"))
 
 		// Sort project UUIDs for consistent output.
 		var projectUUIDs []string
@@ -140,9 +140,9 @@ func outputUserConfigText(config *configs.UserConfig) error {
 				shortUUID = uuid[:8] + "..."
 			}
 			if entry.ProjectName != "" {
-				fmt.Printf("  %s → %s (%s)\n", color.YellowString(shortUUID), color.GreenString(entry.DeviceName), color.CyanString(entry.ProjectName))
+				fmt.Printf("  %s → %s (%s)\n", ui.Highlight.Sprint(shortUUID), ui.Highlight.Sprint(entry.DeviceName), ui.Info.Sprint(entry.ProjectName))
 			} else {
-				fmt.Printf("  %s → %s\n", color.YellowString(shortUUID), color.GreenString(entry.DeviceName))
+				fmt.Printf("  %s → %s\n", ui.Highlight.Sprint(shortUUID), ui.Highlight.Sprint(entry.DeviceName))
 			}
 		}
 	}
@@ -165,9 +165,9 @@ func showProjectConfig() error {
 			fmt.Println("{\"error\": \"not in a project directory\"}")
 			return nil
 		}
-		fmt.Println(color.RedString("✗") + " Not in a Kanuka project directory")
+		fmt.Println(ui.Error.Sprint("✗") + " Not in a Kanuka project directory")
 		fmt.Println()
-		fmt.Println(color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " to initialize a project")
+		fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " to initialize a project")
 		return nil
 	}
 
@@ -206,14 +206,14 @@ func outputProjectConfigJSON(config *configs.ProjectConfig) error {
 
 // outputProjectConfigText outputs project config in human-readable format.
 func outputProjectConfigText(config *configs.ProjectConfig) error {
-	fmt.Println(color.CyanString("Project Configuration") + " (.kanuka/config.toml):")
+	fmt.Println(ui.Info.Sprint("Project Configuration") + " (.kanuka/config.toml):")
 	fmt.Println()
-	fmt.Printf("  %-14s %s\n", "Project ID:", color.YellowString(config.Project.UUID))
-	fmt.Printf("  %-14s %s\n", "Project Name:", color.GreenString(config.Project.Name))
+	fmt.Printf("  %-14s %s\n", "Project ID:", ui.Highlight.Sprint(config.Project.UUID))
+	fmt.Printf("  %-14s %s\n", "Project Name:", ui.Highlight.Sprint(config.Project.Name))
 
 	if len(config.Devices) > 0 {
 		fmt.Println()
-		fmt.Println(color.CyanString("Users:"))
+		fmt.Println(ui.Info.Sprint("Users:"))
 
 		// Group devices by email using the shared deviceInfo type.
 		devicesByEmail := make(map[string][]deviceInfo)
@@ -256,13 +256,13 @@ func outputProjectConfigText(config *configs.ProjectConfig) error {
 				shortUUID = userUUID[:8] + "..."
 			}
 
-			fmt.Printf("  %s (%s)\n", color.GreenString(email), color.YellowString(shortUUID))
+			fmt.Printf("  %s (%s)\n", ui.Highlight.Sprint(email), ui.Highlight.Sprint(shortUUID))
 			for _, device := range devices {
 				createdDisplay := ""
 				if device.CreatedAt != "" {
 					createdDisplay = fmt.Sprintf(" (created: %s)", device.CreatedAt)
 				}
-				fmt.Printf("    - %s%s\n", device.Name, color.HiBlackString(createdDisplay))
+				fmt.Printf("    - %s%s\n", device.Name, ui.Muted.Sprint(createdDisplay))
 			}
 		}
 	}

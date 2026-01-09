@@ -731,8 +731,8 @@ func TestStatus_ProjectName(t *testing.T) {
 		t.Fatalf("Status command failed: %v", err)
 	}
 
-	// Verify project name is shown.
-	if !strings.Contains(output, "Project: test-project") {
+	// Verify project name is shown (may have quotes in NO_COLOR mode).
+	if !strings.Contains(output, "Project: test-project") && !strings.Contains(output, "Project: 'test-project'") {
 		t.Errorf("Output should show 'Project: test-project', got: %s", output)
 	}
 }

@@ -9,8 +9,8 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -81,8 +81,8 @@ func runLog(cmd *cobra.Command, args []string) error {
 	Logger.Debugf("Project path: %s", projectPath)
 
 	if projectPath == "" {
-		fmt.Println(color.RedString("✗") + " Kānuka has not been initialized")
-		fmt.Println(color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first")
+		fmt.Println(ui.Error.Sprint("✗") + " Kānuka has not been initialized")
+		fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 		return nil
 	}
 

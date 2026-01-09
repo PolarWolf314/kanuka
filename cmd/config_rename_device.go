@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -56,23 +56,23 @@ Examples:
 
 		// Validate new device name format.
 		if !isValidDeviceName(newName) {
-			finalMessage := color.RedString("✗") + " Invalid device name: " + color.YellowString(newName) + "\n" +
-				color.CyanString("→") + " Device name must be alphanumeric with hyphens and underscores only"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid device name: " + ui.Highlight.Sprint(newName) + "\n" +
+				ui.Info.Sprint("→") + " Device name must be alphanumeric with hyphens and underscores only"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		// Initialize project settings.
 		if err := configs.InitProjectSettings(); err != nil {
-			finalMessage := color.RedString("✗") + " Failed to initialize project settings\n" +
-				color.CyanString("→") + " Make sure you're in a Kānuka project directory"
+			finalMessage := ui.Error.Sprint("✗") + " Failed to initialize project settings\n" +
+				ui.Info.Sprint("→") + " Make sure you're in a Kānuka project directory"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		if configs.ProjectKanukaSettings.ProjectPath == "" {
-			finalMessage := color.RedString("✗") + " Not in a Kānuka project directory\n" +
-				color.CyanString("→") + " Run this command from within a Kānuka project"
+			finalMessage := ui.Error.Sprint("✗") + " Not in a Kānuka project directory\n" +
+				ui.Info.Sprint("→") + " Run this command from within a Kānuka project"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -86,8 +86,8 @@ Examples:
 		// Get all devices for this user.
 		devices := projectConfig.GetDevicesByEmail(renameDeviceUserEmail)
 		if len(devices) == 0 {
-			finalMessage := color.RedString("✗") + " User " + color.YellowString(renameDeviceUserEmail) + " not found in this project\n" +
-				color.CyanString("→") + " No devices found for this user"
+			finalMessage := ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(renameDeviceUserEmail) + " not found in this project\n" +
+				ui.Info.Sprint("→") + " No devices found for this user"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -106,19 +106,19 @@ Examples:
 
 			// If old-name was provided, verify it matches.
 			if renameDeviceOldName != "" && renameDeviceOldName != oldDeviceName {
-				finalMessage := color.RedString("✗") + " Device " + color.YellowString(renameDeviceOldName) + " not found for user " + color.YellowString(renameDeviceUserEmail) + "\n" +
-					color.CyanString("→") + " The only device is: " + color.CyanString(oldDeviceName)
+				finalMessage := ui.Error.Sprint("✗") + " Device " + ui.Highlight.Sprint(renameDeviceOldName) + " not found for user " + ui.Highlight.Sprint(renameDeviceUserEmail) + "\n" +
+					ui.Info.Sprint("→") + " The only device is: " + ui.Highlight.Sprint(oldDeviceName)
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 		} else {
 			// Multiple devices, require --old-name.
 			if renameDeviceOldName == "" {
-				finalMessage := color.RedString("✗") + " User " + color.YellowString(renameDeviceUserEmail) + " has multiple devices\n" +
-					color.CyanString("→") + " Specify which device to rename with " + color.YellowString("--old-name") + "\n" +
-					color.CyanString("→") + " Available devices:\n"
+				finalMessage := ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(renameDeviceUserEmail) + " has multiple devices\n" +
+					ui.Info.Sprint("→") + " Specify which device to rename with " + ui.Flag.Sprint("--old-name") + "\n" +
+					ui.Info.Sprint("→") + " Available devices:\n"
 				for _, device := range devices {
-					finalMessage += "    - " + color.YellowString(device.Name) + "\n"
+					finalMessage += "    - " + ui.Highlight.Sprint(device.Name) + "\n"
 				}
 				spinner.FinalMSG = finalMessage
 				return nil
@@ -136,10 +136,10 @@ Examples:
 			}
 
 			if !found {
-				finalMessage := color.RedString("✗") + " Device " + color.YellowString(renameDeviceOldName) + " not found for user " + color.YellowString(renameDeviceUserEmail) + "\n" +
-					color.CyanString("→") + " Available devices:\n"
+				finalMessage := ui.Error.Sprint("✗") + " Device " + ui.Highlight.Sprint(renameDeviceOldName) + " not found for user " + ui.Highlight.Sprint(renameDeviceUserEmail) + "\n" +
+					ui.Info.Sprint("→") + " Available devices:\n"
 				for _, device := range devices {
-					finalMessage += "    - " + color.YellowString(device.Name) + "\n"
+					finalMessage += "    - " + ui.Highlight.Sprint(device.Name) + "\n"
 				}
 				spinner.FinalMSG = finalMessage
 				return nil
@@ -148,15 +148,15 @@ Examples:
 
 		// Check if new name is same as old name.
 		if newName == oldDeviceName {
-			finalMessage := color.YellowString("⚠") + " Device is already named " + color.CyanString(newName)
+			finalMessage := ui.Warning.Sprint("⚠") + " Device is already named " + ui.Highlight.Sprint(newName)
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		// Check if new name is already taken by this user.
 		if projectConfig.IsDeviceNameTakenByEmail(renameDeviceUserEmail, newName) {
-			finalMessage := color.RedString("✗") + " Device name " + color.YellowString(newName) + " is already in use for " + color.CyanString(renameDeviceUserEmail) + "\n" +
-				color.CyanString("→") + " Choose a different device name"
+			finalMessage := ui.Error.Sprint("✗") + " Device name " + ui.Highlight.Sprint(newName) + " is already in use for " + ui.Highlight.Sprint(renameDeviceUserEmail) + "\n" +
+				ui.Info.Sprint("→") + " Choose a different device name"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -197,7 +197,7 @@ Examples:
 		}
 
 		ConfigLogger.Infof("Device renamed successfully from %s to %s", oldDeviceName, newName)
-		finalMessage := color.GreenString("✓") + " Device " + color.YellowString(oldDeviceName) + " renamed to " + color.CyanString(newName) + " for " + color.YellowString(renameDeviceUserEmail) + "\n"
+		finalMessage := ui.Success.Sprint("✓") + " Device " + ui.Highlight.Sprint(oldDeviceName) + " renamed to " + ui.Highlight.Sprint(newName) + " for " + ui.Highlight.Sprint(renameDeviceUserEmail) + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil
 	},

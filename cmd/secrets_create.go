@@ -11,9 +11,9 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -88,8 +88,8 @@ Examples:
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -128,8 +128,8 @@ Examples:
 
 		// Validate email format
 		if !utils.IsValidEmail(userEmail) {
-			finalMessage := color.RedString("✗") + " Invalid email format: " + color.YellowString(userEmail) + "\n" +
-				color.CyanString("→") + " Please provide a valid email address"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(userEmail) + "\n" +
+				ui.Info.Sprint("→") + " Please provide a valid email address"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -161,8 +161,8 @@ Examples:
 
 			// Check if device name is already taken by this user
 			if projectConfig.IsDeviceNameTakenByEmail(userEmail, deviceName) {
-				finalMessage := color.RedString("✗") + " Device name " + color.YellowString(deviceName) + " is already in use for " + color.CyanString(userEmail) + "\n" +
-					color.CyanString("→") + " Choose a different device name with " + color.YellowString("--device-name")
+				finalMessage := ui.Error.Sprint("✗") + " Device name " + ui.Highlight.Sprint(deviceName) + " is already in use for " + ui.Highlight.Sprint(userEmail) + "\n" +
+					ui.Info.Sprint("→") + " Choose a different device name with " + ui.Flag.Sprint("--device-name")
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -187,8 +187,8 @@ Examples:
 			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
 
 			if userPublicKey != nil {
-				finalMessage := color.RedString("✗ ") + color.YellowString(userUUID+".pub ") + "already exists\n" +
-					"To override, run: " + color.YellowString("kanuka secrets create --force")
+				finalMessage := ui.Error.Sprint("✗ ") + ui.Path.Sprint(userUUID+".pub ") + "already exists\n" +
+					"To override, run: " + ui.Code.Sprint("kanuka secrets create --force")
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -258,7 +258,7 @@ Examples:
 
 		deletedMessage := ""
 		if didKanukaExist {
-			deletedMessage = "    deleted: " + color.RedString(userKanukaKeyPath) + "\n"
+			deletedMessage = "    deleted: " + ui.Error.Sprint(userKanukaKeyPath) + "\n"
 		}
 
 		Logger.Infof("Create command completed successfully for user: %s (%s)", userEmail, userUUID)
@@ -268,12 +268,12 @@ Examples:
 		auditEntry.DeviceName = deviceName
 		audit.Log(auditEntry)
 
-		finalMessage := color.GreenString("✓") + " Keys created for " + color.YellowString(userEmail) + " (device: " + color.CyanString(deviceName) + ")\n" +
-			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
-			color.CyanString("To gain access to the secrets in this project:\n") +
-			"  1. " + color.WhiteString("Commit your") + color.YellowString(" .kanuka/public_keys/"+userUUID+".pub ") + color.WhiteString("file to your version control system\n") +
-			"  2. " + color.WhiteString("Ask someone with permissions to grant you access with:\n") +
-			"     " + color.YellowString("kanuka secrets register --user "+userEmail)
+		finalMessage := ui.Success.Sprint("✓") + " Keys created for " + ui.Highlight.Sprint(userEmail) + " (device: " + ui.Highlight.Sprint(deviceName) + ")\n" +
+			"    created: " + ui.Path.Sprint(destPath) + "\n" + deletedMessage +
+			ui.Info.Sprint("To gain access to the secrets in this project:\n") +
+			"  1. Commit your " + ui.Path.Sprint(".kanuka/public_keys/"+userUUID+".pub") + " file to your version control system\n" +
+			"  2. Ask someone with permissions to grant you access with:\n" +
+			"     " + ui.Code.Sprint("kanuka secrets register --user "+userEmail)
 
 		spinner.FinalMSG = finalMessage
 		return nil

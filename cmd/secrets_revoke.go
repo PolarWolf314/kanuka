@@ -11,9 +11,9 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -133,31 +133,31 @@ Examples:
 			revokeUserEmail, revokeFilePath, revokeDevice, revokeYes)
 
 		if revokeUserEmail == "" && revokeFilePath == "" {
-			finalMessage := color.RedString("✗") + " Either " + color.YellowString("--user") + " or " + color.YellowString("--file") + " flag is required.\n" +
-				"Run " + color.YellowString("kanuka secrets revoke --help") + " to see the available commands.\n"
+			finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required.\n" +
+				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		if revokeUserEmail != "" && revokeFilePath != "" {
-			finalMessage := color.RedString("✗") + " Cannot specify both " + color.YellowString("--user") + " and " + color.YellowString("--file") + " flags.\n" +
-				"Run " + color.YellowString("kanuka secrets revoke --help") + " to see the available commands.\n"
+			finalMessage := ui.Error.Sprint("✗") + " Cannot specify both " + ui.Flag.Sprint("--user") + " and " + ui.Flag.Sprint("--file") + " flags.\n" +
+				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		// --device requires --user
 		if revokeDevice != "" && revokeUserEmail == "" {
-			finalMessage := color.RedString("✗") + " The " + color.YellowString("--device") + " flag requires the " + color.YellowString("--user") + " flag.\n" +
-				"Run " + color.YellowString("kanuka secrets revoke --help") + " to see the available commands.\n"
+			finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires the " + ui.Flag.Sprint("--user") + " flag.\n" +
+				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		// Validate email format if provided
 		if revokeUserEmail != "" && !utils.IsValidEmail(revokeUserEmail) {
-			finalMessage := color.RedString("✗") + " Invalid email format: " + color.YellowString(revokeUserEmail) + "\n" +
-				color.CyanString("→") + " Please provide a valid email address"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(revokeUserEmail) + "\n" +
+				ui.Info.Sprint("→") + " Please provide a valid email address"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -169,8 +169,8 @@ Examples:
 
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first\n"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -180,8 +180,8 @@ Examples:
 			return Logger.ErrorfAndReturn("failed to check if project exists: %v", err)
 		}
 		if !exists {
-			finalMessage := color.RedString("✗") + " Kānuka project not found\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first\n"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka project not found\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -232,8 +232,8 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 	// Get all devices for this email
 	devices := projectConfig.GetDevicesByEmail(revokeUserEmail)
 	if len(devices) == 0 {
-		finalMessage := color.RedString("✗") + " User " + color.YellowString(revokeUserEmail) + " not found in this project\n" +
-			color.CyanString("→") + " No devices found for this user\n"
+		finalMessage := ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(revokeUserEmail) + " not found in this project\n" +
+			ui.Info.Sprint("→") + " No devices found for this user\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -242,10 +242,10 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 	if revokeDevice != "" {
 		targetUserUUID, found := projectConfig.GetUserUUIDByEmailAndDevice(revokeUserEmail, revokeDevice)
 		if !found {
-			finalMessage := color.RedString("✗") + " Device " + color.YellowString(revokeDevice) + " not found for user " + color.YellowString(revokeUserEmail) + "\n" +
-				color.CyanString("→") + " Available devices:\n"
+			finalMessage := ui.Error.Sprint("✗") + " Device " + ui.Highlight.Sprint(revokeDevice) + " not found for user " + ui.Highlight.Sprint(revokeUserEmail) + "\n" +
+				ui.Info.Sprint("→") + " Available devices:\n"
 			for _, device := range devices {
-				finalMessage += "    - " + color.YellowString(device.Name) + "\n"
+				finalMessage += "    - " + ui.Highlight.Sprint(device.Name) + "\n"
 			}
 			spinner.FinalMSG = finalMessage
 			return nil, nil
@@ -260,7 +260,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 	if len(devices) > 1 && !revokeYes {
 		spinner.Stop()
 
-		fmt.Printf("\n%s Warning: %s has %d devices:\n", color.YellowString("⚠"), revokeUserEmail, len(devices))
+		fmt.Printf("\n%s Warning: %s has %d devices:\n", ui.Warning.Sprint("⚠"), revokeUserEmail, len(devices))
 		for _, device := range devices {
 			fmt.Printf("  - %s (created: %s)\n", device.Name, device.CreatedAt.Format("Jan 2, 2006"))
 		}
@@ -274,7 +274,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 		}
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
-			finalMessage := color.YellowString("⚠") + " Revocation cancelled\n"
+			finalMessage := ui.Warning.Sprint("⚠") + " Revocation cancelled\n"
 			spinner.FinalMSG = finalMessage
 			spinner.Restart()
 			return nil, nil
@@ -300,7 +300,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 	}
 
 	if len(allFiles) == 0 {
-		finalMessage := color.RedString("✗") + " No files found for user " + color.YellowString(revokeUserEmail) + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " No files found for user " + ui.Highlight.Sprint(revokeUserEmail) + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -328,8 +328,8 @@ func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (*r
 		publicKeyExists = true
 	} else if !os.IsNotExist(err) {
 		Logger.Errorf("Failed to check public key file %s: %v", publicKeyPath, err)
-		finalMessage := color.RedString("✗") + " Failed to check user's public key file\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to check user's public key file\n" +
+			ui.Error.Sprint("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -338,16 +338,16 @@ func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (*r
 		kanukaKeyExists = true
 	} else if !os.IsNotExist(err) {
 		Logger.Errorf("Failed to check kanuka key file %s: %v", kanukaKeyPath, err)
-		finalMessage := color.RedString("✗") + " Failed to check user's kanuka key file\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to check user's kanuka key file\n" +
+			ui.Error.Sprint("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
 
 	if !publicKeyExists && !kanukaKeyExists {
 		Logger.Infof("User %s does not exist in the project", displayName)
-		finalMessage := color.RedString("✗") + " User " + color.YellowString(displayName) + " does not exist in this project\n" +
-			color.CyanString("→") + " No files found for this user\n"
+		finalMessage := ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(displayName) + " does not exist in this project\n" +
+			ui.Info.Sprint("→") + " No files found for this user\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -375,7 +375,7 @@ func getFilesByPath(spinner *spinner.Spinner) (*revokeContext, error) {
 
 	absFilePath, err := filepath.Abs(revokeFilePath)
 	if err != nil {
-		finalMessage := color.RedString("✗") + " Failed to resolve file path: " + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to resolve file path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -386,39 +386,39 @@ func getFilesByPath(spinner *spinner.Spinner) (*revokeContext, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			Logger.Infof("File does not exist: %s", absFilePath)
-			finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " does not exist\n"
+			finalMessage := ui.Error.Sprint("✗") + " File " + ui.Path.Sprint(absFilePath) + " does not exist\n"
 			spinner.FinalMSG = finalMessage
 			return nil, nil
 		}
 		Logger.Errorf("Failed to check file %s: %v", absFilePath, err)
-		finalMessage := color.RedString("✗") + " Failed to check file\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to check file\n" +
+			ui.Error.Sprint("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
 
 	if fileInfo.IsDir() {
-		finalMessage := color.RedString("✗") + " Path " + color.YellowString(absFilePath) + " is a directory, not a file\n"
+		finalMessage := ui.Error.Sprint("✗") + " Path " + ui.Path.Sprint(absFilePath) + " is a directory, not a file\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
 
 	absProjectSecretsPath, err := filepath.Abs(projectSecretsPath)
 	if err != nil {
-		finalMessage := color.RedString("✗") + " Failed to resolve project secrets path: " + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to resolve project secrets path: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
 
 	if filepath.Dir(absFilePath) != absProjectSecretsPath {
-		finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " is not in the project secrets directory\n" +
-			color.CyanString("→") + " Expected directory: " + color.YellowString(absProjectSecretsPath) + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " File " + ui.Path.Sprint(absFilePath) + " is not in the project secrets directory\n" +
+			ui.Info.Sprint("→") + " Expected directory: " + ui.Path.Sprint(absProjectSecretsPath) + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
 
 	if filepath.Ext(absFilePath) != ".kanuka" {
-		finalMessage := color.RedString("✗") + " File " + color.YellowString(absFilePath) + " is not a .kanuka file\n"
+		finalMessage := ui.Error.Sprint("✗") + " File " + ui.Path.Sprint(absFilePath) + " is not a .kanuka file\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -448,8 +448,8 @@ func getFilesByPath(spinner *spinner.Spinner) (*revokeContext, error) {
 		files = append(files, fileToRevoke{Path: publicKeyPath, Name: userUUID + ".pub"})
 	} else if !os.IsNotExist(err) {
 		Logger.Errorf("Failed to check public key file %s: %v", publicKeyPath, err)
-		finalMessage := color.RedString("✗") + " Failed to check public key file\n" +
-			color.RedString("Error: ") + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to check public key file\n" +
+			ui.Error.Sprint("Error: ") + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -465,20 +465,20 @@ func printRevokeDryRun(spinner *spinner.Spinner, ctx *revokeContext) error {
 	spinner.Stop()
 
 	fmt.Println()
-	fmt.Println(color.YellowString("[dry-run]") + " Would revoke access for " + color.CyanString(ctx.DisplayName))
+	fmt.Println(ui.Warning.Sprint("[dry-run]") + " Would revoke access for " + ui.Highlight.Sprint(ctx.DisplayName))
 	fmt.Println()
 
 	// List files that would be deleted.
 	fmt.Println("Files that would be deleted:")
 	for _, file := range ctx.Files {
-		fmt.Println("  - " + color.RedString(file.Path))
+		fmt.Println("  - " + ui.Error.Sprint(file.Path))
 	}
 	fmt.Println()
 
 	// Show config changes.
 	fmt.Println("Config changes:")
 	for _, uuid := range ctx.UUIDsRevoked {
-		fmt.Println("  - Remove user " + color.YellowString(uuid) + " from project")
+		fmt.Println("  - Remove user " + ui.Highlight.Sprint(uuid) + " from project")
 	}
 	fmt.Println()
 
@@ -502,10 +502,10 @@ func printRevokeDryRun(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 
 	// Warning about git history.
-	fmt.Println(color.YellowString("⚠") + " Warning: After revocation, " + ctx.DisplayName + " may still have access to old secrets from git history.")
+	fmt.Println(ui.Warning.Sprint("⚠") + " Warning: After revocation, " + ctx.DisplayName + " may still have access to old secrets from git history.")
 	fmt.Println()
 
-	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+	fmt.Println(ui.Info.Sprint("No changes made.") + " Run without --dry-run to execute.")
 
 	spinner.FinalMSG = ""
 	return nil
@@ -555,12 +555,12 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 
 	if len(revokeErrors) > 0 {
-		finalMessage := color.RedString("✗") + " Failed to completely revoke files for " + color.YellowString(displayName) + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to completely revoke files for " + ui.Highlight.Sprint(displayName) + "\n"
 		for _, err := range revokeErrors {
-			finalMessage += color.RedString("Error: ") + err.Error() + "\n"
+			finalMessage += ui.Error.Sprint("Error: ") + err.Error() + "\n"
 		}
 		if len(revokedFiles) > 0 {
-			finalMessage += color.YellowString("Warning: ") + "Some files were revoked successfully\n"
+			finalMessage += ui.Warning.Sprint("Warning: ") + "Some files were revoked successfully\n"
 		}
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -575,7 +575,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	// Save updated project config
 	if err := configs.SaveProjectConfig(projectConfig); err != nil {
 		Logger.Errorf("Failed to update project config: %v", err)
-		finalMessage := color.RedString("✗") + " Files were revoked but failed to update project config: " + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to update project config: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -584,7 +584,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	allUsers, err := secrets.GetAllUsersInProject()
 	if err != nil {
 		Logger.Errorf("Failed to get list of users: %v", err)
-		finalMessage := color.RedString("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -600,7 +600,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 			if revokePrivateKeyStdin {
 				keySource = "from stdin"
 			}
-			finalMessage := color.RedString("✗") + " Files were revoked but failed to load private key " + keySource + ": " + err.Error() + "\n"
+			finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to load private key " + keySource + ": " + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -617,7 +617,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 		syncResult, err := secrets.SyncSecrets(privateKey, syncOpts)
 		if err != nil {
 			Logger.Errorf("Failed to re-encrypt secrets: %v", err)
-			finalMessage := color.RedString("✗") + " Files were revoked but failed to re-encrypt secrets: " + err.Error() + "\n"
+			finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to re-encrypt secrets: " + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -638,20 +638,20 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 	audit.Log(auditEntry)
 
-	finalMessage := color.GreenString("✓") + " Access for " + color.YellowString(displayName) + " has been revoked successfully!\n" +
-		color.CyanString("→") + " Revoked: "
+	finalMessage := ui.Success.Sprint("✓") + " Access for " + ui.Highlight.Sprint(displayName) + " has been revoked successfully!\n" +
+		ui.Info.Sprint("→") + " Revoked: "
 	for i, file := range revokedFiles {
 		if i > 0 {
 			finalMessage += ", "
 		}
-		finalMessage += color.YellowString(file)
+		finalMessage += ui.Highlight.Sprint(file)
 	}
 	finalMessage += "\n"
 	if len(allUsers) > 0 {
-		finalMessage += color.CyanString("→") + " All secrets have been re-encrypted with a new key\n"
+		finalMessage += ui.Info.Sprint("→") + " All secrets have been re-encrypted with a new key\n"
 	}
-	finalMessage += color.YellowString("⚠") + color.RedString(" Warning: ") + color.YellowString(displayName) + " may still have access to old secrets from their local git history.\n" +
-		color.CyanString("→") + " If necessary, rotate your actual secret values after this revocation.\n"
+	finalMessage += ui.Warning.Sprint("⚠") + ui.Error.Sprint(" Warning: ") + ui.Highlight.Sprint(displayName) + " may still have access to old secrets from their local git history.\n" +
+		ui.Info.Sprint("→") + " If necessary, rotate your actual secret values after this revocation.\n"
 	spinner.FinalMSG = finalMessage
 	return nil
 }

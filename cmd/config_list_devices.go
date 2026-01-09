@@ -6,7 +6,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -46,15 +46,15 @@ Examples:
 		ConfigLogger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
 			ConfigLogger.Infof("Failed to initialize project settings: %v", err)
-			fmt.Println(color.RedString("✗") + " Failed to initialize project settings")
-			fmt.Println(color.CyanString("→") + " Make sure you're in a Kānuka project directory")
+			fmt.Println(ui.Error.Sprint("✗") + " Failed to initialize project settings")
+			fmt.Println(ui.Info.Sprint("→") + " Make sure you're in a Kānuka project directory")
 			return nil
 		}
 
 		if configs.ProjectKanukaSettings.ProjectPath == "" {
 			ConfigLogger.Infof("Not in a Kanuka project directory")
-			fmt.Println(color.RedString("✗") + " Not in a Kānuka project directory")
-			fmt.Println(color.CyanString("→") + " Run this command from within a Kānuka project")
+			fmt.Println(ui.Error.Sprint("✗") + " Not in a Kānuka project directory")
+			fmt.Println(ui.Info.Sprint("→") + " Run this command from within a Kānuka project")
 			return nil
 		}
 
@@ -70,7 +70,7 @@ Examples:
 		ConfigLogger.Infof("Project config loaded: %d devices found", len(projectConfig.Devices))
 
 		if len(projectConfig.Devices) == 0 {
-			fmt.Println(color.YellowString("⚠") + " No devices found in this project")
+			fmt.Println(ui.Warning.Sprint("⚠") + " No devices found in this project")
 			return nil
 		}
 
@@ -92,7 +92,7 @@ Examples:
 			ConfigLogger.Infof("Filtering devices by user: %s", listDevicesUserEmail)
 			devices, exists := devicesByEmail[listDevicesUserEmail]
 			if !exists {
-				fmt.Println(color.RedString("✗") + " User " + color.YellowString(listDevicesUserEmail) + " not found in this project")
+				fmt.Println(ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(listDevicesUserEmail) + " not found in this project")
 				return nil
 			}
 			ConfigLogger.Debugf("Found %d devices for user %s", len(devices), listDevicesUserEmail)
@@ -109,7 +109,7 @@ Examples:
 		// Print header.
 		projectName := projectConfig.Project.Name
 		if projectName != "" {
-			fmt.Printf("Devices in project %s:\n\n", color.CyanString(projectName))
+			fmt.Printf("Devices in project %s:\n\n", ui.Highlight.Sprint(projectName))
 		} else {
 			fmt.Print("Devices in this project:\n\n")
 		}
@@ -117,7 +117,7 @@ Examples:
 		// Print devices grouped by email.
 		for _, email := range emails {
 			devices := devicesByEmail[email]
-			fmt.Printf("  %s\n", color.YellowString(email))
+			fmt.Printf("  %s\n", ui.Highlight.Sprint(email))
 
 			// Sort devices by name for consistent output.
 			sort.Slice(devices, func(i, j int) bool {
@@ -130,8 +130,8 @@ Examples:
 					shortUUID = shortUUID[:8] + "..."
 				}
 				fmt.Printf("    - %s (UUID: %s) - created: %s\n",
-					color.CyanString(device.Name),
-					color.WhiteString(shortUUID),
+					ui.Highlight.Sprint(device.Name),
+					ui.Muted.Sprint(shortUUID),
 					device.CreatedAt)
 			}
 			fmt.Println()

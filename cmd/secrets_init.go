@@ -11,9 +11,9 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -47,8 +47,8 @@ var initCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("Failed to check if project kanuka settings exists: %v", err)
 		}
 		if kanukaExists {
-			finalMessage := color.RedString("✗") + " Kānuka has already been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets create") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has already been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -71,14 +71,14 @@ var initCmd = &cobra.Command{
 
 			// If --yes flag is set, fail with clear error.
 			if initYes {
-				spinner.FinalMSG = color.RedString("✗") + " User configuration is incomplete\n" +
-					color.CyanString("→") + " Run " + color.YellowString("kanuka config init") + " first to set up your identity"
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " User configuration is incomplete\n" +
+					ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka config init") + " first to set up your identity"
 				return fmt.Errorf("user configuration required: run 'kanuka config init' first")
 			}
 
 			// Run config init inline.
 			spinner.Stop()
-			fmt.Println(color.YellowString("⚠") + " User configuration not found.\n")
+			fmt.Println(ui.Warning.Sprint("⚠") + " User configuration not found.\n")
 			fmt.Println("Running initial setup...")
 			fmt.Println()
 
@@ -237,13 +237,13 @@ var initCmd = &cobra.Command{
 		Logger.WarnfUser("Remember to never commit .env files to version control - only commit .kanuka files")
 		spinner.Restart()
 
-		finalMessage := color.GreenString("✓") + " Kānuka initialized successfully!\n\n" +
-			color.CyanString("→") + " Run " + color.YellowString("kanuka secrets encrypt") + " to encrypt your existing .env files\n\n" +
-			color.CyanString("Tip:") + " Working in a monorepo? You have two options:\n" +
+		finalMessage := ui.Success.Sprint("✓") + " Kānuka initialized successfully!\n\n" +
+			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets encrypt") + " to encrypt your existing .env files\n\n" +
+			ui.Info.Sprint("Tip:") + " Working in a monorepo? You have two options:\n" +
 			"  1. Keep this single .kanuka at the root and use selective encryption:\n" +
-			"     " + color.YellowString("kanuka secrets encrypt services/api/.env") + "\n" +
+			"     " + ui.Code.Sprint("kanuka secrets encrypt services/api/.env") + "\n" +
 			"  2. Initialize separate .kanuka stores in each service:\n" +
-			"     " + color.YellowString("cd services/api && kanuka secrets init")
+			"     " + ui.Code.Sprint("cd services/api && kanuka secrets init")
 
 		spinner.FinalMSG = finalMessage
 		return nil
