@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bufio"
 	"crypto/rsa"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -21,6 +23,7 @@ var (
 	publicKeyText           string
 	registerDryRun          bool
 	registerPrivateKeyStdin bool
+	registerForce           bool
 	// privateKeyData holds the private key data read from stdin (if --private-key-stdin is used).
 	// This is stored so it can be used by multiple functions without re-reading stdin.
 	registerPrivateKeyData []byte
@@ -33,6 +36,7 @@ func resetRegisterCommandState() {
 	publicKeyText = ""
 	registerDryRun = false
 	registerPrivateKeyStdin = false
+	registerForce = false
 	registerPrivateKeyData = nil
 }
 
@@ -46,12 +50,47 @@ func loadRegisterPrivateKey(projectUUID string) (*rsa.PrivateKey, error) {
 	return secrets.LoadPrivateKey(privateKeyPath)
 }
 
+// fileExists checks if a file exists and is not a directory.
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return err == nil && !info.IsDir()
+}
+
+// confirmRegisterOverwrite prompts the user to confirm overwriting an existing user's access.
+// Returns true if the user confirms, false otherwise.
+func confirmRegisterOverwrite(s *spinner.Spinner, userEmail string) bool {
+	s.Stop()
+
+	fmt.Printf("\n%s Warning: %s already has access to this project.\n", color.YellowString("⚠"), color.YellowString(userEmail))
+	fmt.Println("  Continuing will replace their existing key.")
+	fmt.Println("  If they generated a new keypair, this is expected.")
+	fmt.Println("  If not, they may lose access.")
+	fmt.Println()
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Do you want to continue? [y/N]: ")
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		Logger.Errorf("Failed to read response: %v", err)
+		s.Restart()
+		return false
+	}
+	response = strings.TrimSpace(strings.ToLower(response))
+
+	s.Restart()
+	return response == "y" || response == "yes"
+}
+
 func init() {
 	RegisterCmd.Flags().StringVarP(&registerUserEmail, "user", "u", "", "user email to register for access")
 	RegisterCmd.Flags().StringVarP(&customFilePath, "file", "f", "", "the path to a custom public key — will add public key to the project")
 	RegisterCmd.Flags().StringVar(&publicKeyText, "pubkey", "", "OpenSSH or PEM public key content to be saved with the specified user email")
 	RegisterCmd.Flags().BoolVar(&registerDryRun, "dry-run", false, "preview registration without making changes")
 	RegisterCmd.Flags().BoolVar(&registerPrivateKeyStdin, "private-key-stdin", false, "read private key from stdin instead of from disk")
+	RegisterCmd.Flags().BoolVar(&registerForce, "force", false, "skip confirmation when updating existing user's access")
 }
 
 var RegisterCmd = &cobra.Command{
@@ -256,6 +295,18 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
+	// Check if user already has access (both public key AND .kanuka file exist)
+	userAlreadyHasAccess := fileExists(pubKeyFilePath) && fileExists(kanukaFilePath)
+	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, pubKeyFilePath, kanukaFilePath)
+
+	// If user already has access and not forced, prompt for confirmation
+	if userAlreadyHasAccess && !registerForce && !registerDryRun {
+		if !confirmRegisterOverwrite(spinner, registerUserEmail) {
+			spinner.FinalMSG = color.YellowString("⚠") + " Registration cancelled.\n"
+			return nil
+		}
+	}
+
 	// If dry-run, print preview and exit early
 	if registerDryRun {
 		printRegisterDryRun(spinner, registerUserEmail, pubKeyFilePath, kanukaFilePath, true)
@@ -284,8 +335,19 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	}
 
 	Logger.Infof("Public key registration completed successfully for user: %s", registerUserEmail)
-	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n\n" +
-		"Files created:\n" +
+
+	// Use different message for update vs new registration
+	var successVerb, filesLabel string
+	if userAlreadyHasAccess {
+		successVerb = "access has been updated"
+		filesLabel = "Files updated"
+	} else {
+		successVerb = "has been granted access"
+		filesLabel = "Files created"
+	}
+
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " " + successVerb + " successfully!\n\n" +
+		filesLabel + ":\n" +
 		"  Public key:    " + color.CyanString(pubKeyFilePath) + "\n" +
 		"  Encrypted key: " + color.CyanString(kanukaFilePath) + "\n\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
@@ -456,6 +518,18 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	// Compute path for output
 	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
 
+	// Check if user already has access (both public key AND .kanuka file exist)
+	userAlreadyHasAccess := fileExists(targetPubkeyPath) && fileExists(targetKanukaFilePath)
+	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, targetPubkeyPath, targetKanukaFilePath)
+
+	// If user already has access and not forced, prompt for confirmation
+	if userAlreadyHasAccess && !registerForce && !registerDryRun {
+		if !confirmRegisterOverwrite(spinner, registerUserEmail) {
+			spinner.FinalMSG = color.YellowString("⚠") + " Registration cancelled.\n"
+			return nil
+		}
+	}
+
 	// If dry-run, print preview and exit early
 	if registerDryRun {
 		printRegisterDryRun(spinner, registerUserEmail, targetPubkeyPath, targetKanukaFilePath, false)
@@ -482,8 +556,19 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	}
 
 	Logger.Infof("User registration completed successfully for: %s", registerUserEmail)
-	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " has been granted access successfully!\n\n" +
-		"Files created:\n" +
+
+	// Use different message for update vs new registration
+	var successVerb, filesLabel string
+	if userAlreadyHasAccess {
+		successVerb = "access has been updated"
+		filesLabel = "Files updated"
+	} else {
+		successVerb = "has been granted access"
+		filesLabel = "Files created"
+	}
+
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(registerUserEmail) + " " + successVerb + " successfully!\n\n" +
+		filesLabel + ":\n" +
 		"  Public key:    " + color.CyanString(targetPubkeyPath) + "\n" +
 		"  Encrypted key: " + color.CyanString(targetKanukaFilePath) + "\n\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"
@@ -589,6 +674,19 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// Compute path for output
 	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
 
+	// Check if user already has access (both public key AND .kanuka file exist)
+	// For custom file, we check the custom file path and target kanuka path
+	userAlreadyHasAccess := fileExists(customFilePath) && fileExists(targetKanukaFilePath)
+	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, customFilePath, targetKanukaFilePath)
+
+	// If user already has access and not forced, prompt for confirmation
+	if userAlreadyHasAccess && !registerForce && !registerDryRun {
+		if !confirmRegisterOverwrite(spinner, displayName) {
+			spinner.FinalMSG = color.YellowString("⚠") + " Registration cancelled.\n"
+			return nil
+		}
+	}
+
 	// If dry-run, print preview and exit early
 	if registerDryRun {
 		printRegisterDryRunForFile(spinner, displayName, customFilePath, targetKanukaFilePath)
@@ -613,8 +711,19 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	}
 
 	Logger.Infof("Custom file registration completed successfully for: %s", displayName)
-	finalMessage := color.GreenString("✓") + " " + color.YellowString(displayName) + " has been granted access successfully!\n\n" +
-		"Files created:\n" +
+
+	// Use different message for update vs new registration
+	var successVerb, filesLabel string
+	if userAlreadyHasAccess {
+		successVerb = "access has been updated"
+		filesLabel = "Files updated"
+	} else {
+		successVerb = "has been granted access"
+		filesLabel = "Files created"
+	}
+
+	finalMessage := color.GreenString("✓") + " " + color.YellowString(displayName) + " " + successVerb + " successfully!\n\n" +
+		filesLabel + ":\n" +
 		"  Public key:    " + color.CyanString(customFilePath) + " (provided)\n" +
 		"  Encrypted key: " + color.CyanString(targetKanukaFilePath) + "\n\n" +
 		color.CyanString("→") + " They now have access to decrypt the repository's secrets"

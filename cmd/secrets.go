@@ -43,6 +43,14 @@ func init() {
 	SecretsCmd.AddCommand(RegisterCmd)
 	SecretsCmd.AddCommand(revokeCmd)
 	SecretsCmd.AddCommand(initCmd)
+	SecretsCmd.AddCommand(syncCmd)
+	SecretsCmd.AddCommand(accessCmd)
+	SecretsCmd.AddCommand(cleanCmd)
+	SecretsCmd.AddCommand(statusCmd)
+	SecretsCmd.AddCommand(doctorCmd)
+	SecretsCmd.AddCommand(rotateCmd)
+	SecretsCmd.AddCommand(exportCmd)
+	SecretsCmd.AddCommand(importCmd)
 }
 
 // Helper functions for testing
@@ -68,6 +76,22 @@ func ResetGlobalState() {
 	resetEncryptCommandState()
 	// Reset the decrypt command flags
 	resetDecryptCommandState()
+	// Reset the sync command flags
+	resetSyncCommandState()
+	// Reset the access command flags
+	resetAccessCommandState()
+	// Reset the clean command flags
+	resetCleanCommandState()
+	// Reset the status command flags
+	resetStatusCommandState()
+	// Reset the doctor command flags
+	resetDoctorCommandState()
+	// Reset the rotate command flags
+	resetRotateCommandState()
+	// Reset the export command flags
+	resetExportCommandState()
+	// Reset the import command flags
+	resetImportCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -105,6 +129,62 @@ func resetCobraFlagState() {
 	// Reset the decrypt command flags specifically
 	if decryptCmd != nil && decryptCmd.Flags() != nil {
 		decryptCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the sync command flags specifically
+	if syncCmd != nil && syncCmd.Flags() != nil {
+		syncCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the access command flags specifically
+	if accessCmd != nil && accessCmd.Flags() != nil {
+		accessCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the clean command flags specifically
+	if cleanCmd != nil && cleanCmd.Flags() != nil {
+		cleanCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the status command flags specifically
+	if statusCmd != nil && statusCmd.Flags() != nil {
+		statusCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the doctor command flags specifically
+	if doctorCmd != nil && doctorCmd.Flags() != nil {
+		doctorCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the rotate command flags specifically
+	if rotateCmd != nil && rotateCmd.Flags() != nil {
+		rotateCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the export command flags specifically
+	if exportCmd != nil && exportCmd.Flags() != nil {
+		exportCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the import command flags specifically
+	if importCmd != nil && importCmd.Flags() != nil {
+		importCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}

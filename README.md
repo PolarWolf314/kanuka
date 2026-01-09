@@ -24,6 +24,10 @@ It is fast, resilient, yet pleasant to touch. This is the vision of Kānuka.
 
 - **Secure Secret Management**: Store and encrypt environment variables using industry-standard encryption (AES-256 and RSA-2048)
 - **Team Collaboration**: Register and manage team member access to shared secrets
+- **Key Rotation**: Rotate encryption keys with automatic re-encryption of all secrets
+- **Access Control**: View who has access, revoke users securely with full key rotation
+- **Health Checks**: Run diagnostics to detect configuration issues and inconsistent state
+- **Backup & Recovery**: Export and import encrypted secrets for disaster recovery
 - **User-friendly Interface**: Simple commands for managing secrets across your team
 - **Cross-platform Support**: Works on Linux, macOS, and Windows
 - **Shell Autocompletion**: Supports bash, zsh, fish, and PowerShell
@@ -89,6 +93,14 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 - `kanuka secrets decrypt`: Decrypt .kanuka files
 - `kanuka secrets register --user <email>`: Register a new user
 - `kanuka secrets revoke --user <email>`: Revoke a user's access
+- `kanuka secrets sync`: Rotate encryption key and re-encrypt all secrets
+- `kanuka secrets rotate`: Rotate your personal keypair
+- `kanuka secrets access`: List users with access to secrets
+- `kanuka secrets status`: Show encryption status of secret files
+- `kanuka secrets clean`: Remove orphaned keys and inconsistent state
+- `kanuka secrets doctor`: Run health checks on the project
+- `kanuka secrets export`: Create a backup archive of encrypted secrets
+- `kanuka secrets import <archive>`: Restore secrets from a backup archive
 
 ### Configuration Commands
 
@@ -168,6 +180,9 @@ go test ./test/integration/create/...
 go test ./test/integration/register/...
 go test ./test/integration/encrypt/...
 go test ./test/integration/decrypt/...
+go test ./test/integration/revoke/...
+go test ./test/integration/sync/...
+go test ./test/integration/access/...
 ```
 
 ## Shell Autocompletion

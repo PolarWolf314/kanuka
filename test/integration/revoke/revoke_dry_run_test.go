@@ -285,8 +285,8 @@ func TestRevokeDryRun_ShowsKeyRotationImpact(t *testing.T) {
 	if !strings.Contains(output, "Post-revocation actions") {
 		t.Errorf("Output should contain 'Post-revocation actions', got: %s", output)
 	}
-	if !strings.Contains(output, "Symmetric key would be rotated") {
-		t.Errorf("Output should contain key rotation message, got: %s", output)
+	if !strings.Contains(output, "Re-encrypt symmetric key") {
+		t.Errorf("Output should contain re-encryption message, got: %s", output)
 	}
 	if !strings.Contains(output, "1 remaining user") {
 		t.Errorf("Output should mention 1 remaining user, got: %s", output)
