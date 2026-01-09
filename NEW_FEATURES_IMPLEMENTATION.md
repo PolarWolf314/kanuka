@@ -256,12 +256,12 @@ By extracting this into a reusable module, we avoid code duplication and ensure 
 
 ### Acceptance Criteria
 
-- [ ] `SyncSecrets()` function implemented in `internal/secrets/sync.go`
-- [ ] Function accepts options struct for flexibility (dry-run, excluded users, etc.)
-- [ ] All operations happen in memory; disk writes only at the end
-- [ ] If any step fails, no partial writes occur (atomic operation)
-- [ ] Verbose/debug logging throughout
-- [ ] Returns detailed result struct for caller to report
+- [x] `SyncSecrets()` function implemented in `internal/secrets/sync.go`
+- [x] Function accepts options struct for flexibility (dry-run, excluded users, etc.)
+- [x] All operations happen in memory; disk writes only at the end
+- [x] If any step fails, no partial writes occur (atomic operation)
+- [x] Verbose/debug logging throughout
+- [x] Returns detailed result struct for caller to report
 
 ### Technical Details
 
@@ -511,12 +511,12 @@ $ kanuka secrets sync
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets sync` command implemented
-- [ ] `--dry-run` flag shows what would happen without making changes
-- [ ] `--verbose` flag shows detailed progress
-- [ ] Proper error handling if user doesn't have access
-- [ ] Works with both PKCS#1 and OpenSSH private key formats
-- [ ] Spinner shows progress during operation
+- [x] `kanuka secrets sync` command implemented
+- [x] `--dry-run` flag shows what would happen without making changes
+- [x] `--verbose` flag shows detailed progress
+- [x] Proper error handling if user doesn't have access
+- [x] Works with both PKCS#1 and OpenSSH private key formats
+- [x] Spinner shows progress during operation
 
 ### Technical Details
 
@@ -610,11 +610,11 @@ Create `test/integration/sync/sync_test.go`:
 
 ### Definition of Done
 
-- [ ] `kanuka secrets sync` command implemented
-- [ ] `--dry-run` flag works correctly
-- [ ] Help text is clear and complete
+- [x] `kanuka secrets sync` command implemented
+- [x] `--dry-run` flag works correctly
+- [x] Help text is clear and complete
 - [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `golangci-lint run` passes
 
 ---
 
