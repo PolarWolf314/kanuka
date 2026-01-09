@@ -1678,14 +1678,14 @@ $ kanuka secrets rotate --force
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets rotate` command implemented
-- [ ] Generates new RSA keypair
-- [ ] Decrypts symmetric key with old private key
-- [ ] Re-encrypts symmetric key with new public key
-- [ ] Updates public key in project
-- [ ] Saves new private key to user's key directory
-- [ ] Confirmation prompt (skippable with `--force`)
-- [ ] Works with passphrase-protected keys
+- [x] `kanuka secrets rotate` command implemented
+- [x] Generates new RSA keypair
+- [x] Decrypts symmetric key with old private key
+- [x] Re-encrypts symmetric key with new public key
+- [x] Updates public key in project
+- [x] Saves new private key to user's key directory
+- [x] Confirmation prompt (skippable with `--force`)
+- [x] Works with passphrase-protected keys
 
 ### Technical Details
 
@@ -1757,13 +1757,13 @@ Create `test/integration/rotate/rotate_test.go`:
 
 ### Definition of Done
 
-- [ ] `kanuka secrets rotate` command implemented
-- [ ] New keypair generated correctly
-- [ ] Old key no longer works
-- [ ] Other users unaffected
-- [ ] Confirmation prompt works
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `kanuka secrets rotate` command implemented
+- [x] New keypair generated correctly
+- [x] Old key no longer works
+- [x] Other users unaffected
+- [x] Confirmation prompt works
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 
@@ -1808,13 +1808,13 @@ $ kanuka secrets export -o /backups/project-secrets.tar.gz
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets export` command implemented
-- [ ] Creates tar.gz archive with encrypted data
-- [ ] Includes: config.toml, public_keys/*, secrets/*.kanuka, all *.kanuka files
-- [ ] Does NOT include: private keys, plaintext .env files
-- [ ] `-o` / `--output` flag for custom output path
-- [ ] Default filename includes date
-- [ ] Summary of archive contents shown
+- [x] `kanuka secrets export` command implemented
+- [x] Creates tar.gz archive with encrypted data
+- [x] Includes: config.toml, public_keys/*, secrets/*.kanuka, all *.kanuka files
+- [x] Does NOT include: private keys, plaintext .env files
+- [x] `-o` / `--output` flag for custom output path
+- [x] Default filename includes date
+- [x] Summary of archive contents shown
 
 ### Technical Details
 
@@ -1895,13 +1895,13 @@ Create `test/integration/export/export_test.go`:
 
 ### Definition of Done
 
-- [ ] `kanuka secrets export` command implemented
-- [ ] Creates valid tar.gz archive
-- [ ] Contains all encrypted data
-- [ ] Excludes sensitive data
-- [ ] `-o` flag works
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `kanuka secrets export` command implemented
+- [x] Creates valid tar.gz archive
+- [x] Contains all encrypted data
+- [x] Excludes sensitive data
+- [x] `-o` flag works
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 
