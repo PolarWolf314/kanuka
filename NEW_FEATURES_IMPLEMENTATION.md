@@ -1320,12 +1320,12 @@ $ kanuka secrets status --json
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets status` command implemented
-- [ ] Correctly identifies all file states (current, stale, unencrypted, encrypted-only)
-- [ ] Shows relative paths from project root
-- [ ] `--json` flag outputs machine-readable JSON
-- [ ] Summary with actionable suggestions
-- [ ] Recursively finds files in subdirectories
+- [x] `kanuka secrets status` command implemented
+- [x] Correctly identifies all file states (current, stale, unencrypted, encrypted-only)
+- [x] Shows relative paths from project root
+- [x] `--json` flag outputs machine-readable JSON
+- [x] Summary with actionable suggestions
+- [x] Recursively finds files in subdirectories
 
 ### Technical Details
 
@@ -1440,13 +1440,13 @@ Create `test/integration/status/status_test.go`:
 
 ### Definition of Done
 
-- [ ] `kanuka secrets status` command implemented
-- [ ] All file states correctly identified
-- [ ] Relative paths shown
-- [ ] `--json` flag works
-- [ ] Summary with suggestions
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `kanuka secrets status` command implemented
+- [x] All file states correctly identified
+- [x] Relative paths shown
+- [x] `--json` flag works
+- [x] Summary with suggestions
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 

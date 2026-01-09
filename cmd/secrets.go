@@ -46,6 +46,7 @@ func init() {
 	SecretsCmd.AddCommand(syncCmd)
 	SecretsCmd.AddCommand(accessCmd)
 	SecretsCmd.AddCommand(cleanCmd)
+	SecretsCmd.AddCommand(statusCmd)
 }
 
 // Helper functions for testing
@@ -77,6 +78,8 @@ func ResetGlobalState() {
 	resetAccessCommandState()
 	// Reset the clean command flags
 	resetCleanCommandState()
+	// Reset the status command flags
+	resetStatusCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -135,6 +138,13 @@ func resetCobraFlagState() {
 	// Reset the clean command flags specifically
 	if cleanCmd != nil && cleanCmd.Flags() != nil {
 		cleanCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the status command flags specifically
+	if statusCmd != nil && statusCmd.Flags() != nil {
+		statusCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}
