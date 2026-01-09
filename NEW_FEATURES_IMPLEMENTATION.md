@@ -1960,13 +1960,13 @@ $ kanuka secrets import backup.tar.gz --dry-run
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets import` command implemented
-- [ ] Extracts tar.gz archive
-- [ ] `--merge` flag adds new files, keeps existing
-- [ ] `--replace` flag deletes existing, uses backup
-- [ ] `--dry-run` shows what would happen
-- [ ] Interactive prompt if neither merge/replace specified
-- [ ] Validates archive structure before importing
+- [x] `kanuka secrets import` command implemented
+- [x] Extracts tar.gz archive
+- [x] `--merge` flag adds new files, keeps existing
+- [x] `--replace` flag deletes existing, uses backup
+- [x] `--dry-run` shows what would happen
+- [x] Interactive prompt if neither merge/replace specified
+- [x] Validates archive structure before importing
 
 ### Technical Details
 
@@ -2055,12 +2055,12 @@ Create `test/integration/import/import_test.go`:
 
 ### Definition of Done
 
-- [ ] `kanuka secrets import` command implemented
-- [ ] Merge and replace modes work correctly
-- [ ] `--dry-run` flag works
-- [ ] Archive validation works
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `kanuka secrets import` command implemented
+- [x] Merge and replace modes work correctly
+- [x] `--dry-run` flag works
+- [x] Archive validation works
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 

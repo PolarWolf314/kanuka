@@ -50,6 +50,7 @@ func init() {
 	SecretsCmd.AddCommand(doctorCmd)
 	SecretsCmd.AddCommand(rotateCmd)
 	SecretsCmd.AddCommand(exportCmd)
+	SecretsCmd.AddCommand(importCmd)
 }
 
 // Helper functions for testing
@@ -89,6 +90,8 @@ func ResetGlobalState() {
 	resetRotateCommandState()
 	// Reset the export command flags
 	resetExportCommandState()
+	// Reset the import command flags
+	resetImportCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -175,6 +178,13 @@ func resetCobraFlagState() {
 	// Reset the export command flags specifically
 	if exportCmd != nil && exportCmd.Flags() != nil {
 		exportCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the import command flags specifically
+	if importCmd != nil && importCmd.Flags() != nil {
+		importCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}
