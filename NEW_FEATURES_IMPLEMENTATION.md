@@ -28,7 +28,7 @@ KAN-015 (Selective Encryption)      ─── DONE
      │
      └── KAN-016 (Init Monorepo)    ─── DONE
 
-KAN-017 (Documentation)             ─── Do last, covers all new features
+KAN-017 (Documentation)             ─── DONE
 ```
 
 ---
@@ -1651,17 +1651,17 @@ Add to commands:
 
 ### Acceptance Criteria
 
-- [ ] KANUKA_DATA_DIR removed from configuration docs
-- [ ] Audit log guide created
-- [ ] Log command guide created
-- [ ] Monorepo guide created
-- [ ] Encryption guide updated with selective encryption
-- [ ] Decryption guide updated with selective decryption
-- [ ] Command reference updated
-- [ ] FAQ updated
-- [ ] Sidebar updated
-- [ ] README updated
-- [ ] Docs build without errors
+- [x] KANUKA_DATA_DIR removed from configuration docs
+- [x] Audit log guide created
+- [x] Log command guide created
+- [x] Monorepo guide created
+- [x] Encryption guide updated with selective encryption
+- [x] Decryption guide updated with selective decryption
+- [x] Command reference updated
+- [x] FAQ updated
+- [x] Sidebar updated
+- [x] README updated
+- [x] Docs build without errors
 
 ### Testing Requirements
 
@@ -1674,11 +1674,11 @@ Verify no build errors and spot-check the generated pages.
 
 ### Definition of Done
 
-- [ ] All documentation files created/updated
-- [ ] Sidebar includes new pages
-- [ ] Docs build successfully
-- [ ] No broken internal links
-- [ ] README reflects new features
+- [x] All documentation files created/updated
+- [x] Sidebar includes new pages
+- [x] Docs build successfully
+- [x] No broken internal links
+- [x] README reflects new features
 
 ---
 

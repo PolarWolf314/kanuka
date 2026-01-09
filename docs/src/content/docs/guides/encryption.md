@@ -30,6 +30,37 @@ That's it! Kānuka will automatically encrypt the files, and name the encrypted
 secrets the same as the original with `.kanuka` added onto the end. You can now
 safely commit these files to your version control.
 
+## Encrypting specific files
+
+By default, `encrypt` processes all `.env` files in your project. You can also
+specify exactly which files to encrypt:
+
+```bash
+# Single file
+kanuka secrets encrypt .env
+
+# Multiple files
+kanuka secrets encrypt .env .env.local .env.production
+
+# Glob pattern (quote to prevent shell expansion)
+kanuka secrets encrypt "services/*/.env"
+
+# Recursive glob pattern
+kanuka secrets encrypt "**/.env.production"
+
+# All files in a directory
+kanuka secrets encrypt services/api/
+```
+
+This is particularly useful for:
+
+- **Monorepos** - Encrypt only specific services
+- **Gradual adoption** - Start with production secrets, add others later
+- **CI/CD pipelines** - Encrypt only the files that changed
+- **Debugging** - Re-encrypt just one file after modification
+
+See the [monorepo guide](/guides/monorepo/) for detailed workflows.
+
 ### Previewing encryption
 
 Use the `--dry-run` flag to preview which files would be encrypted without

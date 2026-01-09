@@ -52,6 +52,9 @@ export default defineConfig({
             "guides/doctor",
             "guides/export",
             "guides/import",
+            "guides/audit-log",
+            "guides/log",
+            "guides/monorepo",
           ],
         },
         {

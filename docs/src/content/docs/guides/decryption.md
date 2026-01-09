@@ -24,6 +24,36 @@ kanuka secrets decrypt
 That's it! Kānuka will automatically decrypt the files, and return the original
 `.env`, as long as you have access.
 
+## Decrypting specific files
+
+By default, `decrypt` processes all `.kanuka` files in your project. You can
+also specify exactly which files to decrypt:
+
+```bash
+# Single file
+kanuka secrets decrypt .env.kanuka
+
+# Multiple files
+kanuka secrets decrypt .env.kanuka .env.local.kanuka
+
+# Glob pattern (quote to prevent shell expansion)
+kanuka secrets decrypt "services/*/.env.kanuka"
+
+# Recursive glob pattern
+kanuka secrets decrypt "**/.env.production.kanuka"
+
+# All files in a directory
+kanuka secrets decrypt services/api/
+```
+
+This is particularly useful for:
+
+- **CI/CD pipelines** - Decrypt only the secrets needed for a specific job
+- **Monorepos** - Work with only the services you need
+- **Debugging** - Decrypt a single file to inspect its contents
+
+See the [monorepo guide](/guides/monorepo/) for detailed workflows.
+
 ## Previewing decryption
 
 Use the `--dry-run` flag to preview which files would be decrypted without
