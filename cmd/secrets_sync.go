@@ -6,8 +6,8 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -48,8 +48,8 @@ Use --dry-run to preview what would happen without making changes.`,
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -68,8 +68,8 @@ Use --dry-run to preview what would happen without making changes.`,
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-			finalMessage := color.RedString("✗") + " Failed to load your private key. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load your private key. Are you sure you have access?\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -86,8 +86,8 @@ Use --dry-run to preview what would happen without making changes.`,
 		result, err := secrets.SyncSecrets(privateKey, opts)
 		if err != nil {
 			Logger.Errorf("Sync failed: %v", err)
-			finalMessage := color.RedString("✗") + " Failed to sync secrets\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to sync secrets\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -102,7 +102,7 @@ Use --dry-run to preview what would happen without making changes.`,
 
 		// Handle case where no secrets needed processing.
 		if result.SecretsProcessed == 0 {
-			finalMessage := color.GreenString("✓") + " No encrypted files found. Nothing to sync."
+			finalMessage := ui.Success.Sprint("✓") + " No encrypted files found. Nothing to sync."
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -113,7 +113,7 @@ Use --dry-run to preview what would happen without making changes.`,
 		auditEntry.FilesCount = result.SecretsProcessed
 		audit.Log(auditEntry)
 
-		finalMessage := color.GreenString("✓") + " Secrets synced successfully\n" +
+		finalMessage := ui.Success.Sprint("✓") + " Secrets synced successfully\n" +
 			fmt.Sprintf("  Re-encrypted %d secret file(s) for %d user(s).\n", result.SecretsProcessed, result.UsersProcessed) +
 			"  New encryption key generated and distributed to all users."
 		spinner.FinalMSG = finalMessage
@@ -124,13 +124,13 @@ Use --dry-run to preview what would happen without making changes.`,
 // printSyncDryRun displays what would happen during a sync operation.
 func printSyncDryRun(result *secrets.SyncResult) {
 	fmt.Println()
-	fmt.Println(color.YellowString("[dry-run]") + " Would sync secrets:")
+	fmt.Println(ui.Warning.Sprint("[dry-run]") + " Would sync secrets:")
 	fmt.Println()
 
 	if result.SecretsProcessed == 0 {
 		fmt.Println("  No encrypted files found. Nothing to sync.")
 		fmt.Println()
-		fmt.Println(color.CyanString("No changes needed."))
+		fmt.Println(ui.Info.Sprint("No changes needed."))
 		return
 	}
 
@@ -144,5 +144,5 @@ func printSyncDryRun(result *secrets.SyncResult) {
 
 	fmt.Printf("  - Re-encrypt %d secret file(s)\n", result.SecretsProcessed)
 	fmt.Println()
-	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+	fmt.Println(ui.Info.Sprint("No changes made.") + " Run without --dry-run to execute.")
 }

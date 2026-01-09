@@ -14,7 +14,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -82,8 +82,8 @@ Examples:
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kanuka has not been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -103,7 +103,7 @@ Examples:
 		result.OutputPath = outputPath
 
 		if result.TotalFilesCount == 0 {
-			finalMessage := color.YellowString("⚠") + " No files found to export"
+			finalMessage := ui.Warning.Sprint("⚠") + " No files found to export"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -123,7 +123,7 @@ Examples:
 		audit.Log(auditEntry)
 
 		// Build summary message.
-		finalMessage := color.GreenString("✓") + " Exported secrets to " + color.YellowString(outputPath) + "\n\n" +
+		finalMessage := ui.Success.Sprint("✓") + " Exported secrets to " + ui.Path.Sprint(outputPath) + "\n\n" +
 			"Archive contents:\n"
 
 		if result.ConfigIncluded {
@@ -139,7 +139,7 @@ Examples:
 			finalMessage += fmt.Sprintf("  %d encrypted secret file(s)\n", result.SecretFileCount)
 		}
 
-		finalMessage += "\n" + color.CyanString("Note:") + " This archive contains encrypted data only.\n" +
+		finalMessage += "\n" + ui.Info.Sprint("Note:") + " This archive contains encrypted data only.\n" +
 			"      Private keys are NOT included."
 
 		spinner.FinalMSG = finalMessage

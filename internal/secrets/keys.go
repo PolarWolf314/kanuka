@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
-	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -110,7 +110,7 @@ func LoadPrivateKeyFromBytesWithPrompt(data []byte) (*rsa.PrivateKey, error) {
 		// Check if it's still a passphrase error (wrong passphrase)
 		if errors.Is(err, ErrPassphraseRequired) {
 			if attempt < maxAttempts {
-				fmt.Fprintln(os.Stderr, color.YellowString("✗")+" Incorrect passphrase. Please try again.")
+				fmt.Fprintln(os.Stderr, ui.Warning.Sprint("✗")+" Incorrect passphrase. Please try again.")
 			}
 			continue
 		}
@@ -159,7 +159,7 @@ func LoadPrivateKeyFromBytesWithTTYPrompt(data []byte) (*rsa.PrivateKey, error) 
 		// Check if it's still a passphrase error (wrong passphrase)
 		if errors.Is(err, ErrPassphraseRequired) {
 			if attempt < maxAttempts {
-				fmt.Fprintln(os.Stderr, color.YellowString("✗")+" Incorrect passphrase. Please try again.")
+				fmt.Fprintln(os.Stderr, ui.Warning.Sprint("✗")+" Incorrect passphrase. Please try again.")
 			}
 			continue
 		}

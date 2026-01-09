@@ -10,7 +10,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -673,11 +673,11 @@ func printDoctorResults(result DoctorResult) {
 		var statusIcon string
 		switch check.Status {
 		case CheckPass:
-			statusIcon = color.GreenString("✓")
+			statusIcon = ui.Success.Sprint("✓")
 		case CheckWarning:
-			statusIcon = color.YellowString("⚠")
+			statusIcon = ui.Warning.Sprint("⚠")
 		case CheckError:
-			statusIcon = color.RedString("✗")
+			statusIcon = ui.Error.Sprint("✗")
 		}
 		fmt.Printf("%s %s\n", statusIcon, check.Message)
 	}
@@ -686,10 +686,10 @@ func printDoctorResults(result DoctorResult) {
 	fmt.Println()
 	fmt.Printf("Summary: %d passed", result.Summary.Passed)
 	if result.Summary.Warnings > 0 {
-		fmt.Printf(", %s", color.YellowString(fmt.Sprintf("%d warning(s)", result.Summary.Warnings)))
+		fmt.Printf(", %s", ui.Warning.Sprint(fmt.Sprintf("%d warning(s)", result.Summary.Warnings)))
 	}
 	if result.Summary.Errors > 0 {
-		fmt.Printf(", %s", color.RedString(fmt.Sprintf("%d error(s)", result.Summary.Errors)))
+		fmt.Printf(", %s", ui.Error.Sprint(fmt.Sprintf("%d error(s)", result.Summary.Errors)))
 	}
 	fmt.Println()
 
@@ -698,7 +698,7 @@ func printDoctorResults(result DoctorResult) {
 		fmt.Println()
 		fmt.Println("Suggestions:")
 		for _, suggestion := range result.Suggestions {
-			fmt.Printf("  %s %s\n", color.CyanString("→"), suggestion)
+			fmt.Printf("  %s %s\n", ui.Info.Sprint("→"), suggestion)
 		}
 	}
 }

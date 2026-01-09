@@ -9,8 +9,8 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -59,8 +59,8 @@ Use --force to skip the confirmation prompt.`,
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			fmt.Println(color.RedString("✗") + " Kanuka has not been initialized")
-			fmt.Println(color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first")
+			fmt.Println(ui.Error.Sprint("✗") + " Kanuka has not been initialized")
+			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
 
@@ -71,7 +71,7 @@ Use --force to skip the confirmation prompt.`,
 		}
 
 		if len(orphans) == 0 {
-			fmt.Println(color.GreenString("✓") + " No orphaned entries found. Nothing to clean.")
+			fmt.Println(ui.Success.Sprint("✓") + " No orphaned entries found. Nothing to clean.")
 			return nil
 		}
 
@@ -115,7 +115,7 @@ Use --force to skip the confirmation prompt.`,
 		auditEntry.RemovedCount = len(orphans)
 		audit.Log(auditEntry)
 
-		fmt.Printf("%s Removed %d orphaned file(s)\n", color.GreenString("✓"), len(orphans))
+		fmt.Printf("%s Removed %d orphaned file(s)\n", ui.Success.Sprint("✓"), len(orphans))
 		return nil
 	},
 }

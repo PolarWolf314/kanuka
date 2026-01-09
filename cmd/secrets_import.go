@@ -13,7 +13,7 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -137,7 +137,7 @@ Examples:
 			var ok bool
 			mode, ok = promptForImportMode()
 			if !ok {
-				fmt.Println(color.YellowString("⚠") + " Import cancelled")
+				fmt.Println(ui.Warning.Sprint("⚠") + " Import cancelled")
 				return nil
 			}
 			// Restart spinner for the import operation.
@@ -159,7 +159,7 @@ Examples:
 		// Build summary message.
 		var finalMessage string
 		if importDryRunFlag {
-			finalMessage = color.CyanString("Dry run") + " - no changes made\n\n"
+			finalMessage = ui.Info.Sprint("Dry run") + " - no changes made\n\n"
 		} else {
 			// Log to audit trail.
 			modeStr := "merge"
@@ -171,7 +171,7 @@ Examples:
 			auditEntry.FilesCount = result.TotalFiles
 			audit.Log(auditEntry)
 
-			finalMessage = color.GreenString("✓") + " Imported secrets from " + color.YellowString(archivePath) + "\n\n"
+			finalMessage = ui.Success.Sprint("✓") + " Imported secrets from " + ui.Path.Sprint(archivePath) + "\n\n"
 		}
 
 		modeStr := "Merge"
@@ -189,7 +189,7 @@ Examples:
 		}
 
 		if !importDryRunFlag {
-			finalMessage += "\n" + color.CyanString("Note:") + " You may need to run " + color.YellowString("kanuka secrets decrypt") + " to decrypt secrets."
+			finalMessage += "\n" + ui.Info.Sprint("Note:") + " You may need to run " + ui.Code.Sprint("kanuka secrets decrypt") + " to decrypt secrets."
 		}
 
 		spinner.FinalMSG = finalMessage

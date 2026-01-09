@@ -10,10 +10,10 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -80,8 +80,8 @@ Examples:
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			finalMessage := color.RedString("✗") + " Kānuka has not been initialized\n" +
-				color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -96,7 +96,7 @@ Examples:
 			resolved, err := secrets.ResolveFiles(args, projectPath, false)
 			if err != nil {
 				Logger.Errorf("Failed to resolve file patterns: %v", err)
-				finalMessage := color.RedString("✗") + " " + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " " + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -112,7 +112,7 @@ Examples:
 		}
 		Logger.Debugf("Found %d .kanuka files", len(listOfKanukaFiles))
 		if len(listOfKanukaFiles) == 0 {
-			finalMessage := color.RedString("✗") + " No encrypted environment (" + color.YellowString(".kanuka") + ") files found in " + color.YellowString(projectPath)
+			finalMessage := ui.Error.Sprint("✗") + " No encrypted environment (" + ui.Path.Sprint(".kanuka") + ") files found in " + ui.Path.Sprint(projectPath)
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -142,9 +142,9 @@ Examples:
 		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
 		if err != nil {
 			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
-			finalMessage := color.RedString("✗") + " Failed to obtain your " +
-				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to obtain your " +
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -156,16 +156,16 @@ Examples:
 			keyData, err := utils.ReadStdin()
 			if err != nil {
 				Logger.Errorf("Failed to read private key from stdin: %v", err)
-				finalMessage := color.RedString("✗") + " Failed to read private key from stdin\n" +
-					color.RedString("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin\n" +
+					ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 			privateKey, err = secrets.LoadPrivateKeyFromBytesWithTTYPrompt(keyData)
 			if err != nil {
 				Logger.Errorf("Failed to parse private key from stdin: %v", err)
-				finalMessage := color.RedString("✗") + " Failed to parse private key from stdin\n" +
-					color.RedString("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to parse private key from stdin\n" +
+					ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -176,8 +176,8 @@ Examples:
 			privateKey, err = secrets.LoadPrivateKey(privateKeyPath)
 			if err != nil {
 				Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-				finalMessage := color.RedString("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
-					color.RedString("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
+					ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -198,9 +198,9 @@ Examples:
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 		if err != nil {
 			Logger.Errorf("Failed to decrypt symmetric key: %v", err)
-			finalMessage := color.RedString("✗") + " Failed to decrypt your " +
-				color.YellowString(".kanuka") + " file. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your " +
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 
 			spinner.FinalMSG = finalMessage
 			return nil
@@ -215,9 +215,9 @@ Examples:
 		Logger.Infof("Decrypting %d files", len(listOfKanukaFiles))
 		if err := secrets.DecryptFiles(symKey, listOfKanukaFiles, verbose); err != nil {
 			Logger.Errorf("Failed to decrypt files: %v", err)
-			finalMessage := color.RedString("✗") + " Failed to decrypt the project's " +
-				color.YellowString(".kanuka") + " files. Are you sure you have access?\n" +
-				color.RedString("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt the project's " +
+				ui.Path.Sprint(".kanuka") + " files. Are you sure you have access?\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -242,9 +242,9 @@ Examples:
 		Logger.WarnfUser("Decrypted .env files contain sensitive data - ensure they're in your .gitignore")
 		spinner.Restart()
 
-		finalMessage := color.GreenString("✓") + " Environment files decrypted successfully!\n" +
+		finalMessage := ui.Success.Sprint("✓") + " Environment files decrypted successfully!\n" +
 			"The following files were created:" + formattedListOfFiles +
-			color.CyanString("→") + " Your environment files are now ready to use"
+			ui.Info.Sprint("→") + " Your environment files are now ready to use"
 
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -255,7 +255,7 @@ func printDecryptDryRun(s *spinner.Spinner, kanukaFiles []string, projectPath st
 	s.Stop()
 
 	fmt.Println()
-	fmt.Println(color.YellowString("[dry-run]") + fmt.Sprintf(" Would decrypt %d encrypted file(s)", len(kanukaFiles)))
+	fmt.Println(ui.Warning.Sprint("[dry-run]") + fmt.Sprintf(" Would decrypt %d encrypted file(s)", len(kanukaFiles)))
 	fmt.Println()
 
 	fmt.Println("Files that would be created:")
@@ -273,22 +273,22 @@ func printDecryptDryRun(s *spinner.Spinner, kanukaFiles []string, projectPath st
 		envFullPath := strings.TrimSuffix(kanukaFile, ".kanuka")
 
 		// Check if target file exists.
-		status := color.GreenString("new file")
+		status := ui.Success.Sprint("new file")
 		if _, err := os.Stat(envFullPath); err == nil {
-			status = color.YellowString("exists - would be overwritten")
+			status = ui.Warning.Sprint("exists - would be overwritten")
 			overwriteCount++
 		}
 
-		fmt.Printf("  %s → %s (%s)\n", color.CyanString(relPath), envRelPath, status)
+		fmt.Printf("  %s → %s (%s)\n", ui.Path.Sprint(relPath), envRelPath, status)
 	}
 	fmt.Println()
 
 	if overwriteCount > 0 {
-		fmt.Printf(color.YellowString("⚠")+" Warning: %d existing file(s) would be overwritten.\n", overwriteCount)
+		fmt.Printf(ui.Warning.Sprint("⚠")+" Warning: %d existing file(s) would be overwritten.\n", overwriteCount)
 		fmt.Println()
 	}
 
-	fmt.Println(color.CyanString("No changes made.") + " Run without --dry-run to execute.")
+	fmt.Println(ui.Info.Sprint("No changes made.") + " Run without --dry-run to execute.")
 
 	s.FinalMSG = ""
 	return nil

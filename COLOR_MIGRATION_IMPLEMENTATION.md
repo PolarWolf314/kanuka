@@ -78,11 +78,12 @@ finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
 
 ---
 
-### KAN-020: Create `internal/ui` Package with Semantic Text Formatters
+### KAN-020: Create `internal/ui` Package with Semantic Text Formatters ✅ COMPLETE
 
 **Priority**: High  
 **Estimated Effort**: Small (1-2 hours)  
-**Dependencies**: None
+**Dependencies**: None  
+**Status**: Completed
 
 #### Context
 
@@ -269,19 +270,20 @@ func TestFormatterSprintf(t *testing.T) {
 
 #### Acceptance Criteria
 
-- [ ] `internal/ui/text.go` exists with all formatters defined
-- [ ] `internal/ui/text_test.go` exists with comprehensive tests
-- [ ] All tests pass: `go test -v ./internal/ui/...`
-- [ ] Linter passes: `golangci-lint run ./internal/ui/...`
-- [ ] Package can be imported: `import "github.com/PolarWolf314/kanuka/internal/ui"`
+- [x] `internal/ui/text.go` exists with all formatters defined
+- [x] `internal/ui/text_test.go` exists with comprehensive tests
+- [x] All tests pass: `go test -v ./internal/ui/...`
+- [x] Linter passes: `golangci-lint run ./internal/ui/...`
+- [x] Package can be imported: `import "github.com/PolarWolf314/kanuka/internal/ui"`
 
 ---
 
-### KAN-021: Migrate `secrets_clean.go` to Semantic UI Formatters (Pilot)
+### KAN-021: Migrate `secrets_clean.go` to Semantic UI Formatters (Pilot) ✅ COMPLETE
 
 **Priority**: High  
 **Estimated Effort**: Small (30 minutes)  
-**Dependencies**: KAN-020
+**Dependencies**: KAN-020  
+**Status**: Completed
 
 #### Context
 
@@ -360,20 +362,21 @@ Expected NO_COLOR output:
 
 #### Acceptance Criteria
 
-- [ ] `cmd/secrets_clean.go` uses `internal/ui` instead of `fatih/color`
-- [ ] No direct `color.XxxString()` calls remain in the file
-- [ ] Build succeeds: `go build ./...`
-- [ ] Linter passes: `golangci-lint run ./cmd/secrets_clean.go`
-- [ ] Output looks correct with colors enabled
-- [ ] Output looks correct with `NO_COLOR=1` (commands in backticks)
+- [x] `cmd/secrets_clean.go` uses `internal/ui` instead of `fatih/color`
+- [x] No direct `color.XxxString()` calls remain in the file
+- [x] Build succeeds: `go build ./...`
+- [x] Linter passes: `golangci-lint run ./cmd/secrets_clean.go`
+- [x] Output looks correct with colors enabled
+- [x] Output looks correct with `NO_COLOR=1` (commands in backticks)
 
 ---
 
-### KAN-022: Migrate `secrets_log.go` to Semantic UI Formatters
+### KAN-022: Migrate `secrets_log.go` to Semantic UI Formatters ✅ COMPLETE
 
 **Priority**: Medium  
 **Estimated Effort**: Small (30 minutes)  
-**Dependencies**: KAN-020
+**Dependencies**: KAN-020  
+**Status**: Completed
 
 #### Context
 
@@ -409,17 +412,18 @@ NO_COLOR=1 kanuka secrets log
 
 #### Acceptance Criteria
 
-- [ ] No direct `color.XxxString()` calls remain
-- [ ] Build and linter pass
-- [ ] Output correct with and without NO_COLOR
+- [x] No direct `color.XxxString()` calls remain
+- [x] Build and linter pass
+- [x] Output correct with and without NO_COLOR
 
 ---
 
-### KAN-023: Migrate `secrets_access.go` to Semantic UI Formatters
+### KAN-023: Migrate `secrets_access.go` to Semantic UI Formatters ✅ COMPLETE
 
 **Priority**: Medium  
 **Estimated Effort**: Small (45 minutes)  
-**Dependencies**: KAN-020
+**Dependencies**: KAN-020  
+**Status**: Completed
 
 #### Context
 
@@ -485,19 +489,20 @@ NO_COLOR=1 kanuka secrets access
 
 #### Acceptance Criteria
 
-- [ ] No direct `color.XxxString()` calls remain
-- [ ] Build and linter pass
-- [ ] Status legend displays correctly
-- [ ] Project name highlighted/quoted appropriately
-- [ ] "(unknown)" shows as muted or "(unknown)" with NO_COLOR
+- [x] No direct `color.XxxString()` calls remain
+- [x] Build and linter pass
+- [x] Status legend displays correctly
+- [x] Project name highlighted/quoted appropriately
+- [x] "(unknown)" shows as muted or "(unknown)" with NO_COLOR
 
 ---
 
-### KAN-024: Migrate `secrets_init.go` to Semantic UI Formatters
+### KAN-024: Migrate `secrets_init.go` to Semantic UI Formatters ✅ COMPLETE
 
 **Priority**: Medium  
 **Estimated Effort**: Medium (1 hour)  
-**Dependencies**: KAN-020
+**Dependencies**: KAN-020  
+**Status**: Completed
 
 #### Context
 
@@ -562,10 +567,10 @@ NO_COLOR=1 kanuka secrets init --yes
 
 #### Acceptance Criteria
 
-- [ ] No direct `color.XxxString()` calls remain
-- [ ] Build and linter pass
-- [ ] All command suggestions appear in backticks with NO_COLOR
-- [ ] Monorepo tip commands are properly formatted
+- [x] No direct `color.XxxString()` calls remain
+- [x] Build and linter pass
+- [x] All command suggestions appear in backticks with NO_COLOR
+- [x] Monorepo tip commands are properly formatted
 
 ---
 

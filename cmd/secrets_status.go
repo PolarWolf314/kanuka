@@ -10,8 +10,8 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -89,8 +89,8 @@ Use --json for machine-readable output.`,
 				fmt.Println(`{"error": "Kanuka has not been initialized"}`)
 				return nil
 			}
-			fmt.Println(color.RedString("✗") + " Kanuka has not been initialized")
-			fmt.Println(color.CyanString("→") + " Run " + color.YellowString("kanuka secrets init") + " first")
+			fmt.Println(ui.Error.Sprint("✗") + " Kanuka has not been initialized")
+			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
 
@@ -251,11 +251,11 @@ func outputStatusJSON(result StatusResult) error {
 
 // printStatusTable prints a formatted table of file statuses.
 func printStatusTable(result StatusResult) {
-	fmt.Printf("Project: %s\n", color.CyanString(result.ProjectName))
+	fmt.Printf("Project: %s\n", ui.Highlight.Sprint(result.ProjectName))
 	fmt.Println()
 
 	if len(result.Files) == 0 {
-		fmt.Println(color.GreenString("✓") + " No secret files found.")
+		fmt.Println(ui.Success.Sprint("✓") + " No secret files found.")
 		return
 	}
 
@@ -287,13 +287,13 @@ func printStatusTable(result StatusResult) {
 		var statusStr string
 		switch file.Status {
 		case StatusCurrent:
-			statusStr = color.GreenString("✓") + " encrypted (up to date)"
+			statusStr = ui.Success.Sprint("✓") + " encrypted (up to date)"
 		case StatusStale:
-			statusStr = color.YellowString("⚠") + " stale (plaintext modified after encryption)"
+			statusStr = ui.Warning.Sprint("⚠") + " stale (plaintext modified after encryption)"
 		case StatusUnencrypted:
-			statusStr = color.RedString("✗") + " not encrypted"
+			statusStr = ui.Error.Sprint("✗") + " not encrypted"
 		case StatusEncryptedOnly:
-			statusStr = color.HiBlackString("◌") + " encrypted only (no plaintext)"
+			statusStr = ui.Muted.Sprint("◌") + " encrypted only (no plaintext)"
 		}
 
 		fmt.Printf("  %-*s  %s\n", pathWidth, displayPath, statusStr)
@@ -308,11 +308,11 @@ func printStatusTable(result StatusResult) {
 	}
 	if result.Summary.Stale > 0 {
 		fmt.Printf("  %d file(s) stale (run '%s' to update)\n",
-			result.Summary.Stale, color.YellowString("kanuka secrets encrypt"))
+			result.Summary.Stale, ui.Code.Sprint("kanuka secrets encrypt"))
 	}
 	if result.Summary.Unencrypted > 0 {
 		fmt.Printf("  %d file(s) not encrypted (run '%s' to secure)\n",
-			result.Summary.Unencrypted, color.YellowString("kanuka secrets encrypt"))
+			result.Summary.Unencrypted, ui.Code.Sprint("kanuka secrets encrypt"))
 	}
 	if result.Summary.EncryptedOnly > 0 {
 		fmt.Printf("  %d file(s) encrypted only (plaintext removed, this is normal)\n", result.Summary.EncryptedOnly)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
-	"github.com/fatih/color"
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -52,8 +52,8 @@ Examples:
 
 		// Validate device name format.
 		if !isValidDeviceName(deviceName) {
-			finalMessage := color.RedString("✗") + " Invalid device name: " + color.YellowString(deviceName) + "\n" +
-				color.CyanString("→") + " Device name must be alphanumeric with hyphens and underscores only"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid device name: " + ui.Highlight.Sprint(deviceName) + "\n" +
+				ui.Info.Sprint("→") + " Device name must be alphanumeric with hyphens and underscores only"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -67,15 +67,15 @@ Examples:
 			// Try to get from current project.
 			ConfigLogger.Debugf("No project UUID provided, checking current project")
 			if err := configs.InitProjectSettings(); err != nil {
-				finalMessage := color.RedString("✗") + " Failed to initialize project settings: " + err.Error() + "\n" +
-					color.CyanString("→") + " Use " + color.YellowString("--project-uuid") + " to specify a project"
+				finalMessage := ui.Error.Sprint("✗") + " Failed to initialize project settings: " + err.Error() + "\n" +
+					ui.Info.Sprint("→") + " Use " + ui.Flag.Sprint("--project-uuid") + " to specify a project"
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 
 			if configs.ProjectKanukaSettings.ProjectPath == "" {
-				finalMessage := color.RedString("✗") + " Not in a Kānuka project directory\n" +
-					color.CyanString("→") + " Use " + color.YellowString("--project-uuid") + " to specify a project"
+				finalMessage := ui.Error.Sprint("✗") + " Not in a Kānuka project directory\n" +
+					ui.Info.Sprint("→") + " Use " + ui.Flag.Sprint("--project-uuid") + " to specify a project"
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -89,8 +89,8 @@ Examples:
 		}
 
 		if projectUUID == "" {
-			finalMessage := color.RedString("✗") + " Could not determine project UUID\n" +
-				color.CyanString("→") + " Use " + color.YellowString("--project-uuid") + " to specify a project"
+			finalMessage := ui.Error.Sprint("✗") + " Could not determine project UUID\n" +
+				ui.Info.Sprint("→") + " Use " + ui.Flag.Sprint("--project-uuid") + " to specify a project"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -110,7 +110,7 @@ Examples:
 		// Check if there's an existing device name for this project.
 		existingEntry, hasExisting := userConfig.Projects[projectUUID]
 		if hasExisting && existingEntry.DeviceName == deviceName {
-			finalMessage := color.YellowString("⚠") + " Device name is already set to " + color.CyanString(deviceName) + " for this project"
+			finalMessage := ui.Warning.Sprint("⚠") + " Device name is already set to " + ui.Highlight.Sprint(deviceName) + " for this project"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -143,16 +143,16 @@ Examples:
 		// Build success message.
 		var finalMessage string
 		if hasExisting && existingEntry.DeviceName != "" {
-			finalMessage = color.GreenString("✓") + " Device name updated from " + color.YellowString(existingEntry.DeviceName) + " to " + color.CyanString(deviceName)
+			finalMessage = ui.Success.Sprint("✓") + " Device name updated from " + ui.Highlight.Sprint(existingEntry.DeviceName) + " to " + ui.Highlight.Sprint(deviceName)
 		} else {
-			finalMessage = color.GreenString("✓") + " Device name set to " + color.CyanString(deviceName)
+			finalMessage = ui.Success.Sprint("✓") + " Device name set to " + ui.Highlight.Sprint(deviceName)
 		}
 
 		// Try to get project name for display.
 		if configs.ProjectKanukaSettings.ProjectPath != "" {
 			projectConfig, err := configs.LoadProjectConfig()
 			if err == nil && projectConfig.Project.Name != "" {
-				finalMessage += " for project " + color.YellowString(projectConfig.Project.Name)
+				finalMessage += " for project " + ui.Highlight.Sprint(projectConfig.Project.Name)
 			}
 		}
 
