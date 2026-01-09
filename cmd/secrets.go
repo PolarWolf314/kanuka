@@ -44,6 +44,7 @@ func init() {
 	SecretsCmd.AddCommand(revokeCmd)
 	SecretsCmd.AddCommand(initCmd)
 	SecretsCmd.AddCommand(syncCmd)
+	SecretsCmd.AddCommand(accessCmd)
 }
 
 // Helper functions for testing
@@ -71,6 +72,8 @@ func ResetGlobalState() {
 	resetDecryptCommandState()
 	// Reset the sync command flags
 	resetSyncCommandState()
+	// Reset the access command flags
+	resetAccessCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -115,6 +118,13 @@ func resetCobraFlagState() {
 	// Reset the sync command flags specifically
 	if syncCmd != nil && syncCmd.Flags() != nil {
 		syncCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the access command flags specifically
+	if accessCmd != nil && accessCmd.Flags() != nil {
+		accessCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}

@@ -848,12 +848,12 @@ $ kanuka secrets access --json
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets access` command implemented
-- [ ] Shows all users with their UUID, email (if available), and status
-- [ ] Status correctly determined based on file existence
-- [ ] `--json` flag outputs machine-readable JSON
-- [ ] Summary shows counts by status
-- [ ] Works in non-initialized projects (shows helpful error)
+- [x] `kanuka secrets access` command implemented
+- [x] Shows all users with their UUID, email (if available), and status
+- [x] Status correctly determined based on file existence
+- [x] `--json` flag outputs machine-readable JSON
+- [x] Summary shows counts by status
+- [x] Works in non-initialized projects (shows helpful error)
 
 ### Technical Details
 
@@ -969,12 +969,12 @@ Create `test/integration/access/access_test.go`:
 
 ### Definition of Done
 
-- [ ] `kanuka secrets access` command implemented
-- [ ] Status correctly determined for all user states
-- [ ] `--json` flag works
-- [ ] Output is clear and readable
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] `kanuka secrets access` command implemented
+- [x] Status correctly determined for all user states
+- [x] `--json` flag works
+- [x] Output is clear and readable
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 
