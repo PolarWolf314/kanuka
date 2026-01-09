@@ -443,11 +443,11 @@ Create `internal/secrets/sync_test.go`:
 
 ### Definition of Done
 
-- [ ] `SyncSecrets()` function implemented
-- [ ] `SyncOptions` and `SyncResult` structs defined
-- [ ] All operations atomic (no partial writes on failure)
-- [ ] Unit tests pass
-- [ ] `golangci-lint run` passes
+- [x] `SyncSecrets()` function implemented
+- [x] `SyncOptions` and `SyncResult` structs defined
+- [x] All operations atomic (no partial writes on failure)
+- [x] Unit tests pass
+- [x] `golangci-lint run` passes
 
 ---
 
@@ -613,7 +613,7 @@ Create `test/integration/sync/sync_test.go`:
 - [x] `kanuka secrets sync` command implemented
 - [x] `--dry-run` flag works correctly
 - [x] Help text is clear and complete
-- [ ] Integration tests pass
+- [x] Integration tests pass
 - [x] `golangci-lint run` passes
 
 ---
@@ -674,11 +674,11 @@ $ kanuka secrets revoke --user alice@example.com
 
 ### Acceptance Criteria
 
-- [ ] After revoke, all secret files are re-encrypted with a new symmetric key
-- [ ] Revoked user's old symmetric key cannot decrypt the new files
-- [ ] All remaining users can still decrypt with their keys
-- [ ] Operation is atomic (if it fails, nothing changes)
-- [ ] Verbose output shows progress of re-encryption
+- [x] After revoke, all secret files are re-encrypted with a new symmetric key
+- [x] Revoked user's old symmetric key cannot decrypt the new files
+- [x] All remaining users can still decrypt with their keys
+- [x] Operation is atomic (if it fails, nothing changes)
+- [x] Verbose output shows progress of re-encryption
 
 ### Technical Details
 
@@ -774,12 +774,12 @@ To verify the fix works:
 
 ### Definition of Done
 
-- [ ] Revoke calls sync after removing user
-- [ ] Secret files are re-encrypted with new key
-- [ ] Old symmetric key cannot decrypt new files
-- [ ] Remaining users can still decrypt
-- [ ] Integration tests pass
-- [ ] `golangci-lint run` passes
+- [x] Revoke calls sync after removing user
+- [x] Secret files are re-encrypted with new key
+- [x] Old symmetric key cannot decrypt new files
+- [x] Remaining users can still decrypt
+- [x] Integration tests pass
+- [x] `golangci-lint run` passes
 
 ---
 

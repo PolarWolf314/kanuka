@@ -481,12 +481,22 @@ func printRevokeDryRun(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 	fmt.Println()
 
-	// Show key rotation impact.
+	// Show re-encryption impact.
 	allUsers, err := secrets.GetAllUsersInProject()
 	if err == nil && len(allUsers) > len(ctx.UUIDsRevoked) {
 		remainingCount := len(allUsers) - len(ctx.UUIDsRevoked)
 		fmt.Println("Post-revocation actions:")
-		fmt.Printf("  - Symmetric key would be rotated for %d remaining user(s)\n", remainingCount)
+		fmt.Printf("  - Generate new encryption key\n")
+		fmt.Printf("  - Re-encrypt symmetric key for %d remaining user(s)\n", remainingCount)
+
+		// Count secret files that would be re-encrypted.
+		projectPath := configs.ProjectKanukaSettings.ProjectPath
+		if projectPath != "" {
+			kanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
+			if err == nil && len(kanukaFiles) > 0 {
+				fmt.Printf("  - Re-encrypt %d secret file(s) with new key\n", len(kanukaFiles))
+			}
+		}
 		fmt.Println()
 	}
 
@@ -579,8 +589,8 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 
 	if len(allUsers) > 0 {
-		spinner.Suffix = " Rotating symmetric key for remaining users..."
-		Logger.Infof("Rotating symmetric key for %d remaining users", len(allUsers))
+		spinner.Suffix = " Re-encrypting secrets for remaining users..."
+		Logger.Infof("Re-encrypting secrets for %d remaining users", len(allUsers))
 
 		privateKey, err := loadRevokePrivateKey(projectUUID)
 		if err != nil {
@@ -594,14 +604,24 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 			return nil
 		}
 
-		if err := secrets.RotateSymmetricKey(currentUserUUID, privateKey, verbose); err != nil {
-			Logger.Errorf("Failed to rotate symmetric key: %v", err)
-			finalMessage := color.RedString("✗") + " Files were revoked but failed to rotate key: " + err.Error() + "\n"
+		// Use SyncSecrets to re-encrypt all secrets with a new key.
+		// This ensures the revoked user cannot decrypt any secrets, even if they
+		// previously copied the encrypted files and had the old symmetric key.
+		syncOpts := secrets.SyncOptions{
+			ExcludeUsers: ctx.UUIDsRevoked,
+			Verbose:      verbose,
+			Debug:        debug,
+		}
+
+		syncResult, err := secrets.SyncSecrets(privateKey, syncOpts)
+		if err != nil {
+			Logger.Errorf("Failed to re-encrypt secrets: %v", err)
+			finalMessage := color.RedString("✗") + " Files were revoked but failed to re-encrypt secrets: " + err.Error() + "\n"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
-		Logger.Infof("Symmetric key rotated successfully")
+		Logger.Infof("Secrets re-encrypted successfully: %d secrets for %d users", syncResult.SecretsProcessed, syncResult.UsersProcessed)
 	}
 
 	Logger.Infof("Files revocation completed successfully for: %s", displayName)
@@ -615,7 +635,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 	finalMessage += "\n"
 	if len(allUsers) > 0 {
-		finalMessage += color.CyanString("→") + " Symmetric key has been rotated for remaining users\n"
+		finalMessage += color.CyanString("→") + " All secrets have been re-encrypted with a new key\n"
 	}
 	finalMessage += color.YellowString("⚠") + color.RedString(" Warning: ") + color.YellowString(displayName) + " may still have access to old secrets from their local git history.\n" +
 		color.CyanString("→") + " If necessary, rotate your actual secret values after this revocation.\n"
