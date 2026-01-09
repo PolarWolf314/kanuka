@@ -9,9 +9,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is set at build time via ldflags.
+var version = "dev"
+
 var rootCmd = &cobra.Command{
-	Use:   "kanuka",
-	Short: "Kānuka - A CLI for secure secrets management.",
+	Version: version,
+	Use:     "kanuka",
+	Short:   "Kānuka - A CLI for secure secrets management.",
 	Long: `Kānuka is a powerful command-line tool for securely storing and managing environment secrets.
 
 Features:
