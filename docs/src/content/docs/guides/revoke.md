@@ -1,10 +1,10 @@
 ---
 title: Revoking Someone's Access
-description: A guide to revoking a user's access to a repo's secrets using Kanuka.
+description: A guide to revoking a user's access to a repo's secrets using Kānuka.
 ---
 
 When a team member leaves or a device is compromised, you can revoke their access
-to the project's secrets using Kanuka.
+to the project's secrets using Kānuka.
 
 ## Previewing revocation
 
@@ -37,7 +37,7 @@ This removes:
 
 ### Multiple devices confirmation
 
-If the user has multiple devices registered, Kanuka will ask for confirmation:
+If the user has multiple devices registered, Kānuka will ask for confirmation:
 
 ```bash
 $ kanuka secrets revoke --user alice@example.com
@@ -82,7 +82,7 @@ This removes both the encrypted symmetric key and the corresponding public key.
 
 ## What happens after revocation
 
-When you revoke a user, Kanuka automatically:
+When you revoke a user, Kānuka automatically:
 
 1. **Removes their files** - Public key and encrypted symmetric key are deleted
 2. **Updates the config** - Their entry is removed from `.kanuka/config.toml`
@@ -141,7 +141,7 @@ echo "$KANUKA_PRIVATE_KEY" | kanuka secrets revoke --user alice@example.com --ye
 Note the `--yes` flag to skip confirmation prompts in automated environments.
 
 :::tip
-If your private key is passphrase-protected, Kanuka will prompt for the
+If your private key is passphrase-protected, Kānuka will prompt for the
 passphrase via `/dev/tty`, allowing you to pipe the key while still entering
 the passphrase interactively.
 :::

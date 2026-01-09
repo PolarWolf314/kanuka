@@ -1,6 +1,6 @@
 ---
 title: Cleaning Orphaned Entries
-description: A guide to removing orphaned keys and inconsistent state using Kanuka.
+description: A guide to removing orphaned keys and inconsistent state using Kānuka.
 ---
 
 The clean command removes orphaned entries detected by the `access` command.

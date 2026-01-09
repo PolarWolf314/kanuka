@@ -1,9 +1,9 @@
 ---
 title: Registering Other Users
-description: A guide to giving access to a repo's secrets using Kanuka.
+description: A guide to giving access to a repo's secrets using Kānuka.
 ---
 
-Kanuka uses a symmetric key to encrypt and decrypt files, and uses RSA key
+Kānuka uses a symmetric key to encrypt and decrypt files, and uses RSA key
 pairs to encrypt the symmetric key. Any user who can decrypt the symmetric key
 can grant access to others.
 
@@ -25,7 +25,7 @@ Commit these changes and they'll have access after pulling.
 
 ### Re-registering existing users
 
-If you try to register a user who already has access, Kanuka will warn you:
+If you try to register a user who already has access, Kānuka will warn you:
 
 ```bash
 $ kanuka secrets register --user alice@example.com
@@ -60,7 +60,7 @@ available, and shows which files would be created.
 ### Multiple devices
 
 Users can have multiple devices registered under the same email. When you register
-a user by email, Kanuka registers all of their devices that have public keys in
+a user by email, Kānuka registers all of their devices that have public keys in
 the project:
 
 ```bash
@@ -75,7 +75,7 @@ You can register users who haven't yet created keys in the project by providing
 their public key directly.
 
 :::tip
-Kanuka accepts both OpenSSH and PEM formats for RSA public keys.
+Kānuka accepts both OpenSSH and PEM formats for RSA public keys.
 :::
 
 ### Passing a key file path
@@ -86,7 +86,7 @@ Register a user by providing the path to their public key file:
 kanuka secrets register --file path/to/their-key.pub
 ```
 
-Kanuka will:
+Kānuka will:
 1. Copy the public key to `.kanuka/public_keys/`
 2. Create their encrypted symmetric key
 3. Add them to the project configuration
@@ -129,7 +129,7 @@ This is useful for automated onboarding workflows where you need to register
 new team members without manual intervention.
 
 :::tip
-If your private key is passphrase-protected, Kanuka will prompt for the
+If your private key is passphrase-protected, Kānuka will prompt for the
 passphrase via `/dev/tty`, allowing you to pipe the key while still entering
 the passphrase interactively.
 :::

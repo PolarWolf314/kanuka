@@ -137,7 +137,7 @@ This approach:
 - Keeps your private key out of shell history (the key content isn't in the command)
 
 :::tip
-If your private key is passphrase-protected, Kanuka will prompt for the
+If your private key is passphrase-protected, Kānuka will prompt for the
 passphrase via `/dev/tty`, allowing you to pipe the key while still entering
 the passphrase interactively.
 :::

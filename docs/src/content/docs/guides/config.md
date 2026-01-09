@@ -1,16 +1,16 @@
 ---
 title: Configuration Commands
-description: A guide to managing Kanuka configuration settings.
+description: A guide to managing Kānuka configuration settings.
 ---
 
-Kanuka provides configuration commands for managing user and project settings,
+Kānuka provides configuration commands for managing user and project settings,
 including device names and user information. To understand how configuration
 works at a deeper level, see the [configuration concepts](/concepts/configuration/)
 page.
 
 ## First-Time Setup
 
-When you first use Kanuka, you need to set up your user identity. This is done
+When you first use Kānuka, you need to set up your user identity. This is done
 automatically when you run `kanuka secrets init`, but you can also do it
 explicitly:
 
@@ -123,7 +123,7 @@ kanuka config rename-device --user alice@example.com --old-name macbook personal
 
 The `--old-name` flag is required when a user has multiple devices registered.
 
-When you rename your own device, Kanuka automatically updates both the project
+When you rename your own device, Kānuka automatically updates both the project
 configuration and your local user configuration to keep them in sync.
 
 ## Device Name Requirements

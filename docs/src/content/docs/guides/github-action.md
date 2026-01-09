@@ -1,20 +1,20 @@
 ---
 title: GitHub Action
-description: Use the official Kanuka GitHub Action to decrypt secrets in CI/CD workflows.
+description: Use the official Kānuka GitHub Action to decrypt secrets in CI/CD workflows.
 ---
 
-The official [Kanuka GitHub Action](https://github.com/PolarWolf314/kanuka-actions)
-simplifies using Kanuka in your GitHub Actions workflows. It handles installing
-Kanuka and configuring your private key securely.
+The official [Kānuka GitHub Action](https://github.com/PolarWolf314/kanuka-actions)
+simplifies using Kānuka in your GitHub Actions workflows. It handles installing
+Kānuka and configuring your private key securely.
 
 ## Why use the GitHub Action?
 
-While you can manually install Kanuka and configure keys in your workflows, the
+While you can manually install Kānuka and configure keys in your workflows, the
 GitHub Action provides several benefits:
 
-- **Simplified setup** - One step to install and configure Kanuka
+- **Simplified setup** - One step to install and configure Kānuka
 - **Secure key handling** - Automatically masks secrets and sets restrictive permissions
-- **Version management** - Easy to pin or update Kanuka versions
+- **Version management** - Easy to pin or update Kānuka versions
 - **Cross-platform** - Works on Linux and macOS runners
 
 ## Installation
@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Kanuka
+      - name: Setup Kānuka
         uses: PolarWolf314/kanuka-actions@v1
         with:
           private-key: ${{ secrets.KANUKA_PRIVATE_KEY }}
@@ -60,7 +60,7 @@ jobs:
 |-------|-------------|----------|---------|
 | `private-key` | Private key content for decryption | Yes | - |
 | `passphrase` | Passphrase for the private key, if encrypted | No | `''` |
-| `version` | Kanuka version to install (e.g., `1.2.0` or `latest`) | No | `latest` |
+| `version` | Kānuka version to install (e.g., `1.2.0` or `latest`) | No | `latest` |
 
 ## Outputs
 
@@ -73,7 +73,7 @@ jobs:
 ### With passphrase-protected key
 
 ```yaml
-- name: Setup Kanuka
+- name: Setup Kānuka
   uses: PolarWolf314/kanuka-actions@v1
   with:
     private-key: ${{ secrets.KANUKA_PRIVATE_KEY }}
@@ -83,7 +83,7 @@ jobs:
 ### Pinning a specific version
 
 ```yaml
-- name: Setup Kanuka
+- name: Setup Kānuka
   uses: PolarWolf314/kanuka-actions@v1
   with:
     private-key: ${{ secrets.KANUKA_PRIVATE_KEY }}
@@ -93,7 +93,7 @@ jobs:
 ### Decrypt specific files
 
 ```yaml
-- name: Setup Kanuka
+- name: Setup Kānuka
   uses: PolarWolf314/kanuka-actions@v1
   with:
     private-key: ${{ secrets.KANUKA_PRIVATE_KEY }}
@@ -114,7 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Kanuka
+      - name: Setup Kānuka
         uses: PolarWolf314/kanuka-actions@v1
         with:
           private-key: ${{ secrets.KANUKA_PRIVATE_KEY }}
@@ -141,7 +141,7 @@ store sensitive credentials.
 
 ## Alternative: Manual setup
 
-If you prefer not to use the GitHub Action, you can set up Kanuka manually.
+If you prefer not to use the GitHub Action, you can set up Kānuka manually.
 See the [CI/CD section in the decryption guide](/guides/decryption/#using-in-cicd-pipelines)
 for examples using `--private-key-stdin`.
 

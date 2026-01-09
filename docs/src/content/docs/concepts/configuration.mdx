@@ -1,9 +1,9 @@
 ---
 title: Configuration System
-description: Understanding user and project configuration in Kanuka.
+description: Understanding user and project configuration in Kānuka.
 ---
 
-Kanuka uses two separate configuration files to manage identity and settings:
+Kānuka uses two separate configuration files to manage identity and settings:
 a **user configuration** that belongs to you, and a **project configuration**
 that is shared with your team.
 
@@ -74,7 +74,7 @@ macbook = { created_at = "2025-01-05T09:00:00Z" }
 
 ## The Identity Hierarchy
 
-Kanuka uses a three-level hierarchy to identify encryption keys:
+Kānuka uses a three-level hierarchy to identify encryption keys:
 
 import { Steps } from '@astrojs/starlight/components';
 
@@ -99,15 +99,15 @@ This hierarchy allows for flexible key management:
 
 ## How the Configs Interact
 
-When you run Kanuka commands, both configuration files work together:
+When you run Kānuka commands, both configuration files work together:
 
-1. **During `secrets init`:** Kanuka reads your user config to get your email
+1. **During `secrets init`:** Kānuka reads your user config to get your email
    and device name, then creates entries in the project config.
 
-2. **During `secrets create`:** Kanuka uses your user UUID to create a device
+2. **During `secrets create`:** Kānuka uses your user UUID to create a device
    entry in the project config, and records the project in your user config.
 
-3. **During `secrets encrypt/decrypt`:** Kanuka looks up your user UUID in
+3. **During `secrets encrypt/decrypt`:** Kānuka looks up your user UUID in
    the project config to find your encrypted key file.
 
 4. **During `config rename-device`:** If you rename your own device, both

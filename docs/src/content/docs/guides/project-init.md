@@ -1,27 +1,27 @@
 ---
 title: Project Initialisation
-description: A guide to initialising your first Kanuka project.
+description: A guide to initialising your first Kānuka project.
 ---
 
-To use Kanuka on your project, it needs to be initialised. Provided Kanuka
+To use Kānuka on your project, it needs to be initialised. Provided Kānuka
 hasn't already been initialised, it will automatically create the necessary
 configuration files for your repository. You don't need any `.env` files
-(secrets) to get started, as Kanuka can work, even on an empty folder.
+(secrets) to get started, as Kānuka can work, even on an empty folder.
 
 ## Getting Started
 
-To initialise Kanuka on a new project, run the following commands:
+To initialise Kānuka on a new project, run the following commands:
 
 ```bash
 # Create the directory for your new project
 mkdir my_new_project
 # Navigate to the project
 cd my_new_project
-# Initialise Kanuka
+# Initialise Kānuka
 kanuka secrets init
 ```
 
-That's it! If you want to initialise Kanuka on an existing project, just
+That's it! If you want to initialise Kānuka on an existing project, just
 navigate to the root of that project and run:
 
 ```bash
@@ -30,7 +30,7 @@ kanuka secrets init
 
 ## First-Time User Setup
 
-If this is your first time using Kanuka, the `secrets init` command will
+If this is your first time using Kānuka, the `secrets init` command will
 automatically prompt you to set up your user identity:
 
 ```bash
@@ -39,7 +39,7 @@ $ kanuka secrets init
 
 Running initial setup...
 
-Welcome to Kanuka! Let's set up your identity.
+Welcome to Kānuka! Let's set up your identity.
 
 Email address: alice@example.com
 Display name (optional): Alice Smith
@@ -56,7 +56,7 @@ Your settings:
 Initializing project...
 ```
 
-This setup only happens once. On subsequent projects, Kanuka will use your
+This setup only happens once. On subsequent projects, Kānuka will use your
 existing identity.
 
 You can also set up your identity before initializing any projects by running
@@ -112,4 +112,4 @@ Additionally, on your local machine:
 
 To learn more about `kanuka secrets init`, see the [project structure concepts](/concepts/structure), the [project configuration concepts](/concepts/project-configuration/), and the [command reference](/reference/references).
 
-Or, continue reading to learn how to encrypt secrets using Kanuka.
+Or, continue reading to learn how to encrypt secrets using Kānuka.

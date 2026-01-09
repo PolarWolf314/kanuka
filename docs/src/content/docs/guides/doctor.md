@@ -1,9 +1,9 @@
 ---
 title: Running Health Checks
-description: A guide to checking project health and detecting common issues using Kanuka.
+description: A guide to checking project health and detecting common issues using Kānuka.
 ---
 
-The doctor command runs a series of health checks on your Kanuka project and
+The doctor command runs a series of health checks on your Kānuka project and
 provides actionable suggestions for any issues found.
 
 ## Running doctor
@@ -57,7 +57,7 @@ The doctor command runs these checks:
 | Private key exists | fail | Private key file exists for this project |
 | Private key permissions | warn | Private key has secure permissions (0600) |
 | Public key consistency | fail | Every public key has a matching `.kanuka` file |
-| Kanuka file consistency | fail | Every `.kanuka` user file has a matching public key |
+| Kānuka file consistency | fail | Every `.kanuka` user file has a matching public key |
 | Gitignore patterns | warn | `.env` patterns are in `.gitignore` |
 | Unencrypted files | warn | No plaintext `.env` files without encryption |
 
