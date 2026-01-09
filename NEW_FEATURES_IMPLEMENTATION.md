@@ -1493,12 +1493,12 @@ Suggestions:
 
 ### Acceptance Criteria
 
-- [ ] `kanuka secrets doctor` command implemented
-- [ ] Runs all defined health checks
-- [ ] Clear pass/warning/error indicators
-- [ ] Actionable suggestions for each issue
-- [ ] `--json` flag for scripting
-- [ ] Exit code reflects health (0 = healthy, 1 = warnings, 2 = errors)
+- [x] `kanuka secrets doctor` command implemented
+- [x] Runs all defined health checks
+- [x] Clear pass/warning/error indicators
+- [x] Actionable suggestions for each issue
+- [x] `--json` flag for scripting
+- [x] Exit code reflects health (0 = healthy, 1 = warnings, 2 = errors)
 
 ### Technical Details
 

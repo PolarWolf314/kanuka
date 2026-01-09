@@ -48,6 +48,7 @@ func init() {
 	SecretsCmd.AddCommand(cleanCmd)
 	SecretsCmd.AddCommand(statusCmd)
 	SecretsCmd.AddCommand(doctorCmd)
+	SecretsCmd.AddCommand(rotateCmd)
 }
 
 // Helper functions for testing
@@ -83,6 +84,8 @@ func ResetGlobalState() {
 	resetStatusCommandState()
 	// Reset the doctor command flags
 	resetDoctorCommandState()
+	// Reset the rotate command flags
+	resetRotateCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -155,6 +158,13 @@ func resetCobraFlagState() {
 	// Reset the doctor command flags specifically
 	if doctorCmd != nil && doctorCmd.Flags() != nil {
 		doctorCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the rotate command flags specifically
+	if rotateCmd != nil && rotateCmd.Flags() != nil {
+		rotateCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}
