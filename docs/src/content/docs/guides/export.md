@@ -1,6 +1,6 @@
 ---
 title: Exporting Secrets
-description: A guide to creating backup archives of encrypted secrets using Kanuka.
+description: A guide to creating backup archives of encrypted secrets using Kānuka.
 ---
 
 The export command creates a backup archive of your project's encrypted secrets.

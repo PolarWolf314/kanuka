@@ -1,6 +1,6 @@
 ---
 title: Viewing Access
-description: A guide to viewing who has access to a project's secrets using Kanuka.
+description: A guide to viewing who has access to a project's secrets using Kānuka.
 ---
 
 The access command shows all users who have access to the project's secrets,

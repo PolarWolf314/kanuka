@@ -1,13 +1,13 @@
 ---
-title: Where Kanuka Stores Your Files
+title: Where Kānuka Stores Your Files
 description: An explanation for the project structure and file organization.
 ---
 
-Kanuka creates different files depending on which features you're using. Understanding where everything goes helps you work effectively with the tool.
+Kānuka creates different files depending on which features you're using. Understanding where everything goes helps you work effectively with the tool.
 
 ## Project files
 
-Kanuka stores all project-related files in a `.kanuka` folder at the root of your project:
+Kānuka stores all project-related files in a `.kanuka` folder at the root of your project:
 
 import { FileTree } from '@astrojs/starlight/components';
 
@@ -16,7 +16,7 @@ import { FileTree } from '@astrojs/starlight/components';
 - astro.config.mjs
 - package.json
 - .env your secrets (should be in .gitignore)
-- .env.kanuka your secrets, encrypted by Kanuka
+- .env.kanuka your secrets, encrypted by Kānuka
 - **.kanuka**
   - **config.toml** project configuration
   - public_keys
@@ -78,7 +78,7 @@ To learn more about how encryption works, see the [encryption concepts](/concept
 ## User-specific files
 
 To decrypt files encrypted with your public key, you need your private key.
-Kanuka stores user files in two locations:
+Kānuka stores user files in two locations:
 
 ### Configuration (identity)
 
@@ -116,7 +116,7 @@ Private keys are stored in the XDG data directory, organized by project:
 
 </FileTree>
 
-Each project you're registered with has its own key pair. Kanuka automatically
+Each project you're registered with has its own key pair. Kānuka automatically
 finds the correct private key based on the project UUID in `.kanuka/config.toml`.
 
 ## Platform-specific paths

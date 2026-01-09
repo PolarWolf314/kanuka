@@ -1,26 +1,26 @@
 ---
-title: First Steps with Kanuka
-description: Getting started with Kanuka.
+title: First Steps with Kānuka
+description: Getting started with Kānuka.
 ---
 
-After [installing Kanuka](/getting-started/installation/), you can check that
+After [installing Kānuka](/getting-started/installation/), you can check that
 it is available by running the `kanuka` command:
 
 ```bash
 $ kanuka
-Welcome to Kanuka! Run 'kanuka --help' to see available commands.
+Welcome to Kānuka! Run 'kanuka --help' to see available commands.
 ```
 
 Run `kanuka --help` to see a list of all the available commands.
 
 :::caution[Note]
-Kanuka is under very active development, and so features will be constantly
+Kānuka is under very active development, and so features will be constantly
 added and changed over time. It is NOT production ready.
 :::
 
 ## Quick Start
 
-Kanuka provides secrets management for securely sharing environment variables
+Kānuka provides secrets management for securely sharing environment variables
 and API keys across your team.
 
 ### 1. Initialize Your First Project
@@ -29,11 +29,11 @@ and API keys across your team.
 # Navigate to your project
 cd my-project
 
-# Initialize Kanuka
+# Initialize Kānuka
 kanuka secrets init
 ```
 
-If this is your first time using Kanuka, you'll be prompted to set up your
+If this is your first time using Kānuka, you'll be prompted to set up your
 identity (email, name, and device name). This only happens once.
 
 ### 2. Encrypt Your Secrets
@@ -63,7 +63,7 @@ When a team member clones the repo and has been registered, they can decrypt:
 kanuka secrets decrypt
 ```
 
-## The Kanuka Workflow
+## The Kānuka Workflow
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐

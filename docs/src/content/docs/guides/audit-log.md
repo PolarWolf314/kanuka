@@ -3,7 +3,7 @@ title: Audit Log
 description: Understanding the audit log and viewing operation history.
 ---
 
-Kanuka maintains an audit log of all secrets operations, providing visibility
+Kānuka maintains an audit log of all secrets operations, providing visibility
 into who did what and when. This is valuable for teams who need accountability
 and a paper trail for security auditing.
 
@@ -22,7 +22,7 @@ Every secrets operation is recorded:
 ## Log location
 
 The audit log is stored at `.kanuka/audit.jsonl` and is committed to your
-repository alongside other Kanuka files. This means:
+repository alongside other Kānuka files. This means:
 
 - The log is versioned with git
 - All team members can see the history

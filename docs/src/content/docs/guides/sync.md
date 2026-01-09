@@ -1,6 +1,6 @@
 ---
 title: Syncing Secrets
-description: A guide to rotating encryption keys and re-encrypting secrets using Kanuka.
+description: A guide to rotating encryption keys and re-encrypting secrets using Kānuka.
 ---
 
 The sync command re-encrypts all secret files with a newly generated symmetric key.
@@ -79,7 +79,7 @@ echo "$KANUKA_PRIVATE_KEY" | kanuka secrets sync --private-key-stdin
 ```
 
 :::tip
-If your private key is passphrase-protected, Kanuka will prompt for the
+If your private key is passphrase-protected, Kānuka will prompt for the
 passphrase via `/dev/tty`, allowing you to pipe the key while still entering
 the passphrase interactively.
 :::

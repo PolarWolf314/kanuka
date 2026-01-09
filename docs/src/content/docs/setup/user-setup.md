@@ -1,9 +1,9 @@
 ---
 title: User Setup
-description: Setting up your identity for Kanuka.
+description: Setting up your identity for Kānuka.
 ---
 
-Before you can use Kanuka to manage secrets, you need to set up your user
+Before you can use Kānuka to manage secrets, you need to set up your user
 identity. This is a one-time setup that creates your personal configuration
 file, which stores your email, a unique identifier, and your default device
 name.
@@ -11,7 +11,7 @@ name.
 ## Automatic Setup
 
 The easiest way to set up your identity is to simply run `kanuka secrets init`
-in a project. If you haven't configured your identity yet, Kanuka will
+in a project. If you haven't configured your identity yet, Kānuka will
 automatically prompt you:
 
 ```bash
@@ -20,7 +20,7 @@ $ kanuka secrets init
 
 Running initial setup...
 
-Welcome to Kanuka! Let's set up your identity.
+Welcome to Kānuka! Let's set up your identity.
 
 Email address: alice@example.com
 Display name (optional): Alice Smith
@@ -68,7 +68,7 @@ kanuka config init --email alice@example.com --name "Alice Smith" --device works
 
 ## What Gets Created
 
-After setup, Kanuka creates a configuration file at `~/.config/kanuka/config.toml`:
+After setup, Kānuka creates a configuration file at `~/.config/kanuka/config.toml`:
 
 ```toml
 [user]

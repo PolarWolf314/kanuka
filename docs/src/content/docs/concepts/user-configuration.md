@@ -1,9 +1,9 @@
 ---
 title: User Configuration
-description: Understanding your personal Kanuka configuration.
+description: Understanding your personal Kānuka configuration.
 ---
 
-Kanuka stores your personal identity and preferences in a user configuration
+Kānuka stores your personal identity and preferences in a user configuration
 file. This file is local to your machine and is never shared with others.
 
 ## Location
@@ -71,11 +71,11 @@ During setup, you provide:
 - A display name (optional)
 - A default device name (defaults to hostname)
 
-Kanuka generates a UUID automatically to uniquely identify you.
+Kānuka generates a UUID automatically to uniquely identify you.
 
 ## Why UUIDs?
 
-Kanuka uses UUIDs instead of emails for file naming because:
+Kānuka uses UUIDs instead of emails for file naming because:
 
 1. **Uniqueness** - Guaranteed unique identifiers avoid naming conflicts
 2. **Flexibility** - You can change your email without renaming files
@@ -123,4 +123,4 @@ Only the fields you specify are updated; other fields remain unchanged.
 
 - [Project Configuration](/concepts/project-configuration/) - The shared project config
 - [Configuration Commands](/guides/config/) - All available config commands
-- [File Structure](/concepts/structure/) - Where all Kanuka files are stored
+- [File Structure](/concepts/structure/) - Where all Kānuka files are stored

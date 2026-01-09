@@ -1,6 +1,6 @@
 ---
 title: Checking Encryption Status
-description: A guide to viewing the encryption status of secret files using Kanuka.
+description: A guide to viewing the encryption status of secret files using Kānuka.
 ---
 
 The status command shows the encryption status of all secret files in your project.

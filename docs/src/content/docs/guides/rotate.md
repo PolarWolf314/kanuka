@@ -1,6 +1,6 @@
 ---
 title: Rotating Your Keypair
-description: A guide to rotating your personal encryption keypair using Kanuka.
+description: A guide to rotating your personal encryption keypair using Kānuka.
 ---
 
 The rotate command generates a new keypair for your user account. This is useful
@@ -83,7 +83,7 @@ kanuka secrets rotate --force
 
 ## Using with passphrase-protected keys
 
-If your current private key is passphrase-protected, Kanuka will prompt for
+If your current private key is passphrase-protected, Kānuka will prompt for
 the passphrase to decrypt the symmetric key.
 
 When generating the new keypair, you can optionally protect it with a passphrase

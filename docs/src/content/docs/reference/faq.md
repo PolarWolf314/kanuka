@@ -1,6 +1,6 @@
 ---
 title: Frequently Asked Questions
-description: Common questions and answers about using Kanuka.
+description: Common questions and answers about using Kānuka.
 ---
 
 ## Why do encrypted files change even when my secrets haven't?
@@ -28,7 +28,7 @@ For more details, see the [encryption guide](/guides/encryption/).
 ## Why do I need to provide my email?
 
 Your email address serves as a human-readable identifier that links your
-cryptographic keys to your identity. While Kanuka uses UUIDs internally for
+cryptographic keys to your identity. While Kānuka uses UUIDs internally for
 key file naming (for uniqueness and privacy), your email helps other team
 members identify who has access to the project secrets.
 
@@ -41,7 +41,7 @@ to work intuitively, referencing users by their email rather than cryptic UUIDs.
 
 ## What if I have multiple devices?
 
-Kanuka supports multiple devices per user. Each device gets its own RSA key
+Kānuka supports multiple devices per user. Each device gets its own RSA key
 pair and is tracked separately in the project configuration.
 
 When you run `kanuka secrets create` on a new device:
@@ -111,9 +111,9 @@ means:
 For most use cases, stick to one email address (typically your work email) for
 all your devices.
 
-## What private key formats does Kanuka support?
+## What private key formats does Kānuka support?
 
-Kanuka supports RSA private keys in the following formats:
+Kānuka supports RSA private keys in the following formats:
 
 **PEM PKCS#1** - Traditional OpenSSL format:
 ```
@@ -130,20 +130,20 @@ Kanuka supports RSA private keys in the following formats:
 -----BEGIN OPENSSH PRIVATE KEY-----
 ```
 
-Passphrase-protected keys are supported. Kanuka will prompt you for your
+Passphrase-protected keys are supported. Kānuka will prompt you for your
 passphrase when needed. If you're running in a non-interactive environment
 (like CI/CD), you can use the `--private-key-stdin` flag to pipe your key
 from a secrets manager.
 
 :::note
 Only RSA keys are supported. Ed25519 and ECDSA keys are not compatible with
-Kanuka. See [Why does Kanuka only support RSA keys?](#why-does-kanuka-only-support-rsa-keys)
+Kānuka. See [Why does Kānuka only support RSA keys?](#why-does-kanuka-only-support-rsa-keys)
 for details.
 :::
 
-## Why does Kanuka only support RSA keys?
+## Why does Kānuka only support RSA keys?
 
-Kanuka intentionally supports only RSA keys to keep the implementation simple
+Kānuka intentionally supports only RSA keys to keep the implementation simple
 and reliable. Here's the reasoning:
 
 1. **RSA supports direct encryption** - Ed25519 is a signature-only algorithm
@@ -153,7 +153,7 @@ and reliable. Here's the reasoning:
 
 2. **Sufficient security** - RSA-2048 provides approximately 112 bits of
    security, which is sufficient for current threats. The performance
-   advantages of Ed25519 are irrelevant for Kanuka's use case (encrypting
+   advantages of Ed25519 are irrelevant for Kānuka's use case (encrypting
    small symmetric keys infrequently).
 
 3. **Universal tooling support** - RSA keys can be generated and managed with
@@ -165,7 +165,7 @@ and reliable. Here's the reasoning:
    user confusion without providing meaningful benefits.
 
 If you only have Ed25519 keys, you'll need to generate an RSA key for use
-with Kanuka:
+with Kānuka:
 
 ```bash
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/kanuka_rsa
@@ -175,7 +175,7 @@ ssh-keygen -t rsa -b 4096 -f ~/.ssh/kanuka_rsa
 
 ### "unsupported private key format"
 
-Your key may be in an unsupported format. Kanuka only supports RSA keys.
+Your key may be in an unsupported format. Kānuka only supports RSA keys.
 Check your key type:
 
 ```bash
@@ -191,7 +191,7 @@ ssh-keygen -t rsa -b 4096 -f new_rsa_key
 
 ### "private key is passphrase-protected" in non-interactive environment
 
-This error occurs when Kanuka detects a passphrase-protected key but cannot
+This error occurs when Kānuka detects a passphrase-protected key but cannot
 prompt for the passphrase (e.g., running in a script or CI pipeline).
 
 **Options:**
@@ -281,7 +281,7 @@ kanuka secrets encrypt services/api/
 
 See the [encryption guide](/guides/encryption/) for more details.
 
-## How do I use Kanuka in a monorepo?
+## How do I use Kānuka in a monorepo?
 
 You have two options:
 

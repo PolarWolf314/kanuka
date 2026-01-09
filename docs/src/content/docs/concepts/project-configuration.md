@@ -1,9 +1,9 @@
 ---
 title: Project Configuration
-description: Understanding the shared project configuration in Kanuka.
+description: Understanding the shared project configuration in Kānuka.
 ---
 
-Every Kanuka project has a configuration file that tracks the project identity
+Every Kānuka project has a configuration file that tracks the project identity
 and all registered users. Unlike your [user configuration](/concepts/user-configuration/),
 this file is shared with your team via version control.
 
@@ -52,7 +52,7 @@ created_at = 2025-01-05T09:00:00Z
 The project UUID is used to:
 - Organize your local keys by project
 - Link your user configuration to specific projects
-- Ensure uniqueness across all Kanuka projects
+- Ensure uniqueness across all Kānuka projects
 
 ### Users Section
 
@@ -174,4 +174,4 @@ It does **not** contain:
 
 - [User Configuration](/concepts/user-configuration/) - Your personal config
 - [Configuration Commands](/guides/config/) - All available config commands
-- [File Structure](/concepts/structure/) - Where all Kanuka files are stored
+- [File Structure](/concepts/structure/) - Where all Kānuka files are stored

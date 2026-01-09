@@ -1,6 +1,6 @@
 ---
 title: Importing Secrets
-description: A guide to restoring secrets from a backup archive using Kanuka.
+description: A guide to restoring secrets from a backup archive using Kānuka.
 ---
 
 The import command restores encrypted secrets from an export archive. This is
@@ -165,7 +165,7 @@ git commit -m "Restore project secrets from backup"
 
 ## Archive validation
 
-Before importing, Kanuka validates the archive structure to ensure it contains
+Before importing, Kānuka validates the archive structure to ensure it contains
 the expected files:
 
 - Must contain `.kanuka/config.toml`

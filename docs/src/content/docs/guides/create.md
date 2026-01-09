@@ -1,15 +1,15 @@
 ---
 title: Creating Secrets for Access
-description: A guide to gaining access to a repo's secrets using Kanuka.
+description: A guide to gaining access to a repo's secrets using Kānuka.
 ---
 
-Kanuka uses a combination of RSA key pairs and symmetric keys to encrypt and
+Kānuka uses a combination of RSA key pairs and symmetric keys to encrypt and
 decrypt files. If you weren't the person who ran `kanuka secrets init`, you
 won't have access to decrypt secrets. This guide shows you how to request access.
 
 ## Creating your keys
 
-When you join a project that uses Kanuka, you need to create your encryption keys:
+When you join a project that uses Kānuka, you need to create your encryption keys:
 
 ```bash
 kanuka secrets create
@@ -23,11 +23,11 @@ This command:
 
 ### First-time users
 
-If this is your first time using Kanuka, you'll be prompted to set up your identity:
+If this is your first time using Kānuka, you'll be prompted to set up your identity:
 
 ```bash
 $ kanuka secrets create
-Welcome to Kanuka! Let's set up your identity.
+Welcome to Kānuka! Let's set up your identity.
 
 Enter your email: alice@example.com
 Enter your name: Alice Smith

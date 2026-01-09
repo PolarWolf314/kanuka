@@ -3,12 +3,12 @@ title: Working with Monorepos
 description: Strategies for managing secrets in monorepo projects.
 ---
 
-Kanuka supports two approaches for managing secrets in monorepos. Choose the
+Kānuka supports two approaches for managing secrets in monorepos. Choose the
 one that best fits your team's access control needs.
 
 ## Option 1: Single secrets store at root
 
-Initialize Kanuka once at the monorepo root and use selective encryption to
+Initialize Kānuka once at the monorepo root and use selective encryption to
 manage secrets across all services.
 
 ### Setup
@@ -59,7 +59,7 @@ kanuka secrets decrypt services/api/.env.kanuka
 
 ## Option 2: Separate secrets stores per service
 
-Initialize Kanuka independently in each service that needs secrets management.
+Initialize Kānuka independently in each service that needs secrets management.
 
 ### Setup
 
@@ -117,7 +117,7 @@ migrate to Option 2 later if needed.
 ### From single store to per-service
 
 1. Decrypt all secrets at the root level
-2. Initialize Kanuka in each service directory
+2. Initialize Kānuka in each service directory
 3. Register users as needed per service
 4. Encrypt secrets in each service
 5. Remove the root `.kanuka` directory
@@ -126,7 +126,7 @@ migrate to Option 2 later if needed.
 
 1. Decrypt all secrets in each service
 2. Remove `.kanuka` directories from each service
-3. Initialize Kanuka at the root
+3. Initialize Kānuka at the root
 4. Register all users who need access
 5. Encrypt all secrets from the root
 
