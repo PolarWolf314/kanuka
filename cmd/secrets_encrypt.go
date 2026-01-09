@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -198,6 +199,11 @@ Examples:
 
 		formattedListOfFiles := utils.FormatPaths(listOfKanukaFiles)
 		Logger.Infof("Encrypt command completed successfully. Created %d .kanuka files", len(listOfKanukaFiles))
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("encrypt")
+		auditEntry.Files = listOfKanukaFiles
+		audit.Log(auditEntry)
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +

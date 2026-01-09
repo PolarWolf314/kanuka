@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -261,6 +262,12 @@ Examples:
 		}
 
 		Logger.Infof("Create command completed successfully for user: %s (%s)", userEmail, userUUID)
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("create")
+		auditEntry.DeviceName = deviceName
+		audit.Log(auditEntry)
+
 		finalMessage := color.GreenString("✓") + " Keys created for " + color.YellowString(userEmail) + " (device: " + color.CyanString(deviceName) + ")\n" +
 			"    created: " + color.YellowString(destPath) + "\n" + deletedMessage +
 			color.CyanString("To gain access to the secrets in this project:\n") +

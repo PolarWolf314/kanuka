@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -200,6 +201,11 @@ Examples:
 
 		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
 		Logger.Infof("Decrypt command completed successfully. Created %d environment files", len(listOfEnvFiles))
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("decrypt")
+		auditEntry.Files = listOfEnvFiles
+		audit.Log(auditEntry)
 
 		spinner.Stop()
 		// Security reminder

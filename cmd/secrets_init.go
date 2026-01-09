@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -223,6 +224,13 @@ var initCmd = &cobra.Command{
 		Logger.Infof("Encrypted symmetric key created and saved successfully")
 
 		Logger.Infof("Init command completed successfully")
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("init")
+		auditEntry.ProjectName = projectName
+		auditEntry.ProjectUUID = projectConfig.Project.UUID
+		auditEntry.DeviceName = deviceName
+		audit.Log(auditEntry)
 
 		spinner.Stop()
 		// Security reminder about .env files

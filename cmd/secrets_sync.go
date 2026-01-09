@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
@@ -105,6 +106,12 @@ Use --dry-run to preview what would happen without making changes.`,
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("sync")
+		auditEntry.UsersCount = result.UsersProcessed
+		auditEntry.FilesCount = result.SecretsProcessed
+		audit.Log(auditEntry)
 
 		finalMessage := color.GreenString("✓") + " Secrets synced successfully\n" +
 			fmt.Sprintf("  Re-encrypted %d secret file(s) for %d user(s).\n", result.SecretsProcessed, result.UsersProcessed) +

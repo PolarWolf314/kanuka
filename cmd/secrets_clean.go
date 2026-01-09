@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
 	"github.com/fatih/color"
@@ -108,6 +109,11 @@ Use --force to skip the confirmation prompt.`,
 				return Logger.ErrorfAndReturn("failed to remove %s: %v", orphan.FilePath, err)
 			}
 		}
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("clean")
+		auditEntry.RemovedCount = len(orphans)
+		audit.Log(auditEntry)
 
 		fmt.Printf("%s Removed %d orphaned file(s)\n", color.GreenString("✓"), len(orphans))
 		return nil

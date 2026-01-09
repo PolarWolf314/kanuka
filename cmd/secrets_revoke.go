@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -625,6 +626,18 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 	}
 
 	Logger.Infof("Files revocation completed successfully for: %s", displayName)
+
+	// Log to audit trail.
+	auditEntry := audit.LogWithUser("revoke")
+	auditEntry.TargetUser = displayName
+	if len(ctx.UUIDsRevoked) > 0 {
+		auditEntry.TargetUUID = ctx.UUIDsRevoked[0]
+	}
+	if revokeDevice != "" {
+		auditEntry.Device = revokeDevice
+	}
+	audit.Log(auditEntry)
+
 	finalMessage := color.GreenString("✓") + " Access for " + color.YellowString(displayName) + " has been revoked successfully!\n" +
 		color.CyanString("→") + " Revoked: "
 	for i, file := range revokedFiles {

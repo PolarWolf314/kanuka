@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
@@ -233,6 +234,11 @@ Examples:
 		}
 
 		Logger.Infof("Keypair rotation completed successfully")
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("rotate")
+		audit.Log(auditEntry)
+
 		finalMessage := color.GreenString("✓") + " Keypair rotated successfully\n\n" +
 			"Your new public key has been added to the project.\n" +
 			"Other users do not need to take any action.\n\n" +
