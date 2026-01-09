@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -29,13 +30,20 @@ func resetEncryptCommandState() {
 }
 
 var encryptCmd = &cobra.Command{
-	Use:   "encrypt",
-	Short: "Encrypts the .env file into .env.kanuka using your Kānuka key",
-	Long: `Encrypts all .env files in the project into .env.kanuka files.
+	Use:   "encrypt [files...]",
+	Short: "Encrypts .env files into .kanuka files using your Kānuka key",
+	Long: `Encrypts environment files using your Kānuka key.
 
-This command discovers all .env files in your project (recursively, excluding
-the .kanuka/ directory) and encrypts each one using the project's symmetric key.
-The encrypted files are saved with a .kanuka extension (e.g., .env → .env.kanuka).
+If no files are specified, encrypts all .env files in the current directory
+and subdirectories (excluding the .kanuka/ directory).
+
+You can specify individual files, directories, or glob patterns:
+
+  kanuka secrets encrypt                      # All .env files
+  kanuka secrets encrypt .env                 # Single file
+  kanuka secrets encrypt .env .env.local      # Multiple files
+  kanuka secrets encrypt "services/*/.env"    # Glob pattern
+  kanuka secrets encrypt services/api/        # Directory
 
 Use --dry-run to preview which files would be encrypted without making changes.
 
@@ -45,6 +53,12 @@ This is useful for piping keys from secret managers (e.g., HashiCorp Vault, 1Pas
 Examples:
   # Encrypt all .env files
   kanuka secrets encrypt
+
+  # Encrypt specific files
+  kanuka secrets encrypt .env .env.local
+
+  # Encrypt with glob pattern (quote to prevent shell expansion)
+  kanuka secrets encrypt "services/*/.env"
 
   # Preview which files would be encrypted
   kanuka secrets encrypt --dry-run
@@ -72,10 +86,28 @@ Examples:
 		}
 
 		// TODO: In future, add config options to list which dirs to ignore. .kanuka/ ignored by default
-		Logger.Debugf("Searching for .env files in project path")
-		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to find environment files: %v", err)
+		Logger.Debugf("Resolving files to encrypt")
+
+		var listOfEnvFiles []string
+		if len(args) > 0 {
+			// Use user-provided file patterns.
+			Logger.Debugf("User provided %d file pattern(s)", len(args))
+			resolved, err := secrets.ResolveFiles(args, projectPath, true)
+			if err != nil {
+				Logger.Errorf("Failed to resolve file patterns: %v", err)
+				finalMessage := color.RedString("✗") + " " + err.Error()
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			listOfEnvFiles = resolved
+		} else {
+			// Default: find all .env files.
+			Logger.Debugf("Searching for .env files in project path")
+			found, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
+			if err != nil {
+				return Logger.ErrorfAndReturn("Failed to find environment files: %v", err)
+			}
+			listOfEnvFiles = found
 		}
 		Logger.Debugf("Found %d .env files", len(listOfEnvFiles))
 		if len(listOfEnvFiles) == 0 {
@@ -198,6 +230,11 @@ Examples:
 
 		formattedListOfFiles := utils.FormatPaths(listOfKanukaFiles)
 		Logger.Infof("Encrypt command completed successfully. Created %d .kanuka files", len(listOfKanukaFiles))
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("encrypt")
+		auditEntry.Files = listOfKanukaFiles
+		audit.Log(auditEntry)
 
 		finalMessage := color.GreenString("✓") + " Environment files encrypted successfully!\n" +
 			"The following files were created: " + formattedListOfFiles +

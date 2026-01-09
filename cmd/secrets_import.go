@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
 	"github.com/fatih/color"
@@ -160,6 +161,16 @@ Examples:
 		if importDryRunFlag {
 			finalMessage = color.CyanString("Dry run") + " - no changes made\n\n"
 		} else {
+			// Log to audit trail.
+			modeStr := "merge"
+			if mode == ReplaceMode {
+				modeStr = "replace"
+			}
+			auditEntry := audit.LogWithUser("import")
+			auditEntry.Mode = modeStr
+			auditEntry.FilesCount = result.TotalFiles
+			audit.Log(auditEntry)
+
 			finalMessage = color.GreenString("✓") + " Imported secrets from " + color.YellowString(archivePath) + "\n\n"
 		}
 

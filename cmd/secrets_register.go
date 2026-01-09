@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
@@ -336,6 +337,12 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 
 	Logger.Infof("Public key registration completed successfully for user: %s", registerUserEmail)
 
+	// Log to audit trail.
+	auditEntry := audit.LogWithUser("register")
+	auditEntry.TargetUser = registerUserEmail
+	auditEntry.TargetUUID = targetUserUUID
+	audit.Log(auditEntry)
+
 	// Use different message for update vs new registration
 	var successVerb, filesLabel string
 	if userAlreadyHasAccess {
@@ -557,6 +564,12 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 
 	Logger.Infof("User registration completed successfully for: %s", registerUserEmail)
 
+	// Log to audit trail.
+	auditEntry := audit.LogWithUser("register")
+	auditEntry.TargetUser = registerUserEmail
+	auditEntry.TargetUUID = targetUserUUID
+	audit.Log(auditEntry)
+
 	// Use different message for update vs new registration
 	var successVerb, filesLabel string
 	if userAlreadyHasAccess {
@@ -711,6 +724,12 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	}
 
 	Logger.Infof("Custom file registration completed successfully for: %s", displayName)
+
+	// Log to audit trail.
+	auditEntry := audit.LogWithUser("register")
+	auditEntry.TargetUser = displayName
+	auditEntry.TargetUUID = targetUserUUID
+	audit.Log(auditEntry)
 
 	// Use different message for update vs new registration
 	var successVerb, filesLabel string

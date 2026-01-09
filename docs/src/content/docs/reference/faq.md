@@ -234,6 +234,71 @@ stdin, when stdin is used for the key.
 If running in a container or environment without a TTY, consider using an
 unencrypted key stored in a secrets manager.
 
+## How do I check who has been accessing secrets?
+
+Use the audit log to see all operations:
+
+```bash
+kanuka secrets log
+```
+
+This shows all operations with timestamps and user emails. You can filter by
+user, operation type, or date range:
+
+```bash
+# Filter by user
+kanuka secrets log --user alice@example.com
+
+# Filter by operation
+kanuka secrets log --operation encrypt,decrypt
+
+# Filter by date
+kanuka secrets log --since 2024-01-01
+```
+
+See the [audit log guide](/guides/audit-log/) for more details.
+
+## Can I encrypt just one file?
+
+Yes, specify the file as an argument:
+
+```bash
+kanuka secrets encrypt .env
+```
+
+You can also use glob patterns and directories:
+
+```bash
+# Multiple files
+kanuka secrets encrypt .env .env.local
+
+# Glob pattern
+kanuka secrets encrypt "services/*/.env"
+
+# All .env files in a directory
+kanuka secrets encrypt services/api/
+```
+
+See the [encryption guide](/guides/encryption/) for more details.
+
+## How do I use Kanuka in a monorepo?
+
+You have two options:
+
+1. **Single store at root** - Initialize once, use selective encryption:
+   ```bash
+   kanuka secrets init
+   kanuka secrets encrypt services/api/.env
+   ```
+
+2. **Per-service stores** - Initialize in each service:
+   ```bash
+   cd services/api && kanuka secrets init
+   cd services/web && kanuka secrets init
+   ```
+
+See the [monorepo guide](/guides/monorepo/) for detailed workflows.
+
 ## How do I check who has access to my project's secrets?
 
 Use the `access` command to see all users with access:

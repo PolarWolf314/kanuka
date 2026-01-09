@@ -26,6 +26,9 @@ It is fast, resilient, yet pleasant to touch. This is the vision of Kānuka.
 - **Team Collaboration**: Register and manage team member access to shared secrets
 - **Key Rotation**: Rotate encryption keys with automatic re-encryption of all secrets
 - **Access Control**: View who has access, revoke users securely with full key rotation
+- **Audit Trail**: Track who performed what operations and when with the audit log
+- **Selective Encryption**: Encrypt specific files, directories, or use glob patterns
+- **Monorepo Support**: Flexible workflows for managing secrets in monorepos
 - **Health Checks**: Run diagnostics to detect configuration issues and inconsistent state
 - **Backup & Recovery**: Export and import encrypted secrets for disaster recovery
 - **User-friendly Interface**: Simple commands for managing secrets across your team
@@ -89,8 +92,8 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 
 - `kanuka secrets init`: Initialize a new secrets store
 - `kanuka secrets create`: Create new encryption keys
-- `kanuka secrets encrypt`: Encrypt .env files
-- `kanuka secrets decrypt`: Decrypt .kanuka files
+- `kanuka secrets encrypt [files...]`: Encrypt .env files (all files if none specified)
+- `kanuka secrets decrypt [files...]`: Decrypt .kanuka files (all files if none specified)
 - `kanuka secrets register --user <email>`: Register a new user
 - `kanuka secrets revoke --user <email>`: Revoke a user's access
 - `kanuka secrets sync`: Rotate encryption key and re-encrypt all secrets
@@ -99,6 +102,7 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 - `kanuka secrets status`: Show encryption status of secret files
 - `kanuka secrets clean`: Remove orphaned keys and inconsistent state
 - `kanuka secrets doctor`: Run health checks on the project
+- `kanuka secrets log`: View audit log of operations
 - `kanuka secrets export`: Create a backup archive of encrypted secrets
 - `kanuka secrets import <archive>`: Restore secrets from a backup archive
 

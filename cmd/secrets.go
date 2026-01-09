@@ -92,6 +92,8 @@ func ResetGlobalState() {
 	resetExportCommandState()
 	// Reset the import command flags
 	resetImportCommandState()
+	// Reset the log command flags
+	resetLogCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }

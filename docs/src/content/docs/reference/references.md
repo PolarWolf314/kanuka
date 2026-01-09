@@ -64,6 +64,7 @@ Usage:
   export      Create a backup archive of encrypted secrets
   import      Restore secrets from a backup archive
   init        Initializes the secrets store
+  log         View the audit log of operations
   register    Registers a new user to be given access to the repository's secrets
   revoke      Revokes access to the secret store
   rotate      Rotate your personal keypair
@@ -94,13 +95,21 @@ Decrypts the `.env.kanuka` file back into `.env` using your Kānuka key.
 
 ```
 Usage:
-  kanuka secrets decrypt [flags]
+  kanuka secrets decrypt [files...] [flags]
 
 Flags:
-      --dry-run   preview decryption without making changes
-  -h, --help      help for decrypt
-  -v, --verbose   enable verbose output
+      --dry-run             preview decryption without making changes
+  -h, --help                help for decrypt
+      --private-key-stdin   read private key from stdin
+  -v, --verbose             enable verbose output
 ```
+
+**Arguments:**
+
+If no files are specified, all `.kanuka` files are decrypted. You can specify:
+- Individual files: `.env.kanuka`, `.env.local.kanuka`
+- Glob patterns: `"services/*/.env.kanuka"`, `"**/.env.production.kanuka"`
+- Directories: `services/api/` (decrypts all `.kanuka` files within)
 
 **Examples:**
 
@@ -110,6 +119,15 @@ kanuka secrets decrypt --dry-run
 
 # Decrypt all .kanuka files
 kanuka secrets decrypt
+
+# Decrypt specific files
+kanuka secrets decrypt .env.kanuka .env.local.kanuka
+
+# Decrypt using glob pattern
+kanuka secrets decrypt "services/*/.env.kanuka"
+
+# Decrypt all .kanuka files in a directory
+kanuka secrets decrypt services/api/
 ```
 
 ### `kanuka secrets encrypt`
@@ -118,13 +136,21 @@ Encrypts the `.env` file into `.env.kanuka` using your Kānuka key.
 
 ```
 Usage:
-  kanuka secrets encrypt [flags]
+  kanuka secrets encrypt [files...] [flags]
 
 Flags:
-      --dry-run   preview encryption without making changes
-  -h, --help      help for encrypt
-  -v, --verbose   enable verbose output
+      --dry-run             preview encryption without making changes
+  -h, --help                help for encrypt
+      --private-key-stdin   read private key from stdin
+  -v, --verbose             enable verbose output
 ```
+
+**Arguments:**
+
+If no files are specified, all `.env` files are encrypted. You can specify:
+- Individual files: `.env`, `.env.local`
+- Glob patterns: `"services/*/.env"`, `"**/.env.production"`
+- Directories: `services/api/` (encrypts all `.env` files within)
 
 **Examples:**
 
@@ -134,6 +160,15 @@ kanuka secrets encrypt --dry-run
 
 # Encrypt all .env files
 kanuka secrets encrypt
+
+# Encrypt specific files
+kanuka secrets encrypt .env .env.local
+
+# Encrypt using glob pattern
+kanuka secrets encrypt "services/*/.env"
+
+# Encrypt all .env files in a directory
+kanuka secrets encrypt services/api/
 ```
 
 ### `kanuka secrets init`
@@ -146,7 +181,55 @@ Usage:
 
 Flags:
   -h, --help      help for init
+  -n, --name      project name (defaults to directory name)
   -v, --verbose   enable verbose output
+  -y, --yes       non-interactive mode
+```
+
+### `kanuka secrets log`
+
+Displays the audit log of secrets operations.
+
+```
+Usage:
+  kanuka secrets log [flags]
+
+Flags:
+  -h, --help              help for log
+      --json              output as JSON array
+  -n, --number int        limit number of entries shown
+      --oneline           compact one-line format
+      --operation string  filter by operation type (comma-separated)
+      --reverse           show most recent entries first
+      --since string      show entries after date (YYYY-MM-DD)
+      --until string      show entries before date (YYYY-MM-DD)
+      --user string       filter by user email
+  -v, --verbose           enable verbose output
+```
+
+**Examples:**
+
+```bash
+# View full log
+kanuka secrets log
+
+# Last 10 entries, most recent first
+kanuka secrets log -n 10 --reverse
+
+# Filter by user
+kanuka secrets log --user alice@example.com
+
+# Filter by operation type
+kanuka secrets log --operation encrypt,decrypt
+
+# Filter by date range
+kanuka secrets log --since 2024-01-01 --until 2024-01-31
+
+# Compact one-line format
+kanuka secrets log --oneline
+
+# JSON output for scripting
+kanuka secrets log --json
 ```
 
 ### `kanuka secrets register`

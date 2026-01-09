@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 
@@ -115,6 +116,11 @@ Examples:
 		}
 
 		Logger.Infof("Archive created successfully at %s", outputPath)
+
+		// Log to audit trail.
+		auditEntry := audit.LogWithUser("export")
+		auditEntry.OutputPath = outputPath
+		audit.Log(auditEntry)
 
 		// Build summary message.
 		finalMessage := color.GreenString("✓") + " Exported secrets to " + color.YellowString(outputPath) + "\n\n" +
