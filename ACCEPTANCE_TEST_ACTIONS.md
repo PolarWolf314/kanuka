@@ -166,11 +166,13 @@ The `CreateAndSaveRSAKeyPair` function is called before the project path validat
 - `internal/configs/settings.go:67-110`
 
 ### Acceptance Criteria
-- [ ] Project existence validated before any key generation
-- [ ] Clear error message when not in project: "✗ Kānuka has not been initialized"
-- [ ] Helpful suggestion: "→ Run 'kanuka secrets init' first to create a project"
-- [ ] No keys generated when project doesn't exist
-- [ ] No orphaned files in user's key storage
+- [x] Project existence validated before any key generation
+- [x] Clear error message when not in project: "✗ Kānuka has not been initialized"
+- [x] Helpful suggestion: "→ Run 'kanuka secrets init' first to create a project"
+- [x] No keys generated when project doesn't exist
+- [x] No orphaned files in user's key storage
+
+### Status: ✅ COMPLETED
 
 ### Before
 ```bash

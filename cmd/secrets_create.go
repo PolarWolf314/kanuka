@@ -89,9 +89,20 @@ Examples:
 
 		if projectPath == "" {
 			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
 			spinner.FinalMSG = finalMessage
 			return nil
+		}
+
+		projectConfigPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+		if _, err := os.Stat(projectConfigPath); err != nil {
+			if os.IsNotExist(err) {
+				finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
+					ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			return Logger.ErrorfAndReturn("failed to check project config: %v", err)
 		}
 
 		Logger.Debugf("Ensuring user settings")
