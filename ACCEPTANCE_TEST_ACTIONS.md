@@ -7,15 +7,19 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 ## Overview
 
 **Total Tickets:** 19
-**Critical:** 5
+**Critical:** 2
 **High:** 4
 **Medium:** 6
 **Low:** 3
 
+**Progress:**
+- Completed: ERR-002, ERR-003, ERR-004, ERR-005
+- In Progress: None
+
 **Recommended Fix Order:**
 1. ERR-003 (Init folder cleanup) - Critical, blocks re-init
 2. ERR-002 (Create validation) - Critical, prevents bad state
-3. ERR-004 & ERR-005 (Glob patterns) - Critical, core functionality
+3. ERR-004 & ERR-005 (Glob patterns) - Critical, core functionality - ✅ ALREADY IMPLEMENTED
 4. ERR-001 (Command hanging) - Critical, UX blocker
 5. ERR-007 (Register --file) - High, data integrity
 6. ERR-009 (Set-device-name consistency) - High, data integrity
@@ -173,6 +177,9 @@ The `CreateAndSaveRSAKeyPair` function is called before the project path validat
 - [x] No orphaned files in user's key storage
 
 ### Status: ✅ COMPLETED
+
+### Note
+Fixed to return `nil` instead of error when displaying custom error messages, preventing Cobra from adding "Error:" prefix and usage information.
 
 ### Before
 ```bash
@@ -429,19 +436,26 @@ fi
 When providing a specific glob pattern like `"services/*/.env"` to the encrypt command, it encrypts ALL `.env` files in the project instead of only matching the glob pattern. This breaks the documented selective encryption feature and may inadvertently encrypt files the user didn't intend to.
 
 ### Root Cause Analysis
-The code correctly calls `secrets.ResolveFiles(args, projectPath, true)` when arguments are provided, but there may be a bug in how the pattern is resolved or how the glob library matches files. The pattern `"services/*/.env"` appears to be ignored entirely, causing a fallback to finding all `.env` files.
+The selective encryption feature was correctly implemented, but the success message had a bug where it displayed ALL existing `.kanuka` files in the project instead of just the files that were encrypted in this specific command run. This was misleading to users who expected to see only the files they explicitly requested to encrypt.
 
 **Files Affected:**
-- `cmd/secrets_encrypt.go:92-111`
-- `internal/secrets/files.go:12-114` (resolvePattern, expandGlob)
+- `cmd/secrets_encrypt.go:224-232`
+- `cmd/secrets_decrypt.go:224-232` (same issue)
 
 ### Acceptance Criteria
-- [ ] Glob patterns are respected and only matching files are encrypted
-- [ ] Specific file paths work correctly
-- [ ] Directory arguments encrypt only files in that directory
-- [ ] Double-star patterns (`**`) work as expected
-- [ ] Error messages for invalid patterns are clear
-- [ ] No regression in default behavior (encrypt all when no args)
+- [x] Glob patterns are respected and only matching files are encrypted
+- [x] Specific file paths work correctly
+- [x] Directory arguments encrypt only files in that directory
+- [x] Double-star patterns (`**`) work as expected
+- [x] Error messages for invalid patterns are clear
+- [x] No regression in default behavior (encrypt all when no args)
+
+### Status: ✅ COMPLETED
+
+### Note
+**Initial Implementation:** Selective encryption feature was already implemented in commit 90837be ("feat: selective file encryption"). All integration tests pass, and manual testing confirms glob patterns work correctly.
+
+**Additional Fix:** Fixed messaging issue where success message displayed ALL existing .kanuka files instead of just the files that were encrypted in this specific run. Changed code to display only the files that were actually encrypted (`listOfEnvFiles` converted to .kanuka paths) rather than finding all .kanuka files in the project.
 
 ### Before
 ```bash
@@ -481,54 +495,41 @@ The following files were created:
 
 ### Steps to Completion
 
-1. **Debug Pattern Resolution**
-   - Add debug logging to `resolvePattern` function
-   - Log the input pattern, project path, and resolved files
-   - Verify pattern is being passed correctly
+1. **Identified Messaging Issue**
+   - Confirmed selective encryption feature works correctly (implemented in commit 90837be)
+   - All integration tests pass for glob patterns
+   - Identified that success message incorrectly shows ALL existing `.kanuka` files
+
+2. **Fixed Success Message for Encrypt**
+   - Changed line 224-231 in `cmd/secrets_encrypt.go`
+   - Instead of finding all `.kanuka` files in project, now converts encrypted `.env` files to `.kanuka` paths
+   - This ensures message shows only files that were actually encrypted in this run
 
    ```go
-   Logger.Debugf("resolvePattern called with: pattern=%s, projectPath=%s, forEncryption=%v", pattern, projectPath, forEncryption)
-   ```
-
-2. **Test Glob Library Behavior**
-   - Create unit tests for `expandGlob` function
-   - Test with patterns like `"services/*/.env"`, `"**/.env"`, `"config/.env"`
-   - Verify doublestar library works as expected
-
-   ```go
-   func TestExpandGlob_ServicesPattern(t *testing.T) {
-       // Setup test directory
-       tempDir := t.TempDir()
-       os.MkdirAll(filepath.Join(tempDir, "services/api"), 0755)
-       os.WriteFile(filepath.Join(tempDir, "services/api/.env"), []byte("KEY=VAL"), 0644)
-
-       // Test pattern
-       matches, err := expandGlob("services/*/.env", tempDir, true)
-       assert.NoError(t, err)
-       assert.Contains(t, matches, filepath.Join(tempDir, "services/api/.env"))
+   // Convert .env files to .kanuka file paths for display.
+   listOfKanukaFiles := make([]string, len(listOfEnvFiles))
+   for i, envFile := range listOfEnvFiles {
+       listOfKanukaFiles[i] = envFile + ".kanuka"
    }
    ```
 
-3. **Check for Logic Error**
-   - Review the conditional logic in `cmd/secrets_encrypt.go`
-   - Verify `listOfEnvFiles` is being set correctly when args provided
-   - Check for any early returns that might skip pattern resolution
+3. **Fixed Success Message for Decrypt**
+   - Changed line 224-231 in `cmd/secrets_decrypt.go`
+   - Instead of finding all `.env` files in project, now strips `.kanuka` suffix from decrypted files
+   - Ensures decrypt message shows only files that were actually decrypted in this run
 
-4. **Fix the Bug**
-   - Based on findings, fix the pattern resolution logic
-   - Likely need to ensure pattern is properly escaped/quoted
-   - May need to adjust how `ResolveFiles` processes the pattern
+   ```go
+   // Convert .kanuka files to .env file paths for display.
+   listOfEnvFiles := make([]string, len(listOfKanukaFiles))
+   for i, kanukaFile := range listOfKanukaFiles {
+       listOfEnvFiles[i] = strings.TrimSuffix(kanukaFile, ".kanuka")
+   }
+   ```
 
-5. **Add Integration Tests**
-   - Test encrypt with specific file
-   - Test encrypt with directory
-   - Test encrypt with glob pattern
-   - Test encrypt with double-star pattern
-
-6. **Manual Testing**
-   - Test various glob patterns
-   - Verify only matching files are encrypted
-   - Verify no regression in default behavior
+4. **Verified Fix with Tests**
+   - All encrypt integration tests pass
+   - All decrypt integration tests pass
+   - No linter errors
 
 ### Rationale
 This is critical because:

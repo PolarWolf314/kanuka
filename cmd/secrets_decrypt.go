@@ -222,11 +222,10 @@ Examples:
 			return nil
 		}
 
-		// we can be sure they exist if the previous function ran without errors
-		Logger.Debugf("Finding decrypted environment files")
-		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to find environment files after decryption: %v", err)
+		// Convert .kanuka files to .env file paths for display.
+		listOfEnvFiles := make([]string, len(listOfKanukaFiles))
+		for i, kanukaFile := range listOfKanukaFiles {
+			listOfEnvFiles[i] = strings.TrimSuffix(kanukaFile, ".kanuka")
 		}
 
 		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
@@ -234,7 +233,7 @@ Examples:
 
 		// Log to audit trail.
 		auditEntry := audit.LogWithUser("decrypt")
-		auditEntry.Files = listOfEnvFiles
+		auditEntry.Files = listOfKanukaFiles
 		audit.Log(auditEntry)
 
 		spinner.Stop()

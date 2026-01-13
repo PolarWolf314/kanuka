@@ -221,11 +221,10 @@ Examples:
 			return nil
 		}
 
-		// we can be sure they exist if the previous function ran without errors
-		Logger.Debugf("Finding encrypted .kanuka files")
-		listOfKanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to find environment files after encryption: %v", err)
+		// Convert .env files to .kanuka file paths for display.
+		listOfKanukaFiles := make([]string, len(listOfEnvFiles))
+		for i, envFile := range listOfEnvFiles {
+			listOfKanukaFiles[i] = envFile + ".kanuka"
 		}
 
 		formattedListOfFiles := utils.FormatPaths(listOfKanukaFiles)
