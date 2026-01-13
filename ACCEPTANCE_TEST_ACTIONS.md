@@ -274,11 +274,13 @@ The `EnsureKanukaSettings()` function is called early in the init process, befor
 - `internal/secrets/settings.go` (EnsureKanukaSettings)
 
 ### Acceptance Criteria
-- [ ] No `.kanuka` folder created until user confirms/init completes successfully
-- [ ] If init is cancelled (Ctrl+C), any partial state is cleaned up
-- [ ] Subsequent init after cancellation succeeds without manual intervention
-- [ ] Helpful error message for incomplete init state (if detected)
-- [ ] `DoesProjectKanukaSettingsExist()` checks for complete initialization, not just folder existence
+- [x] No `.kanuka` folder created until user confirms/init completes successfully
+- [x] If init is cancelled (Ctrl+C), any partial state is cleaned up
+- [x] Subsequent init after cancellation succeeds without manual intervention
+- [x] Helpful error message for incomplete init state (if detected)
+- [x] `DoesProjectKanukaSettingsExist()` checks for complete initialization, not just folder existence
+
+### Status: ✅ COMPLETED
 
 ### Before
 ```bash
