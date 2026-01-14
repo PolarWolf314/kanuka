@@ -200,10 +200,11 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to decrypt symmetric key: %v", err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
-
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n\n" +
+				ui.Info.Sprint("→") + " Your encrypted key file appears to be corrupted.\n" +
+				"   Try asking the project administrator to revoke and re-register your access."
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
