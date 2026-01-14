@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
@@ -41,6 +42,10 @@ func TestConfigSetDeviceName(t *testing.T) {
 
 	t.Run("SetDeviceNameOutsideProject", func(t *testing.T) {
 		testSetDeviceNameOutsideProject(t, originalWd, originalUserSettings)
+	})
+
+	t.Run("SetDeviceNameUpdatesProjectConfig", func(t *testing.T) {
+		testSetDeviceNameUpdatesProjectConfig(t, originalWd, originalUserSettings)
 	})
 }
 
@@ -298,5 +303,106 @@ func testSetDeviceNameOutsideProject(t *testing.T, originalWd string, originalUs
 	// Should suggest using --project-uuid.
 	if !strings.Contains(output, "--project-uuid") {
 		t.Errorf("Expected suggestion to use '--project-uuid' not found in output: %s", output)
+	}
+}
+
+func testSetDeviceNameUpdatesProjectConfig(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-project-config-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
+	secretsDir := filepath.Join(kanukaDir, "secrets")
+
+	if err := os.MkdirAll(publicKeysDir, 0755); err != nil {
+		t.Fatalf("Failed to create public keys directory: %v", err)
+	}
+	if err := os.MkdirAll(secretsDir, 0755); err != nil {
+		t.Fatalf("Failed to create secrets directory: %v", err)
+	}
+
+	projectConfig := &configs.ProjectConfig{
+		Project: configs.Project{
+			UUID: shared.TestProjectUUID,
+			Name: "test-project",
+		},
+		Users: map[string]string{
+			shared.TestUserUUID: shared.TestUserEmail,
+		},
+		Devices: map[string]configs.DeviceConfig{
+			shared.TestUserUUID: {
+				Email:     shared.TestUserEmail,
+				Name:      "old-device-name",
+				CreatedAt: time.Now().UTC(),
+			},
+		},
+	}
+
+	configs.ProjectKanukaSettings = &configs.ProjectSettings{
+		ProjectName:          "test-project",
+		ProjectPath:          tempDir,
+		ProjectPublicKeyPath: publicKeysDir,
+		ProjectSecretsPath:   secretsDir,
+	}
+
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
+	output, err := shared.CaptureOutput(func() error {
+		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-device-name", "new-device-name"})
+		return cmd.Execute()
+	})
+	if err != nil {
+		t.Errorf("Command failed unexpectedly: %v", err)
+	}
+
+	if !strings.Contains(output, "Device name set to") {
+		t.Errorf("Expected success message not found in output: %s", output)
+	}
+	if !strings.Contains(output, "new-device-name") {
+		t.Errorf("Expected device name 'new-device-name' not found in output: %s", output)
+	}
+
+	userConfig, err := configs.LoadUserConfig()
+	if err != nil {
+		t.Fatalf("Failed to load user config: %v", err)
+	}
+
+	entry, exists := userConfig.Projects[shared.TestProjectUUID]
+	if !exists {
+		t.Errorf("Expected project UUID '%s' not found in user config projects", shared.TestProjectUUID)
+	}
+	if entry.DeviceName != "new-device-name" {
+		t.Errorf("Expected user config device name 'new-device-name', got '%s'", entry.DeviceName)
+	}
+
+	updatedProjectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+
+	deviceConfig, exists := updatedProjectConfig.Devices[shared.TestUserUUID]
+	if !exists {
+		t.Errorf("Expected user UUID '%s' not found in project config devices", shared.TestUserUUID)
+	}
+	if deviceConfig.Name != "new-device-name" {
+		t.Errorf("Expected project config device name 'new-device-name', got '%s'", deviceConfig.Name)
+	}
+
+	if deviceConfig.Email != shared.TestUserEmail {
+		t.Errorf("Expected email to be preserved, got '%s'", deviceConfig.Email)
 	}
 }

@@ -13,7 +13,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
-- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007
+- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009
 - In Progress: None
 
 **Recommended Fix Order:**
@@ -22,11 +22,9 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 3. ERR-004 & ERR-005 (Glob patterns) - Critical, core functionality - ✅ COMPLETED
 4. ERR-001 (Command hanging) - Critical, UX blocker - ✅ COMPLETED
 5. ERR-007 (Register --file) - High, data integrity - ✅ COMPLETED
-5. ERR-007 (Register --file) - High, data integrity
-6. ERR-009 (Set-device-name consistency) - High, data integrity
-7. ERR-009 (Set-device-name consistency) - High, data integrity
-8. ERR-010 (Import validation) - High, data integrity
-9. ERR-008 (Access display) - High, confusing UX - ✅ COMPLETED
+6. ERR-009 (Set-device-name consistency) - High, data integrity - ✅ COMPLETED
+7. ERR-010 (Import validation) - High, data integrity
+8. ERR-008 (Access display) - High, confusing UX - ✅ COMPLETED
 10. ERR-011, ERR-012, ERR-017, ERR-018 (Error handling) - Medium, UX improvement
 10. ERR-006, ERR-013, ERR-014, ERR-015 (UX issues) - Medium
 11. ERR-016 (Log --oneline) - Low, clarification needed
@@ -1191,11 +1189,28 @@ The `set-device-name` command only updates `userConfig.Projects[projectUUID]` bu
 - `internal/configs/config.go` (DeviceConfig struct)
 
 ### Acceptance Criteria
-- [ ] Both user config and project config are updated when setting device name
-- [ ] `kanuka secrets access` shows updated device name
-- [ ] `kanuka config list-devices` shows updated device name
-- [ ] Device name is consistent across all commands
+- [x] Both user config and project config are updated when setting device name
+- [x] `kanuka secrets access` shows updated device name
+- [x] `kanuka config list-devices` shows updated device name
+- [x] Device name is consistent across all commands
 
+### Status: ✅ COMPLETED
+
+### Implementation Notes
+After saving the user config, the command now:
+1. Loads the project config
+2. Updates `projectConfig.Devices[userUUID].Name` with the new device name
+3. Preserves Email and CreatedAt fields
+4. Saves the updated project config
+
+**Modified Files:**
+- `cmd/config_set_device_name.go`: Added project config update logic (lines 142-160)
+
+**Tests Added:**
+- New test `testSetDeviceNameUpdatesProjectConfig` verifies both user and project config are updated
+- New test also verifies Email and CreatedAt fields are preserved during update
+
+### Before
 ### Before
 ```bash
 # In an initialized project

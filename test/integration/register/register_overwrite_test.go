@@ -456,37 +456,6 @@ type overwriteTestKeyPair struct {
 	privateKey *rsa.PrivateKey
 }
 
-// generateOverwriteTestKeyPair generates a test RSA key pair.
-func generateOverwriteTestKeyPair(t *testing.T) *overwriteTestKeyPair {
-	tempKeyDir, err := os.MkdirTemp("", "kanuka-test-keys-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp key directory: %v", err)
-	}
-	defer os.RemoveAll(tempKeyDir)
-
-	privateKeyPath := filepath.Join(tempKeyDir, "test_key")
-	publicKeyPath := privateKeyPath + ".pub"
-
-	if err := secrets.GenerateRSAKeyPair(privateKeyPath, publicKeyPath); err != nil {
-		t.Fatalf("Failed to generate test key pair: %v", err)
-	}
-
-	privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
-	if err != nil {
-		t.Fatalf("Failed to load test private key: %v", err)
-	}
-
-	publicKey, err := secrets.LoadPublicKey(publicKeyPath)
-	if err != nil {
-		t.Fatalf("Failed to load test public key: %v", err)
-	}
-
-	return &overwriteTestKeyPair{
-		publicKey:  publicKey,
-		privateKey: privateKey,
-	}
-}
-
 // createOverwriteTestUserKeyPair creates a key pair for a test user and places the public key in the project.
 func createOverwriteTestUserKeyPair(t *testing.T, projectDir, username string) *overwriteTestKeyPair {
 	// Generate a key pair.

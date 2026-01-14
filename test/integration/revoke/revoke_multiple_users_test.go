@@ -1,6 +1,10 @@
 package revoke
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +15,6 @@ import (
 )
 
 func TestRevokeCommand_MultipleUsers(t *testing.T) {
-	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
@@ -24,7 +27,6 @@ func TestRevokeCommand_MultipleUsers(t *testing.T) {
 }
 
 func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -37,7 +39,6 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
@@ -47,7 +48,6 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		}
 	}()
 
-	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
 		UserKeysPath:    filepath.Join(tempUserDir, "keys"),
 		UserConfigsPath: filepath.Join(tempUserDir, "config"),
@@ -57,7 +57,6 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		configs.UserKanukaSettings = originalUserSettings
 	}()
 
-	// Create user directories
 	if err := os.MkdirAll(configs.UserKanukaSettings.UserKeysPath, 0755); err != nil {
 		t.Fatalf("Failed to create user keys directory: %v", err)
 	}
@@ -65,7 +64,6 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		t.Fatalf("Failed to create user configs directory: %v", err)
 	}
 
-	// Create user config with UUID so init doesn't prompt for interactive setup.
 	userConfig := &configs.UserConfig{
 		User: configs.User{
 			UUID:  shared.TestUserUUID,
@@ -77,48 +75,58 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		t.Fatalf("Failed to save user config: %v", err)
 	}
 
-	// Initialize the project
 	cmd.ResetGlobalState()
 	initCmd := shared.CreateTestCLIWithArgs("init", []string{"--yes"}, nil, nil, false, false)
 	if err := initCmd.Execute(); err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Define multiple users (these will be used as filenames/identifiers)
-	users := []string{"user1", "user2", "user3"}
+	users := []struct {
+		uuid   string
+		email  string
+		pubKey string
+	}{
+		{"user1-uuid-1234", "user1@example.com", ""},
+		{"user2-uuid-1234", "user2@example.com", ""},
+		{"user3-uuid-1234", "user3@example.com", ""},
+	}
+
 	kanukaDir := filepath.Join(tempDir, ".kanuka")
-	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
 	secretsDir := filepath.Join(kanukaDir, "secrets")
 
-	// Create key pairs and register all users using --file flag
 	for i, user := range users {
-		// Generate key pair for user
-		privateKeyPath := filepath.Join(tempUserDir, user+".key")
-		// Save directly to project's public_keys directory so filename becomes user identifier
-		projectPublicKeyPath := filepath.Join(publicKeysDir, user+".pub")
-
-		if err := shared.GenerateRSAKeyPair(privateKeyPath, projectPublicKeyPath); err != nil {
-			t.Fatalf("Failed to generate RSA key pair for user %s: %v", user, err)
+		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			t.Fatalf("Failed to generate RSA key: %v", err)
 		}
 
-		// Register the user using --file flag (uses filename as user identifier)
+		pubASN1, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+		if err != nil {
+			t.Fatalf("Failed to marshal public key: %v", err)
+		}
+
+		pubPem := &pem.Block{
+			Type:  "PUBLIC KEY",
+			Bytes: pubASN1,
+		}
+		user.pubKey = string(pem.EncodeToMemory(pubPem))
+
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			t.Fatalf("Failed to load project config: %v", err)
+		}
+		projectConfig.Users[user.uuid] = user.email
+		if err := configs.SaveProjectConfig(projectConfig); err != nil {
+			t.Fatalf("Failed to save project config: %v", err)
+		}
+
 		cmd.ResetGlobalState()
-		registerCmd := shared.CreateTestCLIWithArgs("register", []string{"--file", projectPublicKeyPath}, nil, nil, false, false)
+		registerCmd := shared.CreateTestCLIWithArgs("register", []string{"--pubkey", user.pubKey, "--user", user.email}, nil, nil, false, false)
 		if err := registerCmd.Execute(); err != nil {
-			t.Fatalf("Failed to register user %s: %v", user, err)
+			t.Fatalf("Failed to register user %s: %v", user.email, err)
 		}
 
-		t.Logf("Registered user %d: %s", i+1, user)
-	}
-
-	// List all files in the directories to debug
-	publicKeyFiles, err := os.ReadDir(publicKeysDir)
-	if err != nil {
-		t.Fatalf("Failed to read public keys directory: %v", err)
-	}
-	t.Logf("Files in public keys directory: %v", publicKeysDir)
-	for _, file := range publicKeyFiles {
-		t.Logf("  - %s", file.Name())
+		t.Logf("Registered user %d: %s", i+1, user.email)
 	}
 
 	secretFiles, err := os.ReadDir(secretsDir)
@@ -130,23 +138,12 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		t.Logf("  - %s", file.Name())
 	}
 
-	// Remove the second user using --file flag (use relative path)
-	userToRemove := users[1] // user2
-	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", userToRemove+".kanuka")
+	userToRemove := users[1]
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", userToRemove.uuid+".kanuka")
 	cmd.ResetGlobalState()
 	revokeCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
 	if err := revokeCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
-	}
-
-	// List files again after removal to see what changed
-	publicKeyFilesAfter, err := os.ReadDir(publicKeysDir)
-	if err != nil {
-		t.Fatalf("Failed to read public keys directory after removal: %v", err)
-	}
-	t.Logf("Files in public keys directory after removal:")
-	for _, file := range publicKeyFilesAfter {
-		t.Logf("  - %s", file.Name())
 	}
 
 	secretFilesAfter, err := os.ReadDir(secretsDir)
@@ -158,29 +155,26 @@ func testRevokeOneUserFromMultipleUsers(t *testing.T, originalWd string, origina
 		t.Logf("  - %s", file.Name())
 	}
 
-	// Verify that the kanuka key file for the removed user is gone
-	removedUserKanukaKeyPath := filepath.Join(secretsDir, userToRemove+".kanuka")
+	removedUserKanukaKeyPath := filepath.Join(secretsDir, userToRemove.uuid+".kanuka")
 
 	if _, err := os.Stat(removedUserKanukaKeyPath); !os.IsNotExist(err) {
-		t.Errorf("Kanuka key file for removed user %s should be gone", userToRemove)
+		t.Errorf("Kanuka key file for removed user %s should be gone", userToRemove.email)
 	}
 
-	// Verify that the number of secret files has decreased
 	if len(secretFilesAfter) >= len(secretFiles) {
 		t.Errorf("Expected fewer secret files after removal, but got %d before and %d after",
 			len(secretFiles), len(secretFilesAfter))
 	}
 
-	// Verify other users' kanuka key files still exist
 	for _, user := range users {
-		if user == userToRemove {
-			continue // Skip the removed user
+		if user.uuid == userToRemove.uuid {
+			continue
 		}
 
-		kanukaKeyPath := filepath.Join(secretsDir, user+".kanuka")
+		kanukaKeyPath := filepath.Join(secretsDir, user.uuid+".kanuka")
 
 		if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
-			t.Errorf("Kanuka key file for user %s should still exist", user)
+			t.Errorf("Kanuka key file for user %s should still exist", user.email)
 		}
 	}
 }

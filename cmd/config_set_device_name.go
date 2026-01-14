@@ -137,6 +137,27 @@ Examples:
 		if err := configs.SaveUserConfig(userConfig); err != nil {
 			return ConfigLogger.ErrorfAndReturn("Failed to save user config: %v", err)
 		}
+		ConfigLogger.Infof("User config saved successfully")
+
+		if configs.ProjectKanukaSettings.ProjectPath != "" {
+			ConfigLogger.Debugf("Updating project config")
+			projectConfig, err := configs.LoadProjectConfig()
+			if err != nil {
+				return ConfigLogger.ErrorfAndReturn("Failed to load project config: %v", err)
+			}
+
+			if deviceConfig, exists := projectConfig.Devices[userConfig.User.UUID]; exists {
+				deviceConfig.Name = deviceName
+				projectConfig.Devices[userConfig.User.UUID] = deviceConfig
+
+				if err := configs.SaveProjectConfig(projectConfig); err != nil {
+					return ConfigLogger.ErrorfAndReturn("Failed to save project config: %v", err)
+				}
+				ConfigLogger.Infof("Project config updated successfully")
+			} else {
+				ConfigLogger.Warnf("Device not found in project config - only user config updated")
+			}
+		}
 
 		ConfigLogger.Infof("Device name set successfully")
 

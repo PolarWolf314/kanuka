@@ -1,6 +1,10 @@
 package revoke
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +15,6 @@ import (
 )
 
 func TestSecretsRemoveIntegration(t *testing.T) {
-	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
@@ -24,7 +27,6 @@ func TestSecretsRemoveIntegration(t *testing.T) {
 }
 
 func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Setup test environment
 	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
@@ -37,7 +39,6 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 	}
 	defer os.RemoveAll(tempUserDir)
 
-	// Change to temp directory
 	if err := os.Chdir(tempDir); err != nil {
 		t.Fatalf("Failed to change to temp directory: %v", err)
 	}
@@ -47,7 +48,6 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		}
 	}()
 
-	// Setup user settings
 	configs.UserKanukaSettings = &configs.UserSettings{
 		UserKeysPath:    filepath.Join(tempUserDir, "keys"),
 		UserConfigsPath: filepath.Join(tempUserDir, "config"),
@@ -57,7 +57,6 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		configs.UserKanukaSettings = originalUserSettings
 	}()
 
-	// Create user directories
 	if err := os.MkdirAll(configs.UserKanukaSettings.UserKeysPath, 0755); err != nil {
 		t.Fatalf("Failed to create user keys directory: %v", err)
 	}
@@ -65,7 +64,6 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to create user configs directory: %v", err)
 	}
 
-	// Create user config with UUID so init doesn't prompt for interactive setup.
 	userConfig := &configs.UserConfig{
 		User: configs.User{
 			UUID:  shared.TestUserUUID,
@@ -77,43 +75,48 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		t.Fatalf("Failed to save user config: %v", err)
 	}
 
-	// Initialize the project
 	cmd.ResetGlobalState()
 	initCmd := shared.CreateTestCLIWithArgs("init", []string{"--yes"}, nil, nil, false, false)
 	if err := initCmd.Execute(); err != nil {
 		t.Fatalf("Failed to initialize project: %v", err)
 	}
 
-	// Register a second user using --file flag
-	secondUser := "seconduser"
-	kanukaDir := filepath.Join(tempDir, ".kanuka")
-	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
-	secretsDir := filepath.Join(kanukaDir, "secrets")
+	secondUserUUID := "second-user-uuid-1234"
+	secondUserEmail := "seconduser@example.com"
 
-	// Generate key pair for second user, saving public key to project directory
-	privateKeyPath := filepath.Join(tempUserDir, "private.key")
-	projectPublicKeyPath := filepath.Join(publicKeysDir, secondUser+".pub")
-
-	if err := shared.GenerateRSAKeyPair(privateKeyPath, projectPublicKeyPath); err != nil {
-		t.Fatalf("Failed to generate RSA key pair: %v", err)
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate RSA key: %v", err)
 	}
 
-	// Register the second user using --file flag
+	pubASN1, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		t.Fatalf("Failed to marshal public key: %v", err)
+	}
+
+	pubPem := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubASN1,
+	}
+	pubKey := string(pem.EncodeToMemory(pubPem))
+
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectConfig.Users[secondUserUUID] = secondUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
 	cmd.ResetGlobalState()
-	registerCmd := shared.CreateTestCLIWithArgs("register", []string{"--file", projectPublicKeyPath}, nil, nil, false, false)
+	registerCmd := shared.CreateTestCLIWithArgs("register", []string{"--pubkey", pubKey, "--user", secondUserEmail}, nil, nil, false, false)
 	if err := registerCmd.Execute(); err != nil {
 		t.Fatalf("Failed to register second user: %v", err)
 	}
 
-	// List all files in the directories to debug
-	publicKeyFiles, err := os.ReadDir(publicKeysDir)
-	if err != nil {
-		t.Fatalf("Failed to read public keys directory: %v", err)
-	}
-	t.Logf("Files in public keys directory: %v", publicKeysDir)
-	for _, file := range publicKeyFiles {
-		t.Logf("  - %s", file.Name())
-	}
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	secretsDir := filepath.Join(kanukaDir, "secrets")
 
 	secretFiles, err := os.ReadDir(secretsDir)
 	if err != nil {
@@ -124,26 +127,22 @@ func testRemoveUserAfterRegistration(t *testing.T, originalWd string, originalUs
 		t.Logf("  - %s", file.Name())
 	}
 
-	// Verify second user's kanuka file exists
-	registeredKanukaKeyPath := filepath.Join(secretsDir, secondUser+".kanuka")
+	registeredKanukaKeyPath := filepath.Join(secretsDir, secondUserUUID+".kanuka")
 
-	var statErr error
-	if _, statErr = os.Stat(registeredKanukaKeyPath); os.IsNotExist(statErr) {
+	if _, statErr := os.Stat(registeredKanukaKeyPath); os.IsNotExist(statErr) {
 		t.Fatal("Kanuka key file should exist after registration")
 	}
 
 	t.Logf("Found kanuka key file: %v", registeredKanukaKeyPath)
 
-	// Remove the user using --file flag (use relative path)
-	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", secondUser+".kanuka")
+	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", secondUserUUID+".kanuka")
 	cmd.ResetGlobalState()
 	revokeCmd := shared.CreateTestCLIWithArgs("revoke", []string{"--file", relativeKanukaKeyPath}, nil, nil, false, false)
 	if err := revokeCmd.Execute(); err != nil {
 		t.Errorf("Remove command should succeed: %v", err)
 	}
 
-	// Verify kanuka key file is revoked
-	if _, statErr = os.Stat(registeredKanukaKeyPath); !os.IsNotExist(statErr) {
+	if _, err := os.Stat(registeredKanukaKeyPath); !os.IsNotExist(err) {
 		t.Error("Kanuka key file should be revoked")
 	}
 }
