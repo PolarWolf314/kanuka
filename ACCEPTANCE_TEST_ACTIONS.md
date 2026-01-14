@@ -13,7 +13,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
-- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017, ERR-018
+- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017, ERR-018, ERR-006, ERR-014
 - In Progress: None
 
 **Recommended Fix Order:**
@@ -1859,6 +1859,27 @@ fi
 **Recommended Order:** 9
 **Estimated Effort:** 1 hour
 
+### Status: ✅ COMPLETED
+
+### Implementation Notes
+Added gzip error detection and user-friendly error message in `cmd/secrets_import.go:106-118`. The fix:
+1. Detects when `listArchiveContents` returns a gzip-related error
+2. Stops the spinner explicitly to prevent FinalMSG interference
+3. Displays user-friendly message: "Invalid archive file: <path>"
+4. Provides helpful suggestion: "Ensure it was created with kanuka secrets export"
+5. Returns formatted error to trigger Cobra's error handling
+
+**Modified Files:**
+- `cmd/secrets_import.go`: Added gzip error detection and user-friendly error handling (lines 106-118)
+- `test/integration/import/import_test.go`: Updated TestImport_InvalidArchive to check for user-friendly message and verify no technical error details
+
+**Tests Updated:**
+- TestImport_InvalidArchive now verifies:
+  - User-friendly message is displayed
+  - No technical error details ("gzip: invalid header") are shown
+  - Helpful suggestion about export command is present
+  - Command fails with non-zero exit code
+
 ### Context
 When importing an invalid archive (not a valid gzip file), the command shows a Go error message about gzip header instead of a user-friendly error. Users see "gzip: invalid header" which is technical and not helpful.
 
@@ -1870,10 +1891,10 @@ The error from `listArchiveContents` is returned via `Logger.ErrorfAndReturn`, w
 - `cmd/secrets_import.go:200-229` (listArchiveContents)
 
 ### Acceptance Criteria
-- [ ] Invalid archive shows user-friendly error
-- [ ] No technical "gzip: invalid header" error
-- [ ] Helpful suggestion: Ensure archive was created with `kanuka secrets export`
-- [ ] Clear indication of what went wrong
+- [x] Invalid archive shows user-friendly error
+- [x] No technical "gzip: invalid header" error
+- [x] Helpful suggestion: Ensure archive was created with `kanuka secrets export`
+- [x] Clear indication of what went wrong
 
 ### Before
 ```bash

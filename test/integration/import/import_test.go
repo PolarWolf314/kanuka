@@ -593,14 +593,29 @@ func TestImport_InvalidArchive(t *testing.T) {
 	}
 
 	// Try to import invalid archive.
-	_, err = shared.CaptureOutput(func() error {
-		testCmd := shared.CreateTestCLIWithArgs("import", []string{invalidArchive}, nil, nil, false, false)
+	output, err := shared.CaptureOutput(func() error {
+		testCmd := shared.CreateTestCLIWithArgs("import", []string{invalidArchive}, nil, nil, true, false)
 		return testCmd.Execute()
 	})
 
 	// Should fail.
 	if err == nil {
 		t.Errorf("Expected error for invalid archive, got none")
+	}
+
+	// Should NOT contain technical error details (like "gzip: invalid header").
+	if strings.Contains(output, "gzip: invalid header") || strings.Contains(output, "failed to create gzip reader") {
+		t.Errorf("Technical error details found in output: %s", output)
+	}
+
+	// Should contain user-friendly message.
+	if !strings.Contains(output, "not a valid gzip archive") {
+		t.Errorf("Expected user-friendly message about gzip archive, got: %s", output)
+	}
+
+	// Should mention how to fix (export command).
+	if !strings.Contains(output, "kanuka secrets export") {
+		t.Errorf("Expected helpful suggestion about export command, got: %s", output)
 	}
 }
 

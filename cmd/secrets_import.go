@@ -107,6 +107,14 @@ Examples:
 		Logger.Debugf("Validating archive structure")
 		archiveFiles, err := listArchiveContents(archivePath)
 		if err != nil {
+			if strings.Contains(err.Error(), "gzip") || strings.Contains(err.Error(), "invalid header") {
+				spinner.Stop()
+				finalMessage := ui.Error.Sprint("✗") + " Invalid archive file: " + ui.Path.Sprint(archivePath) + "\n\n" +
+					ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:\n" +
+					"   " + ui.Code.Sprint("kanuka secrets export")
+				fmt.Println(finalMessage)
+				return fmt.Errorf("invalid archive")
+			}
 			return Logger.ErrorfAndReturn("failed to read archive: %v", err)
 		}
 
