@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/audit"
@@ -622,6 +623,22 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
+	filename := filepath.Base(customFilePath)
+	targetUserUUID := strings.TrimSuffix(filename, ".pub")
+
+	uuidRegex := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	if !uuidRegex.MatchString(targetUserUUID) {
+		finalMessage := ui.Error.Sprint("✗") + " Public key file must be named <uuid>.pub\n\n" +
+			ui.Info.Sprint("→") + " Rename your public key file to use UUID, or use --user and --pubkey flags instead\n\n" +
+			"Example:\n" +
+			"  mv /tmp/mykey.pub /tmp/550e8400-e29b-41d4-a716-446655440000.pub\n" +
+			"  kanuka secrets register --file /tmp/550e8400-e29b-41d4-a716-446655440000.pub\n\n" +
+			"Or:\n" +
+			"  kanuka secrets register --user user@example.com --pubkey \"$(cat /tmp/mykey.pub)\""
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
 	// Load the custom public key
 	Logger.Debugf("Loading public key from custom file: %s", customFilePath)
 	targetUserPublicKey, err := secrets.LoadPublicKey(customFilePath)
@@ -674,14 +691,18 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		return nil
 	}
 
-	// The target user UUID is the filename without .pub extension
-	targetUserUUID := strings.TrimSuffix(filepath.Base(customFilePath), ".pub")
-
 	// Try to find email for display purposes
 	targetEmail := projectConfig.Users[targetUserUUID]
 	displayName := targetEmail
 	if displayName == "" {
-		displayName = targetUserUUID
+		if registerUserEmail == "" {
+			finalMessage := ui.Error.Sprint("✗") + " UUID " + ui.Highlight.Sprint(targetUserUUID) + " not found in project\n\n" +
+				ui.Info.Sprint("→") + " To register a new user with this UUID, provide the --user flag:\n" +
+				"   " + ui.Code.Sprint("kanuka secrets register --file "+customFilePath+" --user <email>")
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+		displayName = registerUserEmail
 	}
 
 	// Compute path for output
@@ -704,6 +725,33 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	if registerDryRun {
 		printRegisterDryRunForFile(spinner, displayName, customFilePath, targetKanukaFilePath)
 		return nil
+	}
+
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+	targetPubkeyPath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
+
+	if !fileExists(targetPubkeyPath) {
+		Logger.Debugf("Copying public key to project directory: %s", targetPubkeyPath)
+		if err := secrets.SavePublicKeyToFile(targetUserPublicKey, targetPubkeyPath); err != nil {
+			Logger.Errorf("Failed to copy public key to project: %v", err)
+			finalMessage := ui.Error.Sprint("✗") + " Failed to copy public key to " + ui.Path.Sprint(targetPubkeyPath) + "\n" +
+				ui.Error.Sprint("Error: ") + err.Error()
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+		Logger.Infof("Public key copied to project directory successfully")
+
+		if registerUserEmail != "" && projectConfig.Users[targetUserUUID] == "" {
+			projectConfig.Users[targetUserUUID] = registerUserEmail
+			if err := configs.SaveProjectConfig(projectConfig); err != nil {
+				Logger.Errorf("Failed to update project config: %v", err)
+				finalMessage := ui.Error.Sprint("✗") + " Failed to update project config\n" +
+					ui.Error.Sprint("Error: ") + err.Error()
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			Logger.Infof("User added to project config: %s -> %s", targetUserUUID, registerUserEmail)
+		}
 	}
 
 	// Re-decrypt symmetric key for actual use (we verified it works above)
@@ -743,7 +791,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(displayName) + " " + successVerb + " successfully!\n\n" +
 		filesLabel + ":\n" +
-		"  Public key:    " + ui.Path.Sprint(customFilePath) + " (provided)\n" +
+		"  Public key:    " + ui.Path.Sprint(targetPubkeyPath) + "\n" +
 		"  Encrypted key: " + ui.Path.Sprint(targetKanukaFilePath) + "\n\n" +
 		ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage

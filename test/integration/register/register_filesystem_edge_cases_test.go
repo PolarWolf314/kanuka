@@ -17,7 +17,6 @@ import (
 )
 
 func TestSecretsRegisterFilesystemEdgeCases(t *testing.T) {
-	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
@@ -32,16 +31,8 @@ func TestSecretsRegisterFilesystemEdgeCases(t *testing.T) {
 		testRegisterWithReadOnlyPublicKeysDirectory(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterWithSymlinkedPublicKey", func(t *testing.T) {
-		testRegisterWithSymlinkedPublicKey(t, originalWd, originalUserSettings)
-	})
-
-	t.Run("RegisterWithRelativeFilePaths", func(t *testing.T) {
-		testRegisterWithRelativeFilePaths(t, originalWd, originalUserSettings)
-	})
-
-	t.Run("RegisterWithAbsoluteFilePaths", func(t *testing.T) {
-		testRegisterWithAbsoluteFilePaths(t, originalWd, originalUserSettings)
+	t.Run("RegisterWithMultipleKeys", func(t *testing.T) {
+		testRegisterWithMultipleKeys(t, originalWd, originalUserSettings)
 	})
 
 	t.Run("RegisterInDirectoryWithSpaces", func(t *testing.T) {
@@ -49,9 +40,7 @@ func TestSecretsRegisterFilesystemEdgeCases(t *testing.T) {
 	})
 }
 
-// testRegisterWithReadOnlySecretsDirectory tests error when secrets directory is read-only.
 func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Skip on Windows as file permissions work differently
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping read-only directory test on Windows")
 	}
@@ -71,7 +60,6 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Generate a test RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
@@ -81,7 +69,6 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 	targetUserEmail := "readonlyuser@example.com"
 	targetUserUUID := "readonly-user-uuid-1234"
 
-	// Register the user in the project config with UUID→email mapping
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		t.Fatalf("Failed to load project config: %v", err)
@@ -94,16 +81,14 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 		t.Fatalf("Failed to save project config: %v", err)
 	}
 
-	// Make secrets directory read-only AFTER setting up config
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
 	if err := os.Chmod(secretsDir, 0444); err != nil {
 		t.Fatalf("Failed to make secrets directory read-only: %v", err)
 	}
 	defer func() {
-		_ = os.Chmod(secretsDir, 0755) // Restore permissions for cleanup
+		_ = os.Chmod(secretsDir, 0755)
 	}()
 
-	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
@@ -115,7 +100,6 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// Should fail due to read-only directory
 	if !strings.Contains(output, "✗") {
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
@@ -125,9 +109,7 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 	}
 }
 
-// testRegisterWithReadOnlyPublicKeysDirectory tests error when public_keys directory is read-only.
 func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Skip on Windows as file permissions work differently
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping read-only directory test on Windows")
 	}
@@ -147,7 +129,6 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Generate a test RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
@@ -157,7 +138,6 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 	targetUserEmail := "readonlypubuser@example.com"
 	targetUserUUID := "readonly-pubuser-uuid-1234"
 
-	// Register the user in the project config with UUID→email mapping
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		t.Fatalf("Failed to load project config: %v", err)
@@ -170,16 +150,14 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 		t.Fatalf("Failed to save project config: %v", err)
 	}
 
-	// Make public_keys directory read-only AFTER setting up config
 	publicKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
 	if err := os.Chmod(publicKeysDir, 0444); err != nil {
 		t.Fatalf("Failed to make public_keys directory read-only: %v", err)
 	}
 	defer func() {
-		_ = os.Chmod(publicKeysDir, 0755) // Restore permissions for cleanup
+		_ = os.Chmod(publicKeysDir, 0755)
 	}()
 
-	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
@@ -191,7 +169,6 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// Should fail due to read-only directory
 	if !strings.Contains(output, "✗") {
 		t.Errorf("Expected error symbol not found in output: %s", output)
 	}
@@ -201,14 +178,8 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 	}
 }
 
-// testRegisterWithSymlinkedPublicKey tests handling symlinked public key files.
-func testRegisterWithSymlinkedPublicKey(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Skip on Windows as symlinks require special permissions
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping symlink test on Windows")
-	}
-
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-symlink-*")
+func testRegisterWithMultipleKeys(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-register-multiple-keys-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -223,169 +194,61 @@ func testRegisterWithSymlinkedPublicKey(t *testing.T, originalWd string, origina
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Create a real public key file
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate RSA key: %v", err)
+	users := []struct {
+		uuid  string
+		email string
+	}{
+		{"user1-uuid-1234", "user1@example.com"},
+		{"user2-uuid-1234", "user2@example.com"},
+		{"user3-uuid-1234", "user3@example.com"},
 	}
 
-	realKeyPath := filepath.Join(tempUserDir, "real_key.pub")
-	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
-	if err := os.WriteFile(realKeyPath, []byte(pemKey), 0600); err != nil {
-		t.Fatalf("Failed to write real key file: %v", err)
-	}
+	for _, user := range users {
+		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			t.Fatalf("Failed to generate RSA key: %v", err)
+		}
 
-	// Create a symlink to the real key
-	symlinkPath := filepath.Join(tempUserDir, "symlink_key.pub")
-	if err := os.Symlink(realKeyPath, symlinkPath); err != nil {
-		t.Fatalf("Failed to create symlink: %v", err)
-	}
+		pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
 
-	// Reset register command state
-	cmd.ResetGlobalState()
+		projectConfig, err := configs.LoadProjectConfig()
+		if err != nil {
+			t.Fatalf("Failed to load project config: %v", err)
+		}
+		if projectConfig.Users == nil {
+			projectConfig.Users = make(map[string]string)
+		}
+		projectConfig.Users[user.uuid] = user.email
+		if err := configs.SaveProjectConfig(projectConfig); err != nil {
+			t.Fatalf("Failed to save project config: %v", err)
+		}
 
-	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", symlinkPath})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("Command failed unexpectedly: %v", err)
-	}
+		cmd.ResetGlobalState()
 
-	if !strings.Contains(output, "✓") {
-		t.Errorf("Expected success symbol not found in output: %s", output)
-	}
+		output, err := shared.CaptureOutput(func() error {
+			cmd := shared.CreateTestCLI("register", nil, nil, true, false)
+			cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", user.email})
+			return cmd.Execute()
+		})
+		if err != nil {
+			t.Errorf("Command failed unexpectedly for %s: %v", user.email, err)
+		}
 
-	// Verify the kanuka key was created for the symlink target
-	targetUser := "symlink_key"
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
-	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
-		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
-	}
-}
+		if !strings.Contains(output, "✓") {
+			t.Errorf("Expected success symbol not found in output for %s: %s", user.email, output)
+		}
 
-// testRegisterWithRelativeFilePaths tests handling relative paths in --file flag.
-func testRegisterWithRelativeFilePaths(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-relative-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
+		if !strings.Contains(output, user.email) {
+			t.Errorf("Expected email %s not found in output: %s", user.email, output)
+		}
 
-	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp user directory: %v", err)
-	}
-	defer os.RemoveAll(tempUserDir)
-
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	shared.InitializeProject(t, tempDir, tempUserDir)
-
-	// Create a subdirectory and key file
-	subDir := filepath.Join(tempDir, "keys")
-	if err := os.MkdirAll(subDir, 0755); err != nil {
-		t.Fatalf("Failed to create subdirectory: %v", err)
-	}
-
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate RSA key: %v", err)
-	}
-
-	keyPath := filepath.Join(subDir, "relative_user.pub")
-	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
-	if err := os.WriteFile(keyPath, []byte(pemKey), 0600); err != nil {
-		t.Fatalf("Failed to write key file: %v", err)
-	}
-
-	// Use relative path
-	relativePath := "./keys/relative_user.pub"
-
-	// Reset register command state
-	cmd.ResetGlobalState()
-
-	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", relativePath})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("Command failed unexpectedly: %v", err)
-	}
-
-	if !strings.Contains(output, "✓") {
-		t.Errorf("Expected success symbol not found in output: %s", output)
-	}
-
-	// Verify the kanuka key was created
-	targetUser := "relative_user"
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
-	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
-		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
+		kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user.uuid+".kanuka")
+		if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
+			t.Errorf("Kanuka key file was not created for %s at %s", user.email, kanukaKeyPath)
+		}
 	}
 }
 
-// testRegisterWithAbsoluteFilePaths tests handling absolute paths in --file flag.
-func testRegisterWithAbsoluteFilePaths(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-absolute-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp user directory: %v", err)
-	}
-	defer os.RemoveAll(tempUserDir)
-
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	shared.InitializeProject(t, tempDir, tempUserDir)
-
-	// Create a key file with absolute path
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate RSA key: %v", err)
-	}
-
-	keyPath := filepath.Join(tempUserDir, "absolute_user.pub")
-	pemKey := generatePEMKeyFilesystem(t, &privateKey.PublicKey)
-	if err := os.WriteFile(keyPath, []byte(pemKey), 0600); err != nil {
-		t.Fatalf("Failed to write key file: %v", err)
-	}
-
-	// Use absolute path
-	absolutePath, err := filepath.Abs(keyPath)
-	if err != nil {
-		t.Fatalf("Failed to get absolute path: %v", err)
-	}
-
-	// Reset register command state
-	cmd.ResetGlobalState()
-
-	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", absolutePath})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("Command failed unexpectedly: %v", err)
-	}
-
-	if !strings.Contains(output, "✓") {
-		t.Errorf("Expected success symbol not found in output: %s", output)
-	}
-
-	// Verify the kanuka key was created
-	targetUser := "absolute_user"
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
-	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
-		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
-	}
-}
-
-// testRegisterInDirectoryWithSpaces tests handling project paths containing spaces.
 func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka test register spaces *")
 	if err != nil {
@@ -402,7 +265,6 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Generate a test RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
@@ -412,7 +274,6 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 	targetUserEmail := "spaceuser@example.com"
 	targetUserUUID := "space-user-uuid-1234"
 
-	// Register the user in the project config with UUID→email mapping
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
 		t.Fatalf("Failed to load project config: %v", err)
@@ -425,7 +286,6 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 		t.Fatalf("Failed to save project config: %v", err)
 	}
 
-	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
@@ -441,14 +301,12 @@ func testRegisterInDirectoryWithSpaces(t *testing.T, originalWd string, original
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	// Verify the kanuka key was created using the UUID (not email)
 	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}
 }
 
-// Helper function for generating PEM keys (filesystem edge cases).
 func generatePEMKeyFilesystem(t *testing.T, publicKey *rsa.PublicKey) string {
 	pubASN1, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {

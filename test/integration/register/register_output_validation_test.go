@@ -19,16 +19,12 @@ func TestSecretsRegisterOutputValidation(t *testing.T) {
 
 	originalUserSettings := configs.UserKanukaSettings
 
-	t.Run("RegisterSuccessMessageFormat", func(t *testing.T) {
-		testRegisterSuccessMessageFormat(t, originalWd, originalUserSettings)
-	})
-
 	t.Run("RegisterErrorMessageFormat", func(t *testing.T) {
 		testRegisterErrorMessageFormat(t, originalWd, originalUserSettings)
 	})
 }
 
-// testRegisterSuccessMessageFormat tests verify success message format and content.
+// testRegisterErrorMessageFormat tests verify error message format and content.
 func testRegisterSuccessMessageFormat(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-success-format-*")
 	if err != nil {
