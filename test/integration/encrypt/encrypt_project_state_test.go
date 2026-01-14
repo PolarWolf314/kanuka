@@ -273,8 +273,11 @@ func testEncryptWithCorruptedSymmetricKey(t *testing.T, originalWd string, origi
 	})
 
 	// The CLI command may not return an error code, but should show failure in output
-	if !strings.Contains(output, "Failed to decrypt your .kanuka file") || !strings.Contains(output, "decryption error") {
+	if !strings.Contains(output, "Failed to decrypt your .kanuka file") {
 		t.Errorf("Expected error message about decryption failure, got: %s", output)
+	}
+	if !strings.Contains(output, "corrupted") {
+		t.Errorf("Expected helpful suggestion about corrupted file, got: %s", output)
 	}
 }
 

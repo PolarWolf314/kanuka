@@ -485,9 +485,9 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUserUUID, err)
 		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(kanukaKeyPath) + "\n\n" +
-			"Are you sure you have access?\n\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 		spinner.FinalMSG = finalMessage
+		spinner.Stop()
 		return nil
 	}
 
@@ -503,9 +503,9 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 			errorSource = "from stdin"
 		}
 		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your private key " + errorSource + "\n\n" +
-			"Are you sure you have access?\n\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 		spinner.FinalMSG = finalMessage
+		spinner.Stop()
 		return nil
 	}
 
@@ -517,9 +517,9 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
 			"    Kānuka key path: " + ui.Path.Sprint(kanukaKeyPath) + "\n" +
 			"    Private key path: " + ui.Path.Sprint(privateKeyPath) + "\n\n" +
-			"Are you sure you have access?\n\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 		spinner.FinalMSG = finalMessage
+		spinner.Stop()
 		return nil
 	}
 

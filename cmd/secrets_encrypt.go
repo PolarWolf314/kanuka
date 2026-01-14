@@ -169,8 +169,9 @@ Examples:
 			if err != nil {
 				Logger.Errorf("Failed to parse private key from stdin: %v", err)
 				finalMessage := ui.Error.Sprint("✗") + " Failed to parse private key from stdin\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+					ui.Info.Sprint("→") + " Ensure your private key is in valid format (PEM or OpenSSH)"
 				spinner.FinalMSG = finalMessage
+				spinner.Stop()
 				return nil
 			}
 			Logger.Infof("Private key loaded successfully from stdin")
@@ -180,9 +181,11 @@ Examples:
 			privateKey, err = secrets.LoadPrivateKey(privateKeyPath)
 			if err != nil {
 				Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?\n\n" +
+					ui.Info.Sprint("→") + " You don't have access to this project. Ask someone with access to run:\n" +
+					"   " + ui.Code.Sprint("kanuka secrets register --user <your-email>")
 				spinner.FinalMSG = finalMessage
+				spinner.Stop()
 				return nil
 			}
 			Logger.Infof("Private key loaded successfully")
@@ -203,10 +206,11 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to decrypt symmetric key: %v", err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
-
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n\n" +
+				ui.Info.Sprint("→") + " Your encrypted key file appears to be corrupted.\n" +
+				"   Try asking the project administrator to revoke and re-register your access."
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
@@ -219,10 +223,11 @@ Examples:
 		Logger.Infof("Encrypting %d files", len(listOfEnvFiles))
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
 			Logger.Errorf("Failed to encrypt files: %v", err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to encrypt the project's " +
-				ui.Path.Sprint(".env") + " files. Are you sure you have access?\n" +
+			finalMessage := ui.Error.Sprint("✗") + " Failed to encrypt to project's " +
+				ui.Path.Sprint(".env") + " files. Are you sure you have access?\n\n" +
 				ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 
