@@ -16,8 +16,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var encryptDryRun bool
-var encryptPrivateKeyStdin bool
+var (
+	encryptDryRun          bool
+	encryptPrivateKeyStdin bool
+)
 
 func init() {
 	encryptCmd.Flags().BoolVar(&encryptDryRun, "dry-run", false, "preview encryption without making changes")
@@ -143,9 +145,11 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to get your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n\n" +
+				ui.Info.Sprint("→") + " You don't have access to this project. Ask someone with access to run:\n" +
+				"   " + ui.Code.Sprint("kanuka secrets register --user <your-email>\n")
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 

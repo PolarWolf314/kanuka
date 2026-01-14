@@ -88,8 +88,11 @@ func testEncryptWithCorruptedKanukaDir(t *testing.T, originalWd string, original
 	})
 
 	// The CLI command may not return an error code, but should show failure in output
-	if !strings.Contains(output, "Failed to get your .kanuka file") || !strings.Contains(output, "no such file or directory") {
-		t.Errorf("Expected error message about missing symmetric key file, got: %s", output)
+	if !strings.Contains(output, "Failed to get your .kanuka file") {
+		t.Errorf("Expected error message about missing .kanuka file, got: %s", output)
+	}
+	if !strings.Contains(output, "You don't have access to this project") {
+		t.Errorf("Expected helpful suggestion about access, got: %s", output)
 	}
 }
 
@@ -177,8 +180,11 @@ func testEncryptWithMissingSymmetricKey(t *testing.T, originalWd string, origina
 	})
 
 	// The CLI command may not return an error code, but should show failure in output
-	if !strings.Contains(output, "Failed to get your .kanuka file") || !strings.Contains(output, "no such file or directory") {
-		t.Errorf("Expected error message about missing symmetric key file, got: %s", output)
+	if !strings.Contains(output, "Failed to get your .kanuka file") {
+		t.Errorf("Expected error message about missing .kanuka file, got: %s", output)
+	}
+	if !strings.Contains(output, "You don't have access to this project") {
+		t.Errorf("Expected helpful suggestion about access, got: %s", output)
 	}
 }
 

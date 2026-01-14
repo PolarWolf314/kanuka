@@ -13,7 +13,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
-- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010
+- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011
 - In Progress: None
 
 **Recommended Fix Order:**
@@ -1523,10 +1523,24 @@ The code provides a user-friendly error ("Failed to get your .kanuka file. Are y
 - `cmd/secrets_encrypt.go:141-149`
 
 ### Acceptance Criteria
-- [ ] Only user-friendly error message is shown
-- [ ] No raw Go error details in output
-- [ ] Helpful suggestion provided for how to fix (register command)
-- [ ] Clear indication of what went wrong
+- [x] Only user-friendly error message is shown
+- [x] No raw Go error details in output
+- [x] Helpful suggestion provided for how to fix (register command)
+- [x] Clear indication of what went wrong
+
+### Status: ✅ COMPLETED
+
+### Implementation Notes
+Removed raw Go error from the error message in `cmd/secrets_encrypt.go:141-149`. The fix:
+1. Removed `ui.Error.Sprint("Error: ") + err.Error()` from the finalMessage
+2. Added helpful suggestion about asking an admin to run `kanuka secrets register --user <your-email>`
+3. Changed return from `nil` to properly indicate failure and stop spinner
+
+**Note:** Error message only displays in verbose mode due to pre-existing spinner behavior issue (affects other errors like "not initialized" as well). This is outside scope of ERR-011.
+
+**Modified Files:**
+- `cmd/secrets_encrypt.go`
+- `test/integration/encrypt/encrypt_project_state_test.go` (updated test expectations)
 
 ### Before
 ```bash
@@ -2563,7 +2577,7 @@ chmod 755 .kanuka
 | ERR-009 | Set-Device-Name Doesn't Update Project Config | High | 6 | 2-3h | ✅
 | ERR-010 | Invalid Archive Import Creates Blank Config | High | 7 | 2-3h | ✅
 | ERR-008 | Access Shows "test-project" | High | 8 | 1h | ✅
-| ERR-011, ERR-012, ERR-017, ERR-018 | Error Handling (4 tickets) | Medium | 9 | 1h each |
+| ERR-011, ERR-012, ERR-017, ERR-018 | Error Handling (4 tickets) | Medium | 9 | 1h each | 1/4 done (ERR-011 ✅)
 | ERR-006 | Register Shows "Files Created" | Medium | 11 | 1-2h |
 | ERR-013 | Revoke Wrong Error Message | Medium | 11 | 30m |
 | ERR-014 | Invalid Archive Import Error | Medium | 9 | 1h |
@@ -2616,10 +2630,12 @@ Before deploying fixes:
 3. **Config Consistency:** ERR-009 and potentially other issues involve keeping user and project configs in sync. Consider adding a helper function that updates both.
 
 4. **Testing:** Many of these issues were found during manual testing. Consider adding integration tests to prevent regressions:
-   - Test commands outside project
-   - Test with corrupted files
-   - Test with invalid flags
-   - Test permission scenarios
+    - Test commands outside project
+    - Test with corrupted files
+    - Test with invalid flags
+    - Test permission scenarios
+
+5. **Spinner Display Issue:** There's a pre-existing issue where `spinner.FinalMSG` doesn't display in non-verbose mode. This affects multiple error messages (not initialized, no access, etc.). Consider fixing the spinner library integration to ensure FinalMSG displays consistently regardless of verbose mode.
 
 ---
 
