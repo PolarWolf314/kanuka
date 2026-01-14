@@ -133,6 +133,18 @@ Examples:
 		// Load project config for project UUID
 		projectConfig, err := configs.LoadProjectConfig()
 		if err != nil {
+			if strings.Contains(err.Error(), "toml:") {
+				Logger.Errorf("Failed to load project config: %v", err)
+				finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+					ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.\n" +
+					"   " + ui.Code.Sprint(err.Error()) + "\n\n" +
+					"   To fix this issue:\n" +
+					"   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+					"   2. Or contact your project administrator for assistance"
+				spinner.FinalMSG = finalMessage
+				spinner.Stop()
+				return nil
+			}
 			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
 		}
 		projectUUID := projectConfig.Project.UUID

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
@@ -82,6 +83,13 @@ Examples:
 
 			projectConfig, err := configs.LoadProjectConfig()
 			if err != nil {
+				if strings.Contains(err.Error(), "toml:") {
+					return ConfigLogger.ErrorfAndReturn("Failed to load project config: .kanuka/config.toml is not valid TOML\n\n"+
+						"To fix this issue:\n"+
+						"  1. Restore the file from git: git checkout .kanuka/config.toml\n"+
+						"  2. Or contact your project administrator for assistance\n\n"+
+						"Details: %v", err)
+				}
 				return ConfigLogger.ErrorfAndReturn("Failed to load project config: %v", err)
 			}
 			projectUUID = projectConfig.Project.UUID
@@ -143,6 +151,18 @@ Examples:
 			ConfigLogger.Debugf("Updating project config")
 			projectConfig, err := configs.LoadProjectConfig()
 			if err != nil {
+				if strings.Contains(err.Error(), "toml:") {
+					ConfigLogger.Errorf("Failed to load project config: %v", err)
+					finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+						ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.\n" +
+						"   " + ui.Code.Sprint(err.Error()) + "\n\n" +
+						"   To fix this issue:\n" +
+						"   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+						"   2. Or contact your project administrator for assistance"
+					spinner.FinalMSG = finalMessage
+					spinner.Stop()
+					return nil
+				}
 				return ConfigLogger.ErrorfAndReturn("Failed to load project config: %v", err)
 			}
 

@@ -223,7 +223,10 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	// Load project config to look up user UUID by email
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
-		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+		if strings.Contains(err.Error(), "toml:") {
+			return fmt.Errorf("failed to load project config: .kanuka/config.toml is not valid TOML\n\nTo fix this issue:\n  1. Restore the file from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance\n\nDetails: %v", err)
+		}
+		return Logger.ErrorfAndReturn("failed to load project config: %v", err)
 	}
 
 	// Look up user UUID by email
@@ -374,6 +377,9 @@ func registerUserWithPublicKey(targetUserUUID string, targetPublicKey *rsa.Publi
 	// Load project config to get project UUID
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
+		if strings.Contains(err.Error(), "toml:") {
+			return fmt.Errorf("failed to load project config: .kanuka/config.toml is not valid TOML")
+		}
 		return err
 	}
 	projectUUID := projectConfig.Project.UUID
@@ -438,6 +444,18 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	// Load project config to get project UUID and look up target user
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
+		if strings.Contains(err.Error(), "toml:") {
+			Logger.Errorf("Failed to load project config: %v", err)
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+				ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.\n" +
+				"   " + ui.Code.Sprint(err.Error()) + "\n\n" +
+				"   To fix this issue:\n" +
+				"   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+				"   2. Or contact your project administrator for assistance"
+			spinner.FinalMSG = finalMessage
+			spinner.Stop()
+			return nil
+		}
 		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
 	}
 	projectUUID := projectConfig.Project.UUID
@@ -604,6 +622,18 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// Load project config to get project UUID
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
+		if strings.Contains(err.Error(), "toml:") {
+			Logger.Errorf("Failed to load project config: %v", err)
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+				ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.\n" +
+				"   " + ui.Code.Sprint(err.Error()) + "\n\n" +
+				"   To fix this issue:\n" +
+				"   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+				"   2. Or contact your project administrator for assistance"
+			spinner.FinalMSG = finalMessage
+			spinner.Stop()
+			return nil
+		}
 		return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
 	}
 	projectUUID := projectConfig.Project.UUID

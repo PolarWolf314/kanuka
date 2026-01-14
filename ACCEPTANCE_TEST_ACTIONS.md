@@ -13,7 +13,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
-- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017
+- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017, ERR-018
 - In Progress: None
 
 **Recommended Fix Order:**
@@ -2340,13 +2340,35 @@ The error from `LoadProjectConfig()` is wrapped and returned. The TOML parsing l
 
 **Files Affected:**
 - `cmd/secrets_status.go:98-101` (and other commands that load config)
+- `cmd/secrets_access.go:93-96`
+- `cmd/secrets_encrypt.go:135-138`
+- `cmd/secrets_decrypt.go:134-137`
+- `cmd/secrets_register.go:224-229, 382-387, 449-456, 627-634`
+- `cmd/secrets_revoke.go:227-233, 439-443, 542-551`
+- `cmd/secrets_create.go:159-164`
+- `cmd/config_set_device_name.go:84-89, 129-134, 152-162, 174-181`
 - `internal/configs/toml.go` (TOML parsing)
 
 ### Acceptance Criteria
-- [ ] Only user-friendly error message is shown
-- [ ] TOML error details wrapped in helpful message
-- [ ] Helpful suggestion: Restore from git or contact admin
-- [ ] No raw TOML parsing errors shown
+- [x] Only user-friendly error message is shown
+- [x] TOML error details wrapped in helpful message
+- [x] Helpful suggestion: Restore from git or contact admin
+- [x] No raw TOML parsing errors shown
+
+### Status: ✅ COMPLETED
+
+### Implementation Notes
+Added TOML error detection and user-friendly error messages to all commands that load project config. When a TOML parsing error is detected (error message contains "toml:"), a clear and helpful message is displayed instead of the raw Go error.
+
+**Modified Files:**
+- `cmd/secrets_status.go`: Added TOML error detection and user-friendly message
+- `cmd/secrets_access.go`: Added TOML error detection and user-friendly message
+- `cmd/secrets_encrypt.go`: Added TOML error detection and user-friendly message
+- `cmd/secrets_decrypt.go`: Added TOML error detection and user-friendly message
+- `cmd/secrets_register.go`: Added TOML error detection in multiple functions
+- `cmd/secrets_revoke.go`: Added TOML error detection in multiple functions
+- `cmd/secrets_create.go`: Added TOML error detection
+- `cmd/config_set_device_name.go`: Added TOML error detection in multiple functions
 
 ### Before
 ```bash

@@ -158,7 +158,10 @@ Examples:
 		Logger.Debugf("Loading project config for device name validation")
 		projectConfig, err := configs.LoadProjectConfig()
 		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+			if strings.Contains(err.Error(), "toml:") {
+				return fmt.Errorf("failed to load project config: .kanuka/config.toml is not valid TOML\n\nTo fix this issue:\n  1. Restore the file from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance\n\nDetails: %v", err)
+			}
+			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
 		}
 
 		// Determine device name: use flag, or auto-generate from hostname

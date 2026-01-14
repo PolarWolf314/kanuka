@@ -97,6 +97,21 @@ Use --json for machine-readable output.`,
 		// Load project config for project name.
 		projectConfig, err := configs.LoadProjectConfig()
 		if err != nil {
+			if strings.Contains(err.Error(), "toml:") {
+				if statusJSONOutput {
+					fmt.Println(`{"error": "Failed to load project configuration: config.toml is not valid TOML"}`)
+					return nil
+				}
+				fmt.Println(ui.Error.Sprint("✗") + " Failed to load project configuration.")
+				fmt.Println()
+				fmt.Println(ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.")
+				fmt.Println("   " + ui.Code.Sprint(err.Error()))
+				fmt.Println()
+				fmt.Println("   To fix this issue:")
+				fmt.Println("   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml"))
+				fmt.Println("   2. Or contact your project administrator for assistance")
+				return nil
+			}
 			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
 		}
 		projectName := projectConfig.Project.Name
