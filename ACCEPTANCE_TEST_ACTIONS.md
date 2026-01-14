@@ -13,7 +13,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
-- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009
+- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010
 - In Progress: None
 
 **Recommended Fix Order:**
@@ -23,9 +23,9 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 4. ERR-001 (Command hanging) - Critical, UX blocker - ✅ COMPLETED
 5. ERR-007 (Register --file) - High, data integrity - ✅ COMPLETED
 6. ERR-009 (Set-device-name consistency) - High, data integrity - ✅ COMPLETED
-7. ERR-010 (Import validation) - High, data integrity
+7. ERR-010 (Import validation) - High, data integrity - ✅ COMPLETED
 8. ERR-008 (Access display) - High, confusing UX - ✅ COMPLETED
-10. ERR-011, ERR-012, ERR-017, ERR-018 (Error handling) - Medium, UX improvement
+9. ERR-011, ERR-012, ERR-017, ERR-018 (Error handling) - Medium, UX improvement
 10. ERR-006, ERR-013, ERR-014, ERR-015 (UX issues) - Medium
 11. ERR-016 (Log --oneline) - Low, clarification needed
 12. ERR-019 (Read-only filesystem) - Low, investigation needed
@@ -1364,11 +1364,32 @@ The `validateArchiveStructure` function checks for the presence of `config.toml`
 - `cmd/secrets_import.go:387-391` (re-initialization)
 
 ### Acceptance Criteria
-- [ ] Import fails if archive has empty `config.toml`
-- [ ] Import fails if archive has invalid TOML in `config.toml`
-- [ ] Clear error message explains what's wrong
-- [ ] Suggest how to fix (restore from git, re-export)
-- [ ] No blank or corrupted config created
+- [x] Import fails if archive has empty `config.toml`
+- [x] Import fails if archive has invalid TOML in `config.toml`
+- [x] Clear error message explains what's wrong
+- [x] Suggest how to fix (restore from git, re-export)
+- [x] No blank or corrupted config created
+
+### Status: ✅ COMPLETED
+
+### Implementation Notes
+Added validation function `validateExtractedConfig()` that:
+1. Checks if extracted `config.toml` is empty
+2. Parses the file as TOML to validate its structure
+3. Returns clear error if validation fails
+
+Updated `performImport()` to:
+1. Call `validateExtractedConfig()` after extraction (but before dry-run check)
+2. Clean up extracted `.kanuka` directory if validation fails
+3. Return helpful error message with fix suggestions
+
+**Modified Files:**
+- `cmd/secrets_import.go`: Added `validateExtractedConfig()` function and validation call in `performImport()`
+
+**Tests Added:**
+- `TestImport_EmptyConfigFile`: Verifies import fails with empty config.toml
+- `TestImport_InvalidTOMLConfigFile`: Verifies import fails with invalid TOML
+- Both tests verify error messages are clear and cleanup happens correctly
 
 ### Before
 ```bash
@@ -2533,15 +2554,15 @@ chmod 755 .kanuka
 
 | ID | Title | Priority | Order | Effort |
 |----|-------|----------|-------|---------|
-| ERR-003 | Init Creates .kanuka Folder Too Early | Critical | 1 | 3-4h |
-| ERR-002 | Create Generates Keys Before Checking Project | Critical | 2 | 1-2h |
-| ERR-004 | Encrypt Ignores Glob Pattern | Critical | 3 | 4-5h |
-| ERR-005 | Decrypt Ignores File Path | Critical | 3 | 4-5h |
-| ERR-001 | Commands Hang When Not in Project | Critical | 4 | 2-3h |
-| ERR-007 | Register with --file Issues | High | 5 | 4-6h |
-| ERR-009 | Set-Device-Name Doesn't Update Project Config | High | 6 | 2-3h |
-| ERR-010 | Invalid Archive Import Creates Blank Config | High | 7 | 2-3h |
-| ERR-008 | Access Shows "test-project" | High | 8 | 1h |
+| ERR-003 | Init Creates .kanuka Folder Too Early | Critical | 1 | 3-4h | ✅
+| ERR-002 | Create Generates Keys Before Checking Project | Critical | 2 | 1-2h | ✅
+| ERR-004 | Encrypt Ignores Glob Pattern | Critical | 3 | 4-5h | ✅
+| ERR-005 | Decrypt Ignores File Path | Critical | 3 | 4-5h | ✅
+| ERR-001 | Commands Hang When Not in Project | Critical | 4 | 2-3h | ✅
+| ERR-007 | Register with --file Issues | High | 5 | 4-6h | ✅
+| ERR-009 | Set-Device-Name Doesn't Update Project Config | High | 6 | 2-3h | ✅
+| ERR-010 | Invalid Archive Import Creates Blank Config | High | 7 | 2-3h | ✅
+| ERR-008 | Access Shows "test-project" | High | 8 | 1h | ✅
 | ERR-011, ERR-012, ERR-017, ERR-018 | Error Handling (4 tickets) | Medium | 9 | 1h each |
 | ERR-006 | Register Shows "Files Created" | Medium | 11 | 1-2h |
 | ERR-013 | Revoke Wrong Error Message | Medium | 11 | 30m |
@@ -2559,10 +2580,10 @@ chmod 755 .kanuka
 4. ERR-001: Command hanging (3h)
 
 **Week 2: High Priority Issues**
-5. ERR-007: Register --file (6h)
-6. ERR-009: Set-device-name (3h)
-7. ERR-010: Import validation (3h)
-8. ERR-008: Access display (1h)
+5. ERR-007: Register --file (6h) ✅
+6. ERR-009: Set-device-name (3h) ✅
+7. ERR-010: Import validation (3h) ✅
+8. ERR-008: Access display (1h) ✅
 
 **Week 3: Medium Priority Issues**
 9. ERR-011, ERR-012, ERR-017, ERR-018: Error handling (4h)
@@ -2603,5 +2624,5 @@ Before deploying fixes:
 ---
 
 **Document Version:** 1.0
-**Last Updated:** 2026-01-13
+**Last Updated:** 2026-01-14
 **Based On:** ACCEPTANCE_TEST_FINDINGS.md v1.0

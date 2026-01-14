@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
@@ -256,6 +257,27 @@ func validateArchiveStructure(files []string) error {
 	return nil
 }
 
+// validateExtractedConfig validates that the extracted config.toml is not empty and is valid TOML.
+func validateExtractedConfig(projectPath string) error {
+	configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config.toml: %w", err)
+	}
+
+	if len(configContent) == 0 {
+		return fmt.Errorf("config.toml is empty")
+	}
+
+	var decoded map[string]interface{}
+	if _, err := toml.Decode(string(configContent), &decoded); err != nil {
+		return fmt.Errorf("config.toml is invalid: %w", err)
+	}
+
+	return nil
+}
+
 // promptForImportMode asks the user how to handle existing .kanuka directory.
 func promptForImportMode() (ImportMode, bool) {
 	reader := bufio.NewReader(os.Stdin)
@@ -383,8 +405,18 @@ func performImport(archivePath, projectPath string, archiveFiles []string, mode 
 		Logger.Debugf("Extracted: %s", header.Name)
 	}
 
-	// Re-initialize project settings after import.
+	// Validate extracted config.toml if not in dry-run mode.
 	if !dryRun {
+		if err := validateExtractedConfig(projectPath); err != nil {
+			os.RemoveAll(kanukaDir)
+			return nil, fmt.Errorf("invalid archive: %w\n\n"+
+				"The archive contains an invalid .kanuka/config.toml file.\n"+
+				"Ensure your backup was created with 'kanuka secrets export'\n\n"+
+				"To fix this issue:\n"+
+				"  1. Restore from a good backup\n"+
+				"  2. Or re-export from a working project: kanuka secrets export", err)
+		}
+
 		if err := configs.InitProjectSettings(); err != nil {
 			Logger.Debugf("Warning: failed to reinitialize project settings: %v", err)
 		}

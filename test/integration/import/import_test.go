@@ -862,6 +862,184 @@ func TestImport_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestImport_EmptyConfigFile(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get working directory: %v", err)
+	}
+
+	originalUserSettings := configs.UserKanukaSettings
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	// Create an archive with empty config.toml.
+	archivePath := filepath.Join(tempDir, "empty-config.tar.gz")
+	outFile, err := os.Create(archivePath)
+	if err != nil {
+		t.Fatalf("Failed to create archive file: %v", err)
+	}
+	gzWriter := gzip.NewWriter(outFile)
+	tarWriter := tar.NewWriter(gzWriter)
+
+	// Add empty config.toml.
+	configContent := []byte("")
+	configHeader := &tar.Header{
+		Name: ".kanuka/config.toml",
+		Mode: 0600,
+		Size: int64(len(configContent)),
+	}
+	if err := tarWriter.WriteHeader(configHeader); err != nil {
+		t.Fatalf("Failed to write tar header: %v", err)
+	}
+	if _, err := tarWriter.Write(configContent); err != nil {
+		t.Fatalf("Failed to write tar content: %v", err)
+	}
+
+	// Add a dummy .kanuka file to pass structure validation.
+	content := []byte("some encrypted content")
+	header := &tar.Header{
+		Name: ".env.kanuka",
+		Mode: 0600,
+		Size: int64(len(content)),
+	}
+	if err := tarWriter.WriteHeader(header); err != nil {
+		t.Fatalf("Failed to write tar header: %v", err)
+	}
+	if _, err := tarWriter.Write(content); err != nil {
+		t.Fatalf("Failed to write tar content: %v", err)
+	}
+
+	tarWriter.Close()
+	gzWriter.Close()
+	outFile.Close()
+
+	// Try to import archive with empty config.
+	output, err := shared.CaptureOutput(func() error {
+		testCmd := shared.CreateTestCLIWithArgs("import", []string{archivePath}, nil, nil, false, false)
+		return testCmd.Execute()
+	})
+
+	// Should fail with validation error.
+	if err == nil {
+		t.Errorf("Expected error for empty config.toml, got none")
+	}
+
+	// Verify error message mentions empty config.
+	if !strings.Contains(output, "empty") && !strings.Contains(output, "invalid") {
+		t.Errorf("Expected error message to mention empty/invalid config, got: %s", output)
+	}
+
+	// Verify .kanuka directory was cleaned up.
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	if _, err := os.Stat(kanukaDir); !os.IsNotExist(err) {
+		t.Errorf(".kanuka directory should have been cleaned up after validation failure")
+	}
+
+	if err := os.Chdir(originalWd); err != nil {
+		t.Fatalf("Failed to restore directory: %v", err)
+	}
+}
+
+func TestImport_InvalidTOMLConfigFile(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get working directory: %v", err)
+	}
+
+	originalUserSettings := configs.UserKanukaSettings
+	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
+
+	// Create an archive with invalid TOML config.toml.
+	archivePath := filepath.Join(tempDir, "invalid-toml.tar.gz")
+	outFile, err := os.Create(archivePath)
+	if err != nil {
+		t.Fatalf("Failed to create archive file: %v", err)
+	}
+	gzWriter := gzip.NewWriter(outFile)
+	tarWriter := tar.NewWriter(gzWriter)
+
+	// Add invalid TOML config.toml.
+	configContent := []byte("[invalid toml [unclosed bracket")
+	configHeader := &tar.Header{
+		Name: ".kanuka/config.toml",
+		Mode: 0600,
+		Size: int64(len(configContent)),
+	}
+	if err := tarWriter.WriteHeader(configHeader); err != nil {
+		t.Fatalf("Failed to write tar header: %v", err)
+	}
+	if _, err := tarWriter.Write(configContent); err != nil {
+		t.Fatalf("Failed to write tar content: %v", err)
+	}
+
+	// Add a dummy .kanuka file to pass structure validation.
+	content := []byte("some encrypted content")
+	header := &tar.Header{
+		Name: ".env.kanuka",
+		Mode: 0600,
+		Size: int64(len(content)),
+	}
+	if err := tarWriter.WriteHeader(header); err != nil {
+		t.Fatalf("Failed to write tar header: %v", err)
+	}
+	if _, err := tarWriter.Write(content); err != nil {
+		t.Fatalf("Failed to write tar content: %v", err)
+	}
+
+	tarWriter.Close()
+	gzWriter.Close()
+	outFile.Close()
+
+	// Try to import archive with invalid TOML.
+	output, err := shared.CaptureOutput(func() error {
+		testCmd := shared.CreateTestCLIWithArgs("import", []string{archivePath}, nil, nil, false, false)
+		return testCmd.Execute()
+	})
+
+	// Should fail with validation error.
+	if err == nil {
+		t.Errorf("Expected error for invalid TOML config.toml, got none")
+	}
+
+	// Verify error message mentions invalid config.
+	if !strings.Contains(output, "invalid") {
+		t.Errorf("Expected error message to mention invalid config, got: %s", output)
+	}
+
+	// Verify .kanuka directory was cleaned up.
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	if _, err := os.Stat(kanukaDir); !os.IsNotExist(err) {
+		t.Errorf(".kanuka directory should have been cleaned up after validation failure")
+	}
+
+	if err := os.Chdir(originalWd); err != nil {
+		t.Fatalf("Failed to restore directory: %v", err)
+	}
+}
+
 func TestImport_VerboseOutput(t *testing.T) {
 	// Create source project and export.
 	sourceDir, err := os.MkdirTemp("", "kanuka-source-*")
