@@ -80,8 +80,9 @@ Examples:
 
 		if projectPath == "" {
 			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first\n"
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 

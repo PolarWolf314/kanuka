@@ -18,13 +18,13 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 
 **Recommended Fix Order:**
 1. ERR-003 (Init folder cleanup) - Critical, blocks re-init
-2. ERR-002 (Create validation) - Critical, prevents bad state
-3. ERR-004 & ERR-005 (Glob patterns) - Critical, core functionality - ✅ ALREADY IMPLEMENTED
-4. ERR-001 (Command hanging) - Critical, UX blocker
+2. ERR-002 (Create validation) - Critical, prevents bad state - ✅ COMPLETED
+3. ERR-004 & ERR-005 (Glob patterns) - Critical, core functionality - ✅ COMPLETED
+4. ERR-001 (Command hanging) - Critical, UX blocker - ✅ COMPLETED
 5. ERR-007 (Register --file) - High, data integrity
 6. ERR-009 (Set-device-name consistency) - High, data integrity
 7. ERR-010 (Import validation) - High, data integrity
-8. ERR-008 (Access display) - High, confusing UX
+8. ERR-008 (Access display) - High, confusing UX - ✅ COMPLETED
 9. ERR-011, ERR-012, ERR-017, ERR-018 (Error handling) - Medium, UX improvement
 10. ERR-006, ERR-013, ERR-014, ERR-015 (UX issues) - Medium
 11. ERR-016 (Log --oneline) - Low, clarification needed

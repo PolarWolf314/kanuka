@@ -89,7 +89,7 @@ Use --json for machine-readable output.`,
 				fmt.Println(`{"error": "Kanuka has not been initialized"}`)
 				return nil
 			}
-			fmt.Println(ui.Error.Sprint("✗") + " Kanuka has not been initialized")
+			fmt.Println(ui.Error.Sprint("✗") + " Kānuka has not been initialized")
 			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
