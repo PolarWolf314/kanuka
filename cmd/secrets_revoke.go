@@ -117,6 +117,22 @@ Examples:
 		spinner, cleanup := startSpinner("Revoking access...", verbose)
 		defer cleanup()
 
+		// Check --device requires --user FIRST (moved outside of revokePrivateKeyStdin block)
+		if revokeDevice != "" && revokeUserEmail == "" {
+			finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires " + ui.Flag.Sprint("--user") + " flag.\n" +
+				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
+		// Then do the general check
+		if revokeUserEmail == "" && revokeFilePath == "" {
+			finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required.\n" +
+				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
+			spinner.FinalMSG = finalMessage
+			return nil
+		}
+
 		// Read private key from stdin early, before any other code can consume stdin
 		if revokePrivateKeyStdin {
 			Logger.Debugf("Reading private key from stdin")
@@ -128,22 +144,6 @@ Examples:
 			Logger.Infof("Read %d bytes of private key data from stdin", len(keyData))
 			Logger.Debugf("Checking command flags: revokeUserEmail=%s, revokeFilePath=%s, revokeDevice=%s, revokeYes=%t",
 				revokeUserEmail, revokeFilePath, revokeDevice, revokeYes)
-
-			// Check --device requires --user FIRST
-			if revokeDevice != "" && revokeUserEmail == "" {
-				finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires " + ui.Flag.Sprint("--user") + " flag.\n" +
-					"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
-				spinner.FinalMSG = finalMessage
-				return nil
-			}
-
-			// Then do the general check
-			if revokeUserEmail == "" && revokeFilePath == "" {
-				finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required.\n" +
-					"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
-				spinner.FinalMSG = finalMessage
-				return nil
-			}
 		}
 
 		if revokeUserEmail != "" && revokeFilePath != "" {
