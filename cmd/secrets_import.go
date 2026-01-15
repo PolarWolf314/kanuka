@@ -92,16 +92,25 @@ Examples:
 
 		// Validate flags - can't use both merge and replace.
 		if importMergeFlag && importReplaceFlag {
-			return Logger.ErrorfAndReturn("cannot use both --merge and --replace flags")
+			finalMessage := ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags.\n\n" +
+				ui.Info.Sprint("→") + " Use --merge to add new files while keeping existing files,\n" +
+				"   or use --replace to delete existing files and use only of backup."
+			fmt.Print(finalMessage)
+			return nil
 		}
+
+		spinner, cleanup := startSpinner("Importing secrets...", verbose)
+		defer cleanup()
 
 		// Check archive exists.
 		if _, err := os.Stat(archivePath); os.IsNotExist(err) {
 			return Logger.ErrorfAndReturn("archive file not found: %s", archivePath)
 		}
 
-		spinner, cleanup := startSpinner("Importing secrets...", verbose)
-		defer cleanup()
+		// Check archive exists.
+		if _, err := os.Stat(archivePath); os.IsNotExist(err) {
+			return Logger.ErrorfAndReturn("archive file not found: %s", archivePath)
+		}
 
 		// Validate archive structure.
 		Logger.Debugf("Validating archive structure")
@@ -113,7 +122,7 @@ Examples:
 					ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:\n" +
 					"   " + ui.Code.Sprint("kanuka secrets export")
 				fmt.Println(finalMessage)
-				return fmt.Errorf("invalid archive")
+				return nil
 			}
 			return Logger.ErrorfAndReturn("failed to read archive: %v", err)
 		}

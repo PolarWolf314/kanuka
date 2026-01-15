@@ -598,9 +598,9 @@ func TestImport_InvalidArchive(t *testing.T) {
 		return testCmd.Execute()
 	})
 
-	// Should fail.
-	if err == nil {
-		t.Errorf("Expected error for invalid archive, got none")
+	// Should not return error (we display custom message instead).
+	if err != nil {
+		t.Errorf("Expected no error for invalid archive (using custom message), got: %v", err)
 	}
 
 	// Should NOT contain technical error details (like "gzip: invalid header").
@@ -740,14 +740,35 @@ func TestImport_ConflictingFlags(t *testing.T) {
 	}
 
 	// Try to use both --merge and --replace.
-	_, err = shared.CaptureOutput(func() error {
+	output, err := shared.CaptureOutput(func() error {
 		testCmd := shared.CreateTestCLIWithArgs("import", []string{dummyArchive, "--merge", "--replace"}, nil, nil, false, false)
 		return testCmd.Execute()
 	})
 
-	// Should fail.
-	if err == nil {
-		t.Errorf("Expected error for conflicting flags, got none")
+	// Should not return an error.
+	if err != nil {
+		t.Errorf("Expected no error for conflicting flags, got: %v", err)
+	}
+
+	// Verify error message is shown.
+	if !strings.Contains(output, "✗ Cannot use both --merge and --replace flags.") {
+		t.Errorf("Expected error message about conflicting flags, got output:\n%s", output)
+	}
+
+	// Verify helpful explanation is shown.
+	if !strings.Contains(output, "Use --merge to add new files") {
+		t.Errorf("Expected helpful explanation of flags, got output:\n%s", output)
+	}
+
+	// Verify no duplicate error message (Cobra shouldn't add "Error:" prefix).
+	errorCount := strings.Count(output, "Cannot use both --merge and --replace")
+	if errorCount != 1 {
+		t.Errorf("Expected error message to appear exactly once, found %d occurrences in output:\n%s", errorCount, output)
+	}
+
+	// Verify no "Error:" prefix from Cobra.
+	if strings.Contains(output, "Error:") {
+		t.Errorf("Found Cobra 'Error:' prefix, got output:\n%s", output)
 	}
 }
 
