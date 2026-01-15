@@ -94,7 +94,7 @@ Examples:
 		if importMergeFlag && importReplaceFlag {
 			finalMessage := ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags.\n\n" +
 				ui.Info.Sprint("→") + " Use --merge to add new files while keeping existing files,\n" +
-				"   or use --replace to delete existing files and use only of backup."
+				"   or use --replace to delete existing files and use only of backup.\n"
 			fmt.Print(finalMessage)
 			return nil
 		}

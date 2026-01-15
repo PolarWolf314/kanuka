@@ -162,7 +162,7 @@ func TestClean_SingleOrphan(t *testing.T) {
 	}
 
 	// Verify output.
-	if !strings.Contains(output, "Removed 1 orphaned file") {
+	if !strings.Contains(output, "✓ Removed 1 orphaned file") {
 		t.Errorf("Output should indicate 1 file removed, got: %s", output)
 	}
 
@@ -208,7 +208,7 @@ func TestClean_MultipleOrphans(t *testing.T) {
 	}
 
 	// Verify output.
-	if !strings.Contains(output, "Removed 3 orphaned file") {
+	if !strings.Contains(output, "✓ Removed 3 orphaned file") {
 		t.Errorf("Output should indicate 3 files removed, got: %s", output)
 	}
 
@@ -309,7 +309,7 @@ func TestClean_MixedUsersOnlyRemovesOrphans(t *testing.T) {
 	}
 
 	// Verify output.
-	if !strings.Contains(output, "Removed 1 orphaned file") {
+	if !strings.Contains(output, "✓ Removed 1 orphaned file") {
 		t.Errorf("Output should indicate 1 file removed, got: %s", output)
 	}
 
@@ -358,7 +358,7 @@ func TestClean_NotInitialized(t *testing.T) {
 	}
 
 	// Verify error message.
-	if !strings.Contains(output, "not been initialized") {
+	if !strings.Contains(output, "✗ Kanuka has not been initialized") {
 		t.Errorf("Output should indicate project not initialized, got: %s", output)
 	}
 	if !strings.Contains(output, "kanuka secrets init") {

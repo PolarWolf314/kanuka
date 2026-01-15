@@ -423,7 +423,7 @@ func TestAccess_NotInitialized(t *testing.T) {
 	}
 
 	// Verify error message.
-	if !strings.Contains(output, "not been initialized") {
+	if !strings.Contains(output, "✗ Kanuka has not been initialized") {
 		t.Errorf("Output should indicate project not initialized, got: %s", output)
 	}
 	if !strings.Contains(output, "kanuka secrets init") {

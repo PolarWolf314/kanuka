@@ -7,7 +7,6 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
-
 	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -62,15 +61,20 @@ Examples:
 
 // showUserConfig displays the user configuration.
 func showUserConfig() error {
+	spinner, cleanup := startSpinnerWithFlags("Loading user configuration...", configVerbose, configDebug)
+	defer cleanup()
+
 	// Ensure user settings are initialized.
 	ConfigLogger.Debugf("Ensuring user settings are initialized")
 	if err := secrets.EnsureUserSettings(); err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize user settings\n"
 		return ConfigLogger.ErrorfAndReturn("Failed to initialize user settings: %v", err)
 	}
 
 	ConfigLogger.Debugf("Loading user config from %s", configs.UserKanukaSettings.UserConfigsPath)
 	userConfig, err := configs.LoadUserConfig()
 	if err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to load user configuration\n"
 		return ConfigLogger.ErrorfAndReturn("Failed to load user config: %v", err)
 	}
 
@@ -81,7 +85,7 @@ func showUserConfig() error {
 			fmt.Println("{}")
 			return nil
 		}
-		fmt.Println(ui.Warning.Sprint("⚠") + " No user configuration found.")
+		spinner.FinalMSG = ui.Warning.Sprint("⚠") + " No user configuration found.\n"
 		fmt.Println()
 		fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka config init") + " to set up your identity")
 		return nil
@@ -92,10 +96,20 @@ func showUserConfig() error {
 
 	if configShowJSON {
 		ConfigLogger.Debugf("Outputting user config as JSON")
-		return outputUserConfigJSON(userConfig)
+		if err := outputUserConfigJSON(userConfig); err != nil {
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output user configuration\n"
+			return err
+		}
+		spinner.FinalMSG = ui.Success.Sprint("✓") + " User configuration displayed\n"
+		return nil
 	}
 
-	return outputUserConfigText(userConfig)
+	if err := outputUserConfigText(userConfig); err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output user configuration\n"
+		return err
+	}
+	spinner.FinalMSG = ui.Success.Sprint("✓") + " User configuration displayed\n"
+	return nil
 }
 
 // outputUserConfigJSON outputs user config in JSON format.
@@ -147,15 +161,20 @@ func outputUserConfigText(config *configs.UserConfig) error {
 		}
 	}
 
+	// Note: spinner final message is set in showUserConfig
 	return nil
 }
 
 // showProjectConfig displays the project configuration.
 func showProjectConfig() error {
+	spinner, cleanup := startSpinnerWithFlags("Loading project configuration...", configVerbose, configDebug)
+	defer cleanup()
+
 	// Check if we're in a project directory.
 	ConfigLogger.Debugf("Checking if in a Kanuka project directory")
 	exists, err := secrets.DoesProjectKanukaSettingsExist()
 	if err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to check project settings\n"
 		return ConfigLogger.ErrorfAndReturn("Failed to check project settings: %v", err)
 	}
 
@@ -165,7 +184,7 @@ func showProjectConfig() error {
 			fmt.Println("{\"error\": \"not in a project directory\"}")
 			return nil
 		}
-		fmt.Println(ui.Error.Sprint("✗") + " Not in a Kanuka project directory")
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Not in a Kanuka project directory\n"
 		fmt.Println()
 		fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " to initialize a project")
 		return nil
@@ -174,12 +193,14 @@ func showProjectConfig() error {
 	// Initialize project settings.
 	ConfigLogger.Debugf("Initializing project settings")
 	if err := configs.InitProjectSettings(); err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings\n"
 		return ConfigLogger.ErrorfAndReturn("Failed to initialize project settings: %v", err)
 	}
 
 	ConfigLogger.Debugf("Loading project config from %s/.kanuka/config.toml", configs.ProjectKanukaSettings.ProjectPath)
 	projectConfig, err := configs.LoadProjectConfig()
 	if err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to load project configuration\n"
 		return ConfigLogger.ErrorfAndReturn("Failed to load project config: %v", err)
 	}
 
@@ -188,10 +209,20 @@ func showProjectConfig() error {
 
 	if configShowJSON {
 		ConfigLogger.Debugf("Outputting project config as JSON")
-		return outputProjectConfigJSON(projectConfig)
+		if err := outputProjectConfigJSON(projectConfig); err != nil {
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output project configuration\n"
+			return err
+		}
+		spinner.FinalMSG = ui.Success.Sprint("✓") + " Project configuration displayed\n"
+		return nil
 	}
 
-	return outputProjectConfigText(projectConfig)
+	if err := outputProjectConfigText(projectConfig); err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output project configuration\n"
+		return err
+	}
+	spinner.FinalMSG = ui.Success.Sprint("✓") + " Project configuration displayed\n"
+	return nil
 }
 
 // outputProjectConfigJSON outputs project config in JSON format.

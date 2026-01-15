@@ -71,7 +71,7 @@ func testListDevicesNoDevices(t *testing.T, originalWd string, originalUserSetti
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	if !strings.Contains(output, "No devices found") {
+	if !strings.Contains(output, "No devices found in this project") {
 		t.Errorf("Expected 'No devices found' message not found in output: %s", output)
 	}
 }
@@ -358,7 +358,7 @@ func testListDevicesOutsideProject(t *testing.T, originalWd string, originalUser
 	}
 
 	// Should indicate not in a project directory.
-	if !strings.Contains(output, "Not in a Kānuka project") && !strings.Contains(output, "Failed to initialize") {
+	if !strings.Contains(output, "✗ Not in a Kānuka project") && !strings.Contains(output, "Failed to initialize project settings") {
 		t.Errorf("Expected error message about not being in a project directory, got: %s", output)
 	}
 }
