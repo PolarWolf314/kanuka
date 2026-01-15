@@ -301,7 +301,9 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	}
 
 	// Check if user already has access (both public key AND .kanuka file exist)
-	userAlreadyHasAccess := fileExists(pubKeyFilePath) && fileExists(kanukaFilePath)
+	pubkeyExisted := fileExists(pubKeyFilePath)
+	kanukaFileExisted := fileExists(kanukaFilePath)
+	userAlreadyHasAccess := pubkeyExisted && kanukaFileExisted
 	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, pubKeyFilePath, kanukaFilePath)
 
 	// If user already has access and not forced, prompt for confirmation
@@ -347,21 +349,45 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	auditEntry.TargetUUID = targetUserUUID
 	audit.Log(auditEntry)
 
-	// Use different message for update vs new registration
-	var successVerb, filesLabel string
-	if userAlreadyHasAccess {
-		successVerb = "access has been updated"
-		filesLabel = "Files updated"
-	} else {
+	// Build success message based on what was actually done
+	var successVerb string
+	var filesCreated []string
+	var filesUpdated []string
+
+	if !pubkeyExisted && !kanukaFileExisted {
 		successVerb = "has been granted access"
-		filesLabel = "Files created"
+		filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(pubKeyFilePath))
+		filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(kanukaFilePath))
+	} else if pubkeyExisted && !kanukaFileExisted {
+		successVerb = "has been granted access"
+		filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(kanukaFilePath))
+	} else if !pubkeyExisted && kanukaFileExisted {
+		successVerb = "has been granted access"
+		filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(pubKeyFilePath))
+	} else {
+		successVerb = "access has been updated"
+		if !pubkeyExisted {
+			filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(pubKeyFilePath))
+		} else {
+			filesUpdated = append(filesUpdated, "  Public key:    "+ui.Path.Sprint(pubKeyFilePath))
+		}
+		if !kanukaFileExisted {
+			filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(kanukaFilePath))
+		} else {
+			filesUpdated = append(filesUpdated, "  Encrypted key: "+ui.Path.Sprint(kanukaFilePath))
+		}
 	}
 
-	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(registerUserEmail) + " " + successVerb + " successfully!\n\n" +
-		filesLabel + ":\n" +
-		"  Public key:    " + ui.Path.Sprint(pubKeyFilePath) + "\n" +
-		"  Encrypted key: " + ui.Path.Sprint(kanukaFilePath) + "\n\n" +
-		ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
+	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(registerUserEmail) + " " + successVerb + " successfully!\n\n"
+
+	if len(filesCreated) > 0 {
+		finalMessage += "Files created:\n" + strings.Join(filesCreated, "\n") + "\n\n"
+	}
+	if len(filesUpdated) > 0 {
+		finalMessage += "Files updated:\n" + strings.Join(filesUpdated, "\n") + "\n\n"
+	}
+
+	finalMessage += ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
@@ -545,7 +571,9 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
 
 	// Check if user already has access (both public key AND .kanuka file exist)
-	userAlreadyHasAccess := fileExists(targetPubkeyPath) && fileExists(targetKanukaFilePath)
+	pubkeyExisted := fileExists(targetPubkeyPath)
+	kanukaFileExisted := fileExists(targetKanukaFilePath)
+	userAlreadyHasAccess := pubkeyExisted && kanukaFileExisted
 	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, targetPubkeyPath, targetKanukaFilePath)
 
 	// If user already has access and not forced, prompt for confirmation
@@ -589,21 +617,45 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	auditEntry.TargetUUID = targetUserUUID
 	audit.Log(auditEntry)
 
-	// Use different message for update vs new registration
-	var successVerb, filesLabel string
-	if userAlreadyHasAccess {
-		successVerb = "access has been updated"
-		filesLabel = "Files updated"
-	} else {
+	// Build success message based on what was actually done
+	var successVerb string
+	var filesCreated []string
+	var filesUpdated []string
+
+	if !pubkeyExisted && !kanukaFileExisted {
 		successVerb = "has been granted access"
-		filesLabel = "Files created"
+		filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+		filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+	} else if pubkeyExisted && !kanukaFileExisted {
+		successVerb = "has been granted access"
+		filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+	} else if !pubkeyExisted && kanukaFileExisted {
+		successVerb = "has been granted access"
+		filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+	} else {
+		successVerb = "access has been updated"
+		if !pubkeyExisted {
+			filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+		} else {
+			filesUpdated = append(filesUpdated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+		}
+		if !kanukaFileExisted {
+			filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+		} else {
+			filesUpdated = append(filesUpdated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+		}
 	}
 
-	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(registerUserEmail) + " " + successVerb + " successfully!\n\n" +
-		filesLabel + ":\n" +
-		"  Public key:    " + ui.Path.Sprint(targetPubkeyPath) + "\n" +
-		"  Encrypted key: " + ui.Path.Sprint(targetKanukaFilePath) + "\n\n" +
-		ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
+	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(registerUserEmail) + " " + successVerb + " successfully!\n\n"
+
+	if len(filesCreated) > 0 {
+		finalMessage += "Files created:\n" + strings.Join(filesCreated, "\n") + "\n\n"
+	}
+	if len(filesUpdated) > 0 {
+		finalMessage += "Files updated:\n" + strings.Join(filesUpdated, "\n") + "\n\n"
+	}
+
+	finalMessage += ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
@@ -737,11 +789,14 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	// Compute path for output
 	targetKanukaFilePath := filepath.Join(projectSecretsPath, targetUserUUID+".kanuka")
+	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+	targetPubkeyPath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
 
-	// Check if user already has access (both public key AND .kanuka file exist)
-	// For custom file, we check the custom file path and target kanuka path
-	userAlreadyHasAccess := fileExists(customFilePath) && fileExists(targetKanukaFilePath)
-	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, customFilePath, targetKanukaFilePath)
+	// Check if files exist before we start
+	pubkeyExisted := fileExists(targetPubkeyPath)
+	kanukaFileExisted := fileExists(targetKanukaFilePath)
+	userAlreadyHasAccess := fileExists(customFilePath) && kanukaFileExisted
+	Logger.Debugf("User already has access: %t (pubkey: %s, kanuka: %s)", userAlreadyHasAccess, targetPubkeyPath, targetKanukaFilePath)
 
 	// If user already has access and not forced, prompt for confirmation
 	if userAlreadyHasAccess && !registerForce && !registerDryRun {
@@ -756,9 +811,6 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		printRegisterDryRunForFile(spinner, displayName, customFilePath, targetKanukaFilePath)
 		return nil
 	}
-
-	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-	targetPubkeyPath := filepath.Join(projectPublicKeyPath, targetUserUUID+".pub")
 
 	if !fileExists(targetPubkeyPath) {
 		Logger.Debugf("Copying public key to project directory: %s", targetPubkeyPath)
@@ -809,21 +861,45 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	auditEntry.TargetUUID = targetUserUUID
 	audit.Log(auditEntry)
 
-	// Use different message for update vs new registration
-	var successVerb, filesLabel string
-	if userAlreadyHasAccess {
-		successVerb = "access has been updated"
-		filesLabel = "Files updated"
-	} else {
+	// Build success message based on what was actually done
+	var successVerb string
+	var filesCreated []string
+	var filesUpdated []string
+
+	if !pubkeyExisted && !kanukaFileExisted {
 		successVerb = "has been granted access"
-		filesLabel = "Files created"
+		filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+		filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+	} else if pubkeyExisted && !kanukaFileExisted {
+		successVerb = "has been granted access"
+		filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+	} else if !pubkeyExisted && kanukaFileExisted {
+		successVerb = "has been granted access"
+		filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+	} else {
+		successVerb = "access has been updated"
+		if !pubkeyExisted {
+			filesCreated = append(filesCreated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+		} else {
+			filesUpdated = append(filesUpdated, "  Public key:    "+ui.Path.Sprint(targetPubkeyPath))
+		}
+		if !kanukaFileExisted {
+			filesCreated = append(filesCreated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+		} else {
+			filesUpdated = append(filesUpdated, "  Encrypted key: "+ui.Path.Sprint(targetKanukaFilePath))
+		}
 	}
 
-	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(displayName) + " " + successVerb + " successfully!\n\n" +
-		filesLabel + ":\n" +
-		"  Public key:    " + ui.Path.Sprint(targetPubkeyPath) + "\n" +
-		"  Encrypted key: " + ui.Path.Sprint(targetKanukaFilePath) + "\n\n" +
-		ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
+	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(displayName) + " " + successVerb + " successfully!\n\n"
+
+	if len(filesCreated) > 0 {
+		finalMessage += "Files created:\n" + strings.Join(filesCreated, "\n") + "\n\n"
+	}
+	if len(filesUpdated) > 0 {
+		finalMessage += "Files updated:\n" + strings.Join(filesUpdated, "\n") + "\n\n"
+	}
+
+	finalMessage += ui.Info.Sprint("→") + " They now have access to decrypt the repository's secrets"
 	spinner.FinalMSG = finalMessage
 	return nil
 }
