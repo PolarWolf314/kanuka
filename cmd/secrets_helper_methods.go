@@ -5,9 +5,9 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/briandowns/spinner"
 )
 
@@ -42,9 +42,7 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 		}
 
 		// Ensure the final message ends with a newline.
-		if s.FinalMSG != "" && !strings.HasSuffix(s.FinalMSG, "\n") {
-			s.FinalMSG += "\n"
-		}
+		s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
 
 		if !verbose && !debug {
 			// Stop the spinner if it was started.
@@ -82,9 +80,7 @@ func startSpinnerWithFlags(message string, verbose, debugFlag bool) (*spinner.Sp
 		}
 
 		// Ensure the final message ends with a newline.
-		if s.FinalMSG != "" && !strings.HasSuffix(s.FinalMSG, "\n") {
-			s.FinalMSG += "\n"
-		}
+		s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
 
 		if !verbose && !debugFlag {
 			// Stop the spinner if it was started.

@@ -276,9 +276,8 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 		}
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
-			finalMessage := ui.Warning.Sprint("⚠") + " Revocation cancelled\n"
+			finalMessage := ui.Warning.Sprint("⚠") + " Revocation cancelled"
 			spinner.FinalMSG = finalMessage
-			spinner.Restart()
 			return nil, nil
 		}
 
@@ -302,7 +301,7 @@ func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
 	}
 
 	if len(allFiles) == 0 {
-		finalMessage := ui.Error.Sprint("✗") + " No files found for user " + ui.Highlight.Sprint(revokeUserEmail) + "\n"
+		finalMessage := ui.Error.Sprint("✗") + " No files found for user " + ui.Highlight.Sprint(revokeUserEmail)
 		spinner.FinalMSG = finalMessage
 		return nil, nil
 	}
@@ -665,7 +664,7 @@ func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
 		finalMessage += ui.Info.Sprint("→") + " All secrets have been re-encrypted with a new key\n"
 	}
 	finalMessage += ui.Warning.Sprint("⚠") + ui.Error.Sprint(" Warning: ") + ui.Highlight.Sprint(displayName) + " may still have access to old secrets from their local git history.\n" +
-		ui.Info.Sprint("→") + " If necessary, rotate your actual secret values after this revocation.\n"
+		ui.Info.Sprint("→") + " If necessary, rotate your actual secret values after this revocation."
 	spinner.FinalMSG = finalMessage
 	return nil
 }

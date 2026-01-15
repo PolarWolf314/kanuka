@@ -579,7 +579,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	// If user already has access and not forced, prompt for confirmation
 	if userAlreadyHasAccess && !registerForce && !registerDryRun {
 		if !confirmRegisterOverwrite(spinner, registerUserEmail) {
-			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Registration cancelled.\n"
+			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Registration cancelled."
 			return nil
 		}
 	}
@@ -801,7 +801,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// If user already has access and not forced, prompt for confirmation
 	if userAlreadyHasAccess && !registerForce && !registerDryRun {
 		if !confirmRegisterOverwrite(spinner, displayName) {
-			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Registration cancelled.\n"
+			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Registration cancelled."
 			return nil
 		}
 	}

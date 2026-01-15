@@ -168,7 +168,7 @@ Examples:
 		// Confirmation prompt (unless --force)
 		if !rotateForce {
 			if !confirmRotate(spinner) {
-				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Keypair rotation cancelled.\n"
+				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Keypair rotation cancelled."
 				return nil
 			}
 		}

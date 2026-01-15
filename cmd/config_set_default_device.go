@@ -62,7 +62,7 @@ Examples:
 		ConfigLogger.Infof("User config saved successfully")
 
 		ConfigLogger.Infof("Default device name set successfully")
-		finalMessage := ui.Success.Sprint("✓") + " Default device name set to " + ui.Highlight.Sprint(deviceName) + "\n"
+		finalMessage := ui.Success.Sprint("✓") + " Default device name set to " + ui.Highlight.Sprint(deviceName)
 		spinner.FinalMSG = finalMessage
 		return nil
 	},

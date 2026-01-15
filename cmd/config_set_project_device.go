@@ -200,7 +200,7 @@ Examples:
 			}
 		}
 
-		spinner.FinalMSG = finalMessage + "\n"
+		spinner.FinalMSG = finalMessage
 		return nil
 	},
 }
