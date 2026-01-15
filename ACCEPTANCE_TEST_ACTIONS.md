@@ -13,7 +13,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
-- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017, ERR-018, ERR-006, ERR-014
+- Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017, ERR-018, ERR-006, ERR-014, ERR-013
 - In Progress: None
 
 **Recommended Fix Order:**
@@ -1764,6 +1764,18 @@ fi
 **Priority:** Medium
 **Recommended Order:** 11
 **Estimated Effort:** 30 minutes
+
+### Status: ✅ COMPLETED
+
+### Implementation Notes
+Fixed validation order to check for `--device` requiring `--user` before the general check. The specific check now runs first and displays correct error message: "The --device flag requires --user flag."
+
+**Modified Files:**
+- `cmd/secrets_revoke.go`: Reordered validation checks (lines 135-149)
+- `test/integration/revoke/revoke_basic_test.go`: Added test for --device without --user flag
+
+**Tests Added:**
+- `TestRevokeCommand_DeviceRequiresUser`: Verifies that using --device without --user shows specific error message
 
 ### Context
 When using `--device` without `--user` flag, the error message is incorrect. It says "Either --user or --file flag is required" instead of the more specific "--device requires --user flag". The first validation check catches the case but returns the wrong error message.

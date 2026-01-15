@@ -24,10 +24,10 @@ var (
 	revokeYes             bool
 	revokeDryRun          bool
 	revokePrivateKeyStdin bool
-	// revokePrivateKeyData holds the private key data read from stdin (if --private-key-stdin is used).
-	revokePrivateKeyData []byte
+	revokePrivateKeyData  []byte
 )
 
+// resetRevokeCommandState resets all revoke command global variables to their default values for testing.
 func resetRevokeCommandState() {
 	revokeUserEmail = ""
 	revokeFilePath = ""
@@ -114,6 +114,8 @@ Examples:
   vault kv get -field=private_key secret/kanuka | kanuka secrets revoke --user alice@example.com --private-key-stdin`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting revoke command")
+		spinner, cleanup := startSpinner("Revoking access...", verbose)
+		defer cleanup()
 
 		// Read private key from stdin early, before any other code can consume stdin
 		if revokePrivateKeyStdin {
@@ -124,31 +126,28 @@ Examples:
 			}
 			revokePrivateKeyData = keyData
 			Logger.Infof("Read %d bytes of private key data from stdin", len(keyData))
-		}
+			Logger.Debugf("Checking command flags: revokeUserEmail=%s, revokeFilePath=%s, revokeDevice=%s, revokeYes=%t",
+				revokeUserEmail, revokeFilePath, revokeDevice, revokeYes)
 
-		spinner, cleanup := startSpinner("Revoking user access...", verbose)
-		defer cleanup()
+			// Check --device requires --user FIRST
+			if revokeDevice != "" && revokeUserEmail == "" {
+				finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires " + ui.Flag.Sprint("--user") + " flag.\n" +
+					"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
 
-		Logger.Debugf("Checking command flags: revokeUserEmail=%s, revokeFilePath=%s, revokeDevice=%s, revokeYes=%t",
-			revokeUserEmail, revokeFilePath, revokeDevice, revokeYes)
-
-		if revokeUserEmail == "" && revokeFilePath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required.\n" +
-				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
-			spinner.FinalMSG = finalMessage
-			return nil
+			// Then do the general check
+			if revokeUserEmail == "" && revokeFilePath == "" {
+				finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required.\n" +
+					"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
 		}
 
 		if revokeUserEmail != "" && revokeFilePath != "" {
 			finalMessage := ui.Error.Sprint("✗") + " Cannot specify both " + ui.Flag.Sprint("--user") + " and " + ui.Flag.Sprint("--file") + " flags.\n" +
-				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// --device requires --user
-		if revokeDevice != "" && revokeUserEmail == "" {
-			finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires the " + ui.Flag.Sprint("--user") + " flag.\n" +
 				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
 			spinner.FinalMSG = finalMessage
 			return nil
