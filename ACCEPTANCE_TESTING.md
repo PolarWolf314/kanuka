@@ -336,7 +336,7 @@ Pass
 **Command(s):**
 
 ```bash
-./kanuka config set-device-name new-device-name
+./kanuka config set-project-device new-device-name
 ```
 
 **Preconditions:**
@@ -359,7 +359,7 @@ Success message shows, user config changes, but the project config doesn't chang
 **Command(s):**
 
 ```bash
-./kanuka config set-device-name "my device name!"
+./kanuka config set-project-device "my device name!"
 ```
 
 **Preconditions:**
@@ -382,8 +382,6 @@ Pass
 **Command(s):**
 
 ```bash
-./kanuka config rename-device --user alice@example.com new-laptop
-./kanuka config rename-device --user alice@example.com --old-name macbook new-laptop
 ```
 
 **Preconditions:**

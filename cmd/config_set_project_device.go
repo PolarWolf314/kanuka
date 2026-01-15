@@ -1,50 +1,53 @@
 package cmd
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	"github.com/PolarWolf314/kanuka/internal/utils"
 
 	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
 
 var (
-	setDeviceProjectUUID string
+	setProjectDeviceUUID string
 )
 
 func init() {
-	setDeviceNameCmd.Flags().StringVar(&setDeviceProjectUUID, "project-uuid", "", "project UUID (defaults to current project)")
-	ConfigCmd.AddCommand(setDeviceNameCmd)
+	setProjectDeviceCmd.Flags().StringVar(&setProjectDeviceUUID, "project-uuid", "", "project UUID (defaults to current project)")
+	ConfigCmd.AddCommand(setProjectDeviceCmd)
 }
 
-// resetSetDeviceNameState resets the set-device-name command's global state for testing.
-func resetSetDeviceNameState() {
-	setDeviceProjectUUID = ""
+// resetSetProjectDeviceState resets the set-project-device command's global state for testing.
+func resetSetProjectDeviceState() {
+	setProjectDeviceUUID = ""
 }
 
-var setDeviceNameCmd = &cobra.Command{
-	Use:   "set-device-name [device-name]",
+var setProjectDeviceCmd = &cobra.Command{
+	Use:   "set-project-device [device-name]",
 	Short: "Set your device name for a project",
-	Long: `Sets your preferred device name for a project in your local user configuration.
+	Long: `Sets your device name for a project in both user and project configuration.
 
-This command stores a device name preference in your user config file
-(~/.config/kanuka/config.toml). This name is used when you create keys
-for a project.
+This command updates your device name in:
+  - Your user config file (~/.config/kanuka/config.toml)
+  - The project's config.toml file
+
+This is the command to use when you want to change your device name for
+an existing project.
 
 The device name must be alphanumeric with hyphens and underscores only.
 If no project UUID is specified, the current project is used.
 
 Examples:
   # Set device name for the current project
-  kanuka config set-device-name my-laptop
+  kanuka config set-project-device my-laptop
 
   # Set device name for a specific project
-  kanuka config set-device-name --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation`,
+  kanuka config set-project-device --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ConfigLogger.Infof("Starting set-device-name command")
+		ConfigLogger.Infof("Starting set-project-device command")
 		spinner, cleanup := startSpinnerWithFlags("Setting device name...", configVerbose, configDebug)
 		defer cleanup()
 
@@ -52,7 +55,7 @@ Examples:
 		ConfigLogger.Debugf("Device name argument: %s", deviceName)
 
 		// Validate device name format.
-		if !isValidDeviceName(deviceName) {
+		if !utils.IsValidDeviceName(deviceName) {
 			finalMessage := ui.Error.Sprint("✗") + " Invalid device name: " + ui.Highlight.Sprint(deviceName) + "\n" +
 				ui.Info.Sprint("→") + " Device name must be alphanumeric with hyphens and underscores only"
 			spinner.FinalMSG = finalMessage
@@ -61,8 +64,8 @@ Examples:
 
 		// Determine project UUID.
 		var projectUUID string
-		if setDeviceProjectUUID != "" {
-			projectUUID = setDeviceProjectUUID
+		if setProjectDeviceUUID != "" {
+			projectUUID = setProjectDeviceUUID
 			ConfigLogger.Debugf("Using provided project UUID: %s", projectUUID)
 		} else {
 			// Try to get from current project.
@@ -200,14 +203,4 @@ Examples:
 		spinner.FinalMSG = finalMessage + "\n"
 		return nil
 	},
-}
-
-// isValidDeviceName checks if a device name is valid (alphanumeric, hyphens, underscores).
-func isValidDeviceName(name string) bool {
-	if name == "" {
-		return false
-	}
-	// Match alphanumeric characters, hyphens, and underscores only.
-	validPattern := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
-	return validPattern.MatchString(name)
 }

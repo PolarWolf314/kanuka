@@ -134,7 +134,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	}
 
 	// Validate device name.
-	if !isValidDeviceName(deviceName) {
+	if !utils.IsValidDeviceName(deviceName) {
 		return false, fmt.Errorf("invalid device name: %s (must be alphanumeric with hyphens and underscores)", deviceName)
 	}
 	if verbose {
@@ -283,7 +283,7 @@ Examples:
 
 			if configInitDeviceName != "" {
 				deviceName := utils.SanitizeDeviceName(configInitDeviceName)
-				if !isValidDeviceName(deviceName) {
+				if !utils.IsValidDeviceName(deviceName) {
 					fmt.Println(ui.Error.Sprint("✗") + " Invalid device name: " + ui.Highlight.Sprint(configInitDeviceName))
 					return nil
 				}

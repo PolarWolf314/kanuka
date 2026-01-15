@@ -722,11 +722,11 @@ Actually, looking more closely at `configs.LoadProjectConfig()` and related func
 **Test Case:** TEST-018
 **Command:**
 ```bash
-kanuka config set-device-name new-device-name
+kanuka config set-project-device new-device-name
 ```
 
 **Issue:**
-When setting a device name with `kanuka config set-device-name`, the user config is updated but the project config is not updated to reflect the new device name.
+When setting a device name with `kanuka config set-project-device`, the user config is updated but the project config is not updated to reflect the new device name.
 
 **Root Cause Analysis:**
 Looking at `cmd/config_set_device_name.go:98-148`:
@@ -771,7 +771,7 @@ type ProjectConfig struct {
 }
 ```
 
-When `set-device-name` is called, it updates `UserProjectEntry` (which stores `DeviceName` and `ProjectName` in the user's config) but does not update the `DeviceConfig` in the project config. This means:
+When `set-project-device` is called, it updates `UserProjectEntry` (which stores `DeviceName` and `ProjectName` in the user's config) but does not update the `DeviceConfig` in the project config. This means:
 - `kanuka secrets access` will still show the old device name
 - `kanuka config list-devices` will show the new device name (because it reads from user config)
 - Inconsistent state between user and project configs
@@ -782,7 +782,7 @@ When `set-device-name` is called, it updates `UserProjectEntry` (which stores `D
 3. **Confusing:** Different commands show different device names
 
 **Reproduction Steps:**
-1. In an initialized project, run `kanuka config set-device-name new-name`
+1. In an initialized project, run `kanuka config set-project-device new-name`
 2. Run `kanuka secrets access` and observe old device name
 3. Run `kanuka config list-devices` and observe new device name
 
@@ -1488,7 +1488,7 @@ Actually, I suspect this might be a false positive in the test - perhaps the dir
 | ERR-004 | encrypt | Glob pattern encrypts all files | High |
 | ERR-005 | decrypt | Ignores file path arguments | High |
 | ERR-008 | access | Shows test-project when not in project | High |
-| ERR-009 | set-device-name | Doesn't update project config | High |
+| ERR-009 | set-project-device | Doesn't update project config | High |
 
 ### UX Issues
 | ID | Command | Issue | Severity |

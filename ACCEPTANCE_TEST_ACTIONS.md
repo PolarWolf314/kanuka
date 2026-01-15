@@ -1326,14 +1326,14 @@ fi
 
 ### Context
 
-When setting a device name with `kanuka config set-device-name`, the user config is updated but the project config is not updated. This causes inconsistent state:
+When setting a device name with `kanuka config set-project-device`, the user config is updated but the project config is not updated. This causes inconsistent state:
 
 - `kanuka secrets access` shows the old device name
 - `kanuka config list-devices` shows the new device name (reads from user config)
 
 ### Root Cause Analysis
 
-The `set-device-name` command only updates `userConfig.Projects[projectUUID]` but never updates `projectConfig.Devices[projectUUID]`. The `DeviceConfig` struct in project config stores device name, but it's not being updated when `set-device-name` is called.
+The `set-project-device` command only updates `userConfig.Projects[projectUUID]` but never updates `projectConfig.Devices[projectUUID]`. The `DeviceConfig` struct in project config stores device name, but it's not being updated when `set-project-device` is called.
 
 **Files Affected:**
 
@@ -1378,7 +1378,7 @@ Users:
   abc123 (aarons-macbook-pro): user@example.com
 
 # Set new device name
-$ kanuka config set-device-name my-laptop
+$ kanuka config set-project-device my-laptop
 ✓ Device name set to 'my-laptop' for project 'myproject'
 
 # Check access - still shows old name
@@ -1401,7 +1401,7 @@ Users:
   abc123 (aarons-macbook-pro): user@example.com
 
 # Set new device name
-$ kanuka config set-device-name my-laptop
+$ kanuka config set-project-device my-laptop
 ✓ Device name set to 'my-laptop' for project 'myproject'
 
 # Check access - shows updated name
@@ -1466,7 +1466,7 @@ Devices for user@example.com:
    - Verify consistency across commands
 
 6. **Manual Testing**
-   - Test set-device-name command
+   - Test set-project-device command
    - Verify `kanuka secrets access` shows new name
    - Verify `kanuka config list-devices` shows new name
 
@@ -1492,7 +1492,7 @@ OLD_NAME=$(kanuka secrets access | grep -oP '\(\K[^)]+\)' | head -1 | tr -d '()'
 echo "Original device name: $OLD_NAME"
 
 # Set new device name
-kanuka config set-device-name new-test-device
+kanuka config set-project-device new-test-device
 
 # Check access command output
 ACCESS_NAME=$(kanuka secrets access | grep -oP '\(\K[^)]+\)' | head -1 | tr -d '()')

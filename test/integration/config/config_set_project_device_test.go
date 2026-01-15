@@ -11,8 +11,8 @@ import (
 	"github.com/PolarWolf314/kanuka/test/integration/shared"
 )
 
-// TestConfigSetDeviceName contains tests for the `kanuka config set-device-name` command.
-func TestConfigSetDeviceName(t *testing.T) {
+// TestConfigSetProjectDevice contains tests for the `kanuka config set-project-device` command.
+func TestConfigSetProjectDevice(t *testing.T) {
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get original working directory: %v", err)
@@ -20,38 +20,38 @@ func TestConfigSetDeviceName(t *testing.T) {
 
 	originalUserSettings := configs.UserKanukaSettings
 
-	t.Run("SetDeviceNameInProject", func(t *testing.T) {
-		testSetDeviceNameInProject(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceInProject", func(t *testing.T) {
+		testSetProjectDeviceInProject(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("SetDeviceNameWithProjectUUID", func(t *testing.T) {
-		testSetDeviceNameWithProjectUUID(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceWithProjectUUID", func(t *testing.T) {
+		testSetProjectDeviceWithProjectUUID(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("SetDeviceNameInvalidName", func(t *testing.T) {
-		testSetDeviceNameInvalidName(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceInvalidName", func(t *testing.T) {
+		testSetProjectDeviceInvalidName(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("SetDeviceNameUpdate", func(t *testing.T) {
-		testSetDeviceNameUpdate(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceUpdate", func(t *testing.T) {
+		testSetProjectDeviceUpdate(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("SetDeviceNameSameValue", func(t *testing.T) {
-		testSetDeviceNameSameValue(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceSameValue", func(t *testing.T) {
+		testSetProjectDeviceSameValue(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("SetDeviceNameOutsideProject", func(t *testing.T) {
-		testSetDeviceNameOutsideProject(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceOutsideProject", func(t *testing.T) {
+		testSetProjectDeviceOutsideProject(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("SetDeviceNameUpdatesProjectConfig", func(t *testing.T) {
-		testSetDeviceNameUpdatesProjectConfig(t, originalWd, originalUserSettings)
+	t.Run("SetProjectDeviceUpdatesProjectConfig", func(t *testing.T) {
+		testSetProjectDeviceUpdatesProjectConfig(t, originalWd, originalUserSettings)
 	})
 }
 
-// Tests set-device-name in a project directory.
-func testSetDeviceNameInProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-name-*")
+// Tests set-project-device in a project directory.
+func testSetProjectDeviceInProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -67,8 +67,8 @@ func testSetDeviceNameInProject(t *testing.T, originalWd string, originalUserSet
 	shared.InitializeProjectStructureOnly(t, tempDir, tempUserDir)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "my-laptop"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "my-laptop"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -94,9 +94,9 @@ func testSetDeviceNameInProject(t *testing.T, originalWd string, originalUserSet
 	}
 }
 
-// Tests set-device-name with --project-uuid flag.
-func testSetDeviceNameWithProjectUUID(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-uuid-*")
+// Tests set-project-device with --project-uuid flag.
+func testSetProjectDeviceWithProjectUUID(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-uuid-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -114,8 +114,8 @@ func testSetDeviceNameWithProjectUUID(t *testing.T, originalWd string, originalU
 	specificUUID := "specific-project-uuid-1234"
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "--project-uuid", specificUUID, "workstation"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "--project-uuid", specificUUID, "workstation"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -144,9 +144,9 @@ func testSetDeviceNameWithProjectUUID(t *testing.T, originalWd string, originalU
 	}
 }
 
-// Tests set-device-name with invalid device name.
-func testSetDeviceNameInvalidName(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-invalid-*")
+// Tests set-project-device with invalid device name.
+func testSetProjectDeviceInvalidName(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-invalid-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -170,8 +170,8 @@ func testSetDeviceNameInvalidName(t *testing.T, originalWd string, originalUserS
 
 	for _, invalidName := range invalidNames {
 		output, err := shared.CaptureOutput(func() error {
-			cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-			cmd.SetArgs([]string{"config", "set-device-name", invalidName})
+			cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+			cmd.SetArgs([]string{"config", "set-project-device", invalidName})
 			return cmd.Execute()
 		})
 		if err != nil {
@@ -184,9 +184,9 @@ func testSetDeviceNameInvalidName(t *testing.T, originalWd string, originalUserS
 	}
 }
 
-// Tests set-device-name updating an existing name.
-func testSetDeviceNameUpdate(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-update-*")
+// Tests set-project-device updating an existing name.
+func testSetProjectDeviceUpdate(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-update-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -203,8 +203,8 @@ func testSetDeviceNameUpdate(t *testing.T, originalWd string, originalUserSettin
 
 	// Set initial device name.
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "old-name"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "old-name"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -213,8 +213,8 @@ func testSetDeviceNameUpdate(t *testing.T, originalWd string, originalUserSettin
 
 	// Update to new name.
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "new-name"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "new-name"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -232,9 +232,9 @@ func testSetDeviceNameUpdate(t *testing.T, originalWd string, originalUserSettin
 	}
 }
 
-// Tests set-device-name when name is already set to same value.
-func testSetDeviceNameSameValue(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-same-*")
+// Tests set-project-device when name is already set to same value.
+func testSetProjectDeviceSameValue(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-same-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -251,8 +251,8 @@ func testSetDeviceNameSameValue(t *testing.T, originalWd string, originalUserSet
 
 	// Set initial device name.
 	_, err = shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "my-laptop"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "my-laptop"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -261,8 +261,8 @@ func testSetDeviceNameSameValue(t *testing.T, originalWd string, originalUserSet
 
 	// Set same name again.
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "my-laptop"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "my-laptop"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -274,9 +274,9 @@ func testSetDeviceNameSameValue(t *testing.T, originalWd string, originalUserSet
 	}
 }
 
-// Tests set-device-name outside a project directory without --project-uuid.
-func testSetDeviceNameOutsideProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-outside-*")
+// Tests set-project-device outside a project directory without --project-uuid.
+func testSetProjectDeviceOutsideProject(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-outside-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -292,8 +292,8 @@ func testSetDeviceNameOutsideProject(t *testing.T, originalWd string, originalUs
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "my-laptop"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "my-laptop"})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -306,8 +306,8 @@ func testSetDeviceNameOutsideProject(t *testing.T, originalWd string, originalUs
 	}
 }
 
-func testSetDeviceNameUpdatesProjectConfig(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-set-device-project-config-*")
+func testSetProjectDeviceUpdatesProjectConfig(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-set-project-device-project-config-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -361,8 +361,8 @@ func testSetDeviceNameUpdatesProjectConfig(t *testing.T, originalWd string, orig
 	}
 
 	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateConfigTestCLI("set-device-name", nil, nil, true, false)
-		cmd.SetArgs([]string{"config", "set-device-name", "new-device-name"})
+		cmd := shared.CreateConfigTestCLI("set-project-device", nil, nil, true, false)
+		cmd.SetArgs([]string{"config", "set-project-device", "new-device-name"})
 		return cmd.Execute()
 	})
 	if err != nil {

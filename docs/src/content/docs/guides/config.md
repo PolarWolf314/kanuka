@@ -95,36 +95,32 @@ kanuka config list-devices --user alice@example.com
 
 ## Setting Your Device Name
 
-You can set your preferred device name for a project. This name is stored in
-your local user configuration and will be used when you create keys.
+There are two types of device name settings:
+
+### Default Device Name
+
+Set your default device name for new projects. This is used when you
+initialize or register for a project for the first time.
 
 ```bash
-kanuka config set-device-name my-laptop
+kanuka config set-default-device my-laptop
 ```
 
-This sets the device name for the current project. To set a device name for a
-specific project by UUID:
+### Project Device Name
+
+Set your device name for an existing project. This updates both your user
+configuration and the project configuration to keep them in sync.
 
 ```bash
-kanuka config set-device-name --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation
+kanuka config set-project-device my-laptop
 ```
 
-## Renaming Devices
-
-To rename a device in the project configuration (requires project access):
+To set a device name for a specific project by UUID (without being in the
+project directory):
 
 ```bash
-# Rename a user's only device
-kanuka config rename-device --user alice@example.com new-laptop
-
-# Rename a specific device when the user has multiple
-kanuka config rename-device --user alice@example.com --old-name macbook personal-macbook
+kanuka config set-project-device --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation
 ```
-
-The `--old-name` flag is required when a user has multiple devices registered.
-
-When you rename your own device, Kānuka automatically updates both the project
-configuration and your local user configuration to keep them in sync.
 
 ## Device Name Requirements
 
@@ -143,7 +139,7 @@ When you want to access a project from a new computer:
 2. Run `kanuka config init` to set up your identity (use the same email).
 3. Set a unique device name for this project:
    ```bash
-   kanuka config set-device-name work-laptop
+   kanuka config set-project-device work-laptop
    ```
 4. Run `kanuka secrets create` to generate keys for this device.
 5. Ask a teammate to register your new device:

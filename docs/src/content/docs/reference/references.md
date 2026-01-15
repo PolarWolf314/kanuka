@@ -526,11 +526,11 @@ Usage:
   kanuka config [command]
 
 Available Commands:
-  init            Initialize your user configuration
-  list-devices    List all devices in the project
-  rename-device   Rename a device in the project
-  set-device-name Set your device name for a project
-  show            Display current configuration
+  init                Initialize your user configuration
+  list-devices        List all devices in project
+  set-default-device   Set your default device name for new projects
+  set-project-device   Set your device name for a project
+  show                Display current configuration
 
 Flags:
   -d, --debug     enable debug output
@@ -601,16 +601,39 @@ kanuka config show --project
 kanuka config show --json
 ```
 
-### `kanuka config set-device-name`
+### `kanuka config set-default-device`
 
-Sets your preferred device name for a project in your local user configuration. This name is used when you create keys for a project.
+Sets your default device name in your user configuration. This default name is used when you initialize or register for new projects.
 
 ```
 Usage:
-  kanuka config set-device-name [device-name] [flags]
+  kanuka config set-default-device [device-name]
 
 Flags:
-  -h, --help                  help for set-device-name
+  -h, --help          help for set-default-device
+
+Global Flags:
+  -d, --debug     enable debug output
+  -v, --verbose   enable verbose output
+```
+
+**Examples:**
+
+```bash
+# Set your default device name
+kanuka config set-default-device my-laptop
+```
+
+### `kanuka config set-project-device`
+
+Sets your device name for an existing project in both user and project configuration. This is the command to use when you want to change your device name for a project you're already part of.
+
+```
+Usage:
+  kanuka config set-project-device [device-name] [flags]
+
+Flags:
+  -h, --help                  help for set-project-device
       --project-uuid string   project UUID (defaults to current project)
 
 Global Flags:
@@ -622,38 +645,10 @@ Global Flags:
 
 ```bash
 # Set device name for the current project
-kanuka config set-device-name my-laptop
+kanuka config set-project-device my-laptop
 
 # Set device name for a specific project
-kanuka config set-device-name --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation
-```
-
-### `kanuka config rename-device`
-
-Renames a device in the project configuration. You must specify the user email whose device you want to rename.
-
-```
-Usage:
-  kanuka config rename-device [new-name] [flags]
-
-Flags:
-  -h, --help              help for rename-device
-      --old-name string   old device name (required if user has multiple devices)
-  -u, --user string       user email (required)
-
-Global Flags:
-  -d, --debug     enable debug output
-  -v, --verbose   enable verbose output
-```
-
-**Examples:**
-
-```bash
-# Rename the only device for a user
-kanuka config rename-device --user alice@example.com new-laptop
-
-# Rename a specific device when user has multiple
-kanuka config rename-device --user alice@example.com --old-name macbook personal-macbook
+kanuka config set-project-device --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation
 ```
 
 ### `kanuka config list-devices`

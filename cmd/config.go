@@ -20,8 +20,8 @@ var (
 
 Use these commands to:
   - Initialize your user identity (config init)
-  - Set your device name for a project
-  - Rename devices in the project
+  - Set your default device name for new projects
+  - Set your device name for an existing project
   - List all devices in the project
 
 Examples:
@@ -31,11 +31,11 @@ Examples:
   # List all devices in the project
   kanuka config list-devices
 
-  # Set your device name for the current project
-  kanuka config set-device-name my-laptop
+  # Set your default device name
+  kanuka config set-default-device my-laptop
 
-  # Rename a device in the project
-  kanuka config rename-device --user alice@example.com --new-name workstation`,
+  # Set your device name for the current project
+  kanuka config set-project-device my-laptop`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			ConfigLogger = logger.Logger{
 				Verbose: configVerbose,
@@ -65,8 +65,7 @@ func ResetConfigState() {
 	configDebug = false
 	resetConfigInitState()
 	resetConfigShowState()
-	resetSetDeviceNameState()
-	resetRenameDeviceState()
+	resetSetProjectDeviceState()
 	resetListDevicesState()
 	resetConfigCobraFlagState()
 }
