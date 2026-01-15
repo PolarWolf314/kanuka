@@ -20,9 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	exportOutputPath string
-)
+var exportOutputPath string
 
 func init() {
 	exportCmd.Flags().StringVarP(&exportOutputPath, "output", "o", "", "output path for the archive (default: kanuka-secrets-YYYY-MM-DD.tar.gz)")
@@ -90,11 +88,22 @@ Examples:
 
 		configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			return Logger.ErrorfAndReturn("config.toml not found at %s\n\nTo fix this issue:\n  1. Run 'kanuka secrets init' to initialize the project\n  2. Or restore config.toml from git: git checkout .kanuka/config.toml", configPath)
+			finalMessage := ui.Error.Sprint("✗") + " config.toml not found\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " to initialize the project\n"
+			spinner.FinalMSG = finalMessage
+			spinner.Stop()
+			return nil
 		}
 
 		if err := validateProjectConfig(configPath); err != nil {
-			return Logger.ErrorfAndReturn("failed to validate project config: %w", err)
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+				ui.Info.Sprint("→") + " " + ui.Code.Sprint(err.Error()) + "\n\n" +
+				ui.Info.Sprint("→") + " To fix this issue:\n" +
+				"   1. Restore from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+				"   2. Or contact your project administrator for assistance\n"
+			spinner.FinalMSG = finalMessage
+			spinner.Stop()
+			return nil
 		}
 
 		Logger.Debugf("Initializing project settings")
@@ -290,7 +299,7 @@ func validateProjectConfig(configPath string) error {
 
 	var decoded map[string]interface{}
 	if _, err := toml.Decode(string(configContent), &decoded); err != nil {
-		return fmt.Errorf("config.toml is invalid: %w\n\nTo fix this issue:\n  1. Restore from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance", err)
+		return fmt.Errorf("config.toml is invalid: %w", err)
 	}
 
 	return nil
