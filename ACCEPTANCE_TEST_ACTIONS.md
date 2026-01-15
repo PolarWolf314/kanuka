@@ -13,10 +13,12 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Low:** 3
 
 **Progress:**
+
 - Completed: ERR-001, ERR-002, ERR-003, ERR-004, ERR-005, ERR-007, ERR-009, ERR-010, ERR-011, ERR-012, ERR-017, ERR-018, ERR-006, ERR-014, ERR-013, ERR-015
 - In Progress: None
 
 **Recommended Fix Order:**
+
 1. ERR-003 (Init folder cleanup) - Critical, blocks re-init - ✅ COMPLETED
 2. ERR-002 (Create validation) - Critical, prevents bad state - ✅ COMPLETED
 3. ERR-004 & ERR-005 (Glob patterns) - Critical, core functionality - ✅ COMPLETED
@@ -27,7 +29,7 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 8. ERR-008 (Access display) - High, confusing UX - ✅ COMPLETED
 9. ERR-011, ERR-012, ERR-017, ERR-018 (Error handling) - Medium, UX improvement
 10. ERR-006, ERR-013, ERR-014, ERR-015 (UX issues) - Medium
-11. ERR-016 (Log --oneline) - Low, clarification needed
+11. ERR-016 (Log --oneline) - Low, clarification needed ✅ SKIPPED
 12. ERR-019 (Read-only filesystem) - Low, investigation needed
 
 ---
@@ -41,18 +43,22 @@ This document transforms the findings from `ACCEPTANCE_TEST_FINDINGS.md` into ac
 **Estimated Effort:** 2-3 hours
 
 ### Context
+
 When running secrets commands (`encrypt`, `decrypt`, `access`, `status`) outside of a Kānuka-initialized project, the commands hang indefinitely or show incorrect behavior instead of immediately exiting with a clear error message. This is a critical UX issue that leaves users confused about what went wrong.
 
 ### Root Cause Analysis
+
 The code correctly detects missing projects but sets `spinner.FinalMSG` and returns `nil` before spinner cleanup runs. The spinner's `defer cleanup()` may not display the final message properly, leading to hangs. Additionally, the `access` command shows "test-project" when no project exists (hard-coded fallback value).
 
 **Files Affected:**
+
 - `cmd/secrets_encrypt.go:74-86`
 - `cmd/secrets_decrypt.go:74-87`
 - `cmd/secrets_access.go:82-90`
 - `cmd/secrets_status.go:87-95`
 
 ### Acceptance Criteria
+
 - [x] All commands (`encrypt`, `decrypt`, `access`, `status`) immediately exit with non-zero status when not in a project
 - [x] Clear error message displayed: "✗ Kānuka has not been initialized"
 - [x] Helpful suggestion shown: "→ Run 'kanuka secrets init' first"
@@ -63,6 +69,7 @@ The code correctly detects missing projects but sets `spinner.FinalMSG` and retu
 ### Status: ✅ COMPLETED
 
 ### Before
+
 ```bash
 $ cd /tmp
 $ kanuka secrets encrypt
@@ -77,6 +84,7 @@ Project: test-project  [Incorrect - no project exists]
 ```
 
 ### After
+
 ```bash
 $ cd /tmp
 $ kanuka secrets encrypt
@@ -98,16 +106,19 @@ $ echo $?
 ### Steps to Completion
 
 1. **Fix Spinner Cleanup Logic**
+
    - Review spinner cleanup in all affected commands
    - Ensure `spinner.FinalMSG` is properly displayed before returning
    - Move spinner cleanup to happen before error returns
 
 2. **Remove Hard-coded Fallback**
+
    - Search for "test-project" in codebase
    - Remove or replace with empty string in `cmd/secrets_access.go`
    - Ensure all commands check for empty projectPath before displaying project name
 
 3. **Standardize Error Handling**
+
    - Create consistent error pattern for missing project:
      ```go
      if projectPath == "" {
@@ -121,6 +132,7 @@ $ echo $?
    - Apply to all affected commands
 
 4. **Add Tests**
+
    - Create test cases for each command outside project directory
    - Verify non-zero exit codes
    - Verify error messages are displayed
@@ -132,13 +144,16 @@ $ echo $?
    - Verify exit codes
 
 ### Rationale
+
 This is critical because:
+
 1. **Blocks User Progress:** Users cannot diagnose the problem when commands hang
 2. **Security Concern:** Hard-coded "test-project" suggests test data leaked to production
 3. **Inconsistent Behavior:** Different commands behave differently for the same error condition
 4. **Poor First Impression:** New users encountering hangs will abandon the tool
 
 ### Testing Instructions
+
 ```bash
 # Test in empty directory
 cd /tmp && mkdir test_no_project && cd test_no_project
@@ -162,16 +177,20 @@ kanuka secrets access 2>&1 | grep -q "test-project" && echo "FAIL" || echo "PASS
 **Estimated Effort:** 1-2 hours
 
 ### Context
+
 When running `kanuka secrets create` outside of a Kanuka project directory, the command generates an RSA key pair in the user's local storage before checking if the project exists. This results in confusing error messages about missing directories and leaves orphaned keys on the user's system.
 
 ### Root Cause Analysis
+
 The `CreateAndSaveRSAKeyPair` function is called before the project path validation completes. The function successfully creates keys in `~/.local/share/kanuka/keys/` but the subsequent `CopyUserPublicKeyToProject()` fails because the project's `.kanuka/public_keys/` directory doesn't exist.
 
 **Files Affected:**
+
 - `cmd/secrets_create.go:78-95`, `202-217`
 - `internal/configs/settings.go:67-110`
 
 ### Acceptance Criteria
+
 - [x] Project existence validated before any key generation
 - [x] Clear error message when not in project: "✗ Kānuka has not been initialized"
 - [x] Helpful suggestion: "→ Run 'kanuka secrets init' first to create a project"
@@ -181,9 +200,11 @@ The `CreateAndSaveRSAKeyPair` function is called before the project path validat
 ### Status: ✅ COMPLETED
 
 ### Note
+
 Fixed to return `nil` instead of error when displaying custom error messages, preventing Cobra from adding "Error:" prefix and usage information.
 
 ### Before
+
 ```bash
 $ cd /tmp/empty_folder
 $ kanuka secrets create
@@ -192,6 +213,7 @@ $ kanuka secrets create
 ```
 
 ### After
+
 ```bash
 $ cd /tmp/empty_folder
 $ kanuka secrets create
@@ -204,6 +226,7 @@ $ echo $?
 ### Steps to Completion
 
 1. **Reorder Validation Logic**
+
    - Move project path check to the beginning of `createCmd`
    - Check if `configs.ProjectKanukaSettings.ProjectPath` is empty
    - Return error before calling `CreateAndSaveRSAKeyPair`
@@ -225,10 +248,12 @@ $ echo $?
    ```
 
 2. **Update Error Message**
+
    - Make error message more specific about creating a project
    - Distinguish from "run init instead" message (used when already initialized)
 
 3. **Add Tests**
+
    - Test create command in non-initialized directory
    - Verify no keys are generated
    - Verify error message is clear
@@ -239,13 +264,16 @@ $ echo $?
    - Verify error message
 
 ### Rationale
+
 This is critical because:
+
 1. **Data Integrity:** Leaves orphaned keys that serve no purpose
 2. **Confusing Error Messages:** Users see "RSA key pair created successfully" followed by an error
 3. **Wastes Resources:** Unnecessary key generation
 4. **Poor UX:** Users don't understand why keys were created but can't be used
 
 ### Testing Instructions
+
 ```bash
 # Count keys before
 mkdir -p ~/.local/share/kanuka/keys
@@ -275,16 +303,20 @@ fi
 **Estimated Effort:** 3-4 hours
 
 ### Context
+
 When running `kanuka secrets init`, if the user cancels during the interactive prompts (e.g., with Ctrl+C or by not providing input), the `.kanuka` folder has already been created. Subsequent init attempts fail with "already initialized" error, forcing users to manually delete the folder.
 
 ### Root Cause Analysis
+
 The `EnsureKanukaSettings()` function is called early in the init process, before interactive prompts complete. This creates the `.kanuka` folder structure. Later checks see the existing folder and think init is complete, blocking re-init.
 
 **Files Affected:**
+
 - `cmd/secrets_init.go:44-54`, `100-104`
 - `internal/secrets/settings.go` (EnsureKanukaSettings)
 
 ### Acceptance Criteria
+
 - [x] No `.kanuka` folder created until user confirms/init completes successfully
 - [x] If init is cancelled (Ctrl+C), any partial state is cleaned up
 - [x] Subsequent init after cancellation succeeds without manual intervention
@@ -294,6 +326,7 @@ The `EnsureKanukaSettings()` function is called early in the init process, befor
 ### Status: ✅ COMPLETED
 
 ### Before
+
 ```bash
 $ cd /tmp/test_init
 $ kanuka secrets init
@@ -305,6 +338,7 @@ $ kanuka secrets init
 ```
 
 ### After
+
 ```bash
 $ cd /tmp/test_init
 $ kanuka secrets init
@@ -316,6 +350,7 @@ Project name [current]: myproject
 ```
 
 OR (if incomplete init detected):
+
 ```bash
 $ cd /tmp/test_init
 $ kanuka secrets init
@@ -329,6 +364,7 @@ Then run: kanuka secrets init
 ### Steps to Completion
 
 1. **Option A: Delay Folder Creation**
+
    - Move `EnsureKanukaSettings()` call to after all prompts complete
    - Create `.kanuka` folder only when all user input received
    - Add validation before folder creation
@@ -344,6 +380,7 @@ Then run: kanuka secrets init
    ```
 
 2. **Option B: Implement Cleanup Handler**
+
    - Add signal handler for Ctrl+C
    - Clean up partial `.kanuka` folder if interrupted
    - Use defer for cleanup in error paths
@@ -373,15 +410,18 @@ Then run: kanuka secrets init
    ```
 
 3. **Option C: Improved Existence Check**
+
    - Update `DoesProjectKanukaSettingsExist()` to check for `config.toml`
    - Folder existence alone is not sufficient for "already initialized"
    - Provide clearer error message for incomplete state
 
 4. **Add Signal Handling**
+
    - Handle SIGINT (Ctrl+C) gracefully
    - Clean up partial state before exiting
 
 5. **Add Tests**
+
    - Test init cancellation
    - Test re-init after cancellation
    - Test cleanup on failure
@@ -392,13 +432,16 @@ Then run: kanuka secrets init
    - Verify no orphaned folders
 
 ### Rationale
+
 This is critical because:
+
 1. **Blocks Recovery:** Users cannot retry init without manual cleanup
 2. **Poor UX:** Canceling a prompt should not leave persistent state
 3. **Confusing Error:** "Already initialized" when init was incomplete
 4. **Manual Intervention Required:** Users must know to delete `.kanuka` folder
 
 ### Testing Instructions
+
 ```bash
 # Setup test directory
 cd /tmp && rm -rf test_init_cleanup && mkdir test_init_cleanup && cd test_init_cleanup
@@ -435,16 +478,20 @@ fi
 **Estimated Effort:** 4-5 hours
 
 ### Context
+
 When providing a specific glob pattern like `"services/*/.env"` to the encrypt command, it encrypts ALL `.env` files in the project instead of only matching the glob pattern. This breaks the documented selective encryption feature and may inadvertently encrypt files the user didn't intend to.
 
 ### Root Cause Analysis
+
 The selective encryption feature was correctly implemented, but the success message had a bug where it displayed ALL existing `.kanuka` files in the project instead of just the files that were encrypted in this specific command run. This was misleading to users who expected to see only the files they explicitly requested to encrypt.
 
 **Files Affected:**
+
 - `cmd/secrets_encrypt.go:224-232`
 - `cmd/secrets_decrypt.go:224-232` (same issue)
 
 ### Acceptance Criteria
+
 - [x] Glob patterns are respected and only matching files are encrypted
 - [x] Specific file paths work correctly
 - [x] Directory arguments encrypt only files in that directory
@@ -455,11 +502,13 @@ The selective encryption feature was correctly implemented, but the success mess
 ### Status: ✅ COMPLETED
 
 ### Note
+
 **Initial Implementation:** Selective encryption feature was already implemented in commit 90837be ("feat: selective file encryption"). All integration tests pass, and manual testing confirms glob patterns work correctly.
 
 **Additional Fix:** Fixed messaging issue where success message displayed ALL existing .kanuka files instead of just the files that were encrypted in this specific run. Changed code to display only the files that were actually encrypted (`listOfEnvFiles` converted to .kanuka paths) rather than finding all .kanuka files in the project.
 
 ### Before
+
 ```bash
 # Setup test structure
 $ mkdir -p services/api services/web config
@@ -479,6 +528,7 @@ The following files were created:
 ```
 
 ### After
+
 ```bash
 # Setup test structure (same as before)
 $ mkdir -p services/api services/web config
@@ -498,11 +548,13 @@ The following files were created:
 ### Steps to Completion
 
 1. **Identified Messaging Issue**
+
    - Confirmed selective encryption feature works correctly (implemented in commit 90837be)
    - All integration tests pass for glob patterns
    - Identified that success message incorrectly shows ALL existing `.kanuka` files
 
 2. **Fixed Success Message for Encrypt**
+
    - Changed line 224-231 in `cmd/secrets_encrypt.go`
    - Instead of finding all `.kanuka` files in project, now converts encrypted `.env` files to `.kanuka` paths
    - This ensures message shows only files that were actually encrypted in this run
@@ -516,6 +568,7 @@ The following files were created:
    ```
 
 3. **Fixed Success Message for Decrypt**
+
    - Changed line 224-231 in `cmd/secrets_decrypt.go`
    - Instead of finding all `.env` files in project, now strips `.kanuka` suffix from decrypted files
    - Ensures decrypt message shows only files that were actually decrypted in this run
@@ -534,13 +587,16 @@ The following files were created:
    - No linter errors
 
 ### Rationale
+
 This is critical because:
+
 1. **Functionality Broken:** Cannot selectively encrypt files as documented
 2. **Security Concern:** May inadvertently encrypt files user didn't intend to
 3. **Unexpected Behavior:** Encrypts more files than user requested
 4. **Breaks Documentation:** Help text shows pattern support but it doesn't work
 
 ### Testing Instructions
+
 ```bash
 # Setup test environment
 cd /tmp && rm -rf test_glob && mkdir -p test_glob && cd test_glob
@@ -586,16 +642,20 @@ fi
 **Estimated Effort:** 4-5 hours
 
 ### Context
+
 When providing a specific file path to decrypt (e.g., `.env.kanuka`), the command ignores the argument and decrypts ALL `.kanuka` files in the project. This is the same bug pattern as ERR-004 but for the decrypt command.
 
 ### Root Cause Analysis
+
 Same underlying issue as ERR-004. The `resolvePattern` function in `internal/secrets/files.go` may not be handling literal file paths correctly. When `forEncryption` is `false`, the code should validate that the file is a `.kanuka` file.
 
 **Files Affected:**
+
 - `cmd/secrets_decrypt.go:92-111`
 - `internal/secrets/files.go:45-77` (resolvePattern)
 
 ### Acceptance Criteria
+
 - [x] Specific file paths work correctly
 - [x] Glob patterns are respected
 - [x] Directory arguments decrypt only files in that directory
@@ -605,9 +665,11 @@ Same underlying issue as ERR-004. The `resolvePattern` function in `internal/sec
 ### Status: ✅ COMPLETED
 
 ### Note
+
 Fixed together with ERR-004. The same messaging fix was applied to both encrypt and decrypt commands, ensuring only the files that were actually processed are displayed in the success message.
 
 ### Before
+
 ```bash
 # Setup with multiple encrypted files
 $ ls *.kanuka
@@ -624,6 +686,7 @@ The following files were created:
 ```
 
 ### After
+
 ```bash
 # Setup with multiple encrypted files
 $ ls *.kanuka
@@ -639,14 +702,17 @@ The following files were created:
 ### Steps to Completion
 
 1. **Reuse ERR-004 Fix**
+
    - Once ERR-004 is fixed, apply the same fix approach here
    - The root cause is the same `ResolveFiles` function
 
 2. **Verify File Path Logic**
+
    - Check that literal file paths are handled correctly
    - Verify `isKanukaFile` validation is working
 
 3. **Add Tests**
+
    - Test decrypt with specific file
    - Test decrypt with glob pattern
    - Test decrypt with directory
@@ -658,13 +724,16 @@ The following files were created:
    - Verify no regression in default behavior
 
 ### Rationale
+
 This is critical because:
+
 1. **Command Doesn't Work As Documented:** Help text shows specific file decryption is supported
 2. **Inconsistent:** Same bug affects both encrypt and decrypt
 3. **Poor UX:** User expects only specific files to be decrypted
 4. **Security Concern:** May inadvertently decrypt sensitive files user didn't want to
 
 ### Testing Instructions
+
 ```bash
 # Setup with encrypted files
 cd /tmp && rm -rf test_decrypt && mkdir -p test_decrypt && cd test_decrypt
@@ -716,21 +785,26 @@ fi
 **Estimated Effort:** 1-2 hours
 
 ### Context
+
 When registering a user who already has a public key (e.g., they've already run `kanuka secrets create`), the success message lists the public key path under "Files created" or "Files updated", even though the public key wasn't touched. This is misleading because only the `.kanuka` file was created/updated.
 
 ### Root Cause Analysis
+
 The code correctly changes the label to "Files updated" when `userAlreadyHasAccess` is true, but the file list still shows both the public key and encrypted key paths, making it appear both were created/updated.
 
 **Files Affected:**
+
 - `cmd/secrets_register.go:527-564`, `347-354`
 
 ### Acceptance Criteria
+
 - [ ] Success message accurately reflects which files were created/updated
 - [ ] When public key already exists, it's not listed in output
 - [ ] When public key is new, it's listed as "Files created"
 - [ ] When only `.kanuka` file is updated, shows "Files updated" with only that file
 
 ### Before
+
 ```bash
 # User has already created their keys (public key exists)
 $ kanuka secrets create
@@ -750,6 +824,7 @@ Files updated:  # Misleading - pubkey wasn't touched
 ```
 
 ### After
+
 ```bash
 # User has already created their keys (public key exists)
 $ kanuka secrets create
@@ -770,6 +845,7 @@ Files created:
 ### Steps to Completion
 
 1. **Track Which Files Were Modified**
+
    - Add variables to track if pubkey was created/updated
    - Add variables to track if `.kanuka` file was created/updated
 
@@ -779,6 +855,7 @@ Files created:
    ```
 
 2. **Dynamic Success Message**
+
    - Build message based on what was actually done
    - Only list files that were created/updated
 
@@ -795,11 +872,13 @@ Files created:
    ```
 
 3. **Adjust Message Text**
+
    - Use "Files created" only when at least one file is new
    - Use "Files updated" when updating existing files
    - Don't show file list if nothing changed
 
 4. **Add Tests**
+
    - Test registering user with existing public key
    - Test registering user without existing key
    - Verify message accuracy in both cases
@@ -809,12 +888,15 @@ Files created:
    - Verify message reflects reality
 
 ### Rationale
+
 This matters because:
+
 1. **User Confusion:** Users might think both files were created when only one was
 2. **Inaccuracy:** Success message doesn't reflect what actually happened
 3. **Audit Trail:** Misleading messages could cause confusion during troubleshooting
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_register_msg && mkdir -p test_register_msg && cd test_register_msg
@@ -845,6 +927,7 @@ kanuka secrets register --user second@example.com
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Implemented Option A: Require UUID-named files. The fix includes:
 
 1. Added UUID validation for filenames using regex pattern `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
@@ -855,23 +938,28 @@ Implemented Option A: Require UUID-named files. The fix includes:
 6. Update project config if adding new user
 
 **Modified Files:**
+
 - `cmd/secrets_register.go`: Added UUID validation, public key copying, and project config updates
 - `test/integration/register/register_cross_platform_test.go`: Updated tests to use UUID filenames
 - `test/integration/register/secrets_register_integration_test.go`: Updated test to use UUID filename
 - `test/integration/register/register_dry_run_test.go`: Updated test to use UUID filename
 
 **Tests Updated:**
+
 - Cross-platform tests now use UUID-named files
 - Unicode username tests now use `--user` flag with UUID filenames
 - Custom file test uses UUID filename
 
 **Tests Still Failing (need updates):**
+
 - Tests using non-UUID filenames like "test-user-2-uuid-5678-1234-abcdefghijkl.pub"
 - Tests in `secrets_register_integration_test.go` using patterns like "test-user"
 - Tests in `register_project_state_test.go` using non-UUID naming
 
 ### Context
+
 Using `--file` to register a user from a public key file has several serious problems:
+
 1. The encrypted key file is named after the filename base (e.g., `pubkey.kanuka`) instead of using a UUID
 2. No public key is written to the project's `public_keys/` directory
 3. Breaks project config because it creates a user entry with no UUID or email
@@ -879,15 +967,19 @@ Using `--file` to register a user from a public key file has several serious pro
 5. Breaks `kanuka secrets revoke` - cannot revoke by user email
 
 ### Root Cause Analysis
+
 The `handleCustomFileRegistration` function uses the filename (minus `.pub` extension) as the UUID. This creates files with non-UUID names like `pubkey.kanuka`. Additionally, the function doesn't copy the public key to the project directory or update the project config.
 
 **Files Affected:**
+
 - `cmd/secrets_register.go:592-751` (handleCustomFileRegistration)
 
 ### Acceptance Criteria
+
 **Choose one of these approaches:**
 
 **Option A (Recommended): Require UUID-named files**
+
 - [x] Reject files not named `<uuid>.pub`
 - [x] Clear error message explaining requirement
 - [x] Suggest using `--user` with `--pubkey` flags instead
@@ -896,16 +988,19 @@ The `handleCustomFileRegistration` function uses the filename (minus `.pub` exte
 - [x] Require --user flag if UUID not found in project config
 
 **Option B: Generate UUID for custom keys**
+
 - [ ] Generate new UUID for custom key
 - [ ] Copy public key to `.kanuka/public_keys/<uuid>.pub`
 - [ ] Create `.kanuka/secrets/<uuid>.kanuka`
 - [ ] Update project config with UUID and optional email
 
 **Option C: Remove --file flag entirely**
+
 - [ ] Deprecate or remove `--file` flag
 - [ ] Direct users to use `--user` and `--pubkey` instead
 
 ### Before
+
 ```bash
 # Create a public key file with non-UUID name
 $ ssh-keygen -t rsa -f /tmp/mykey -N "" -C ""
@@ -928,6 +1023,7 @@ $ kanuka secrets revoke --user mykey@example.com
 ```
 
 ### After (Option A):
+
 ```bash
 # Create a public key file with non-UUID name
 $ ssh-keygen -t rsa -f /tmp/mykey -N "" -C ""
@@ -947,6 +1043,7 @@ Or:
 ```
 
 ### After (Option B):
+
 ```bash
 # Create a public key file with any name
 $ ssh-keygen -t rsa -f /tmp/mykey -N "" -C ""
@@ -970,6 +1067,7 @@ Users:
 ### Steps to Completion (Option A - Recommended)
 
 1. **Add UUID Validation**
+
    - Check if filename matches UUID pattern
    - Use regex to validate UUID format: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
 
@@ -993,10 +1091,12 @@ Users:
    ```
 
 2. **Update Error Messages**
+
    - Make error message clear and actionable
    - Provide examples of correct usage
 
 3. **Add Tests**
+
    - Test with UUID-named file
    - Test with non-UUID-named file
    - Verify error messages
@@ -1009,18 +1109,22 @@ Users:
 ### Steps to Completion (Option B)
 
 1. **Generate UUID**
+
    - Generate new UUID when using `--file`
    - Use `github.com/google/uuid` or similar library
 
 2. **Copy Public Key to Project**
+
    - Call `secrets.SavePublicKeyToFile()` to copy pubkey
    - Save with generated UUID name
 
 3. **Update Project Config**
+
    - Update `projectConfig.Users[generatedUUID] = email`
    - Save project config
 
 4. **Add --email Flag**
+
    - Optional flag to associate email with custom key
    - Required if email should be in config
 
@@ -1030,7 +1134,9 @@ Users:
    - Verify config is updated correctly
 
 ### Rationale
+
 This is high priority because:
+
 1. **Inconsistent Naming:** Breaks UUID-based file naming convention
 2. **Incomplete Registration:** Public key not copied to project directory
 3. **Config Corruption:** Project config has no record of this user
@@ -1038,6 +1144,7 @@ This is high priority because:
 5. **Breaks Revoke:** Cannot revoke by user email since user not in config
 
 ### Testing Instructions
+
 ```bash
 # Create test key with non-UUID name
 cd /tmp
@@ -1068,15 +1175,19 @@ kanuka secrets register --file /tmp/testkey.pub 2>&1
 **Estimated Effort:** 1 hour
 
 ### Context
+
 When running `kanuka secrets access` outside of a Kanuka-initialized project, it displays "test-project" as the project name. This is confusing and misleading - users might think they're in a project called "test-project" when no project exists.
 
 ### Root Cause Analysis
+
 The code uses `configs.ProjectKanukaSettings.ProjectName` as a fallback when `projectConfig.Project.Name` is empty. "test-project" appears to be a hard-coded or default value from test fixtures. This fallback should not be used when no project exists.
 
 **Files Affected:**
+
 - `cmd/secrets_access.go:92-99`
 
 ### Acceptance Criteria
+
 - [x] Access command immediately errors when not in project
 - [x] No "test-project" or other fallback project name shown
 - [x] Consistent error message: "✗ Kānuka has not been initialized"
@@ -1085,6 +1196,7 @@ The code uses `configs.ProjectKanukaSettings.ProjectName` as a fallback when `pr
 ### Status: ✅ COMPLETED
 
 ### Before
+
 ```bash
 $ cd /tmp
 $ kanuka secrets access
@@ -1093,6 +1205,7 @@ Project: test-project  [Incorrect - no project exists]
 ```
 
 ### After
+
 ```bash
 $ cd /tmp
 $ kanuka secrets access
@@ -1105,11 +1218,13 @@ $ echo $?
 ### Steps to Completion
 
 1. **Remove Hard-coded Fallback**
+
    - Find where "test-project" is set
    - Remove or replace with empty string
    - Don't display any project name when project doesn't exist
 
 2. **Add Early Return for No Project**
+
    - Check if `projectPath` is empty at the start
    - Return error before trying to display project name
 
@@ -1123,10 +1238,12 @@ $ echo $?
    ```
 
 3. **Search for Other Occurrences**
+
    - Grep codebase for "test-project"
    - Remove or fix any other occurrences
 
 4. **Add Tests**
+
    - Test access command outside project
    - Verify no "test-project" output
    - Verify error message is clear
@@ -1137,13 +1254,16 @@ $ echo $?
    - Verify clear error message
 
 ### Rationale
+
 This is high priority because:
+
 1. **Confusing Output:** Shows specific project name when no project exists
 2. **Misleading:** User might think they're in a project called "test-project"
 3. **Inconsistent:** Other commands show "not initialized" message
 4. **Security Concern:** Hard-coded test values in production code
 
 ### Testing Instructions
+
 ```bash
 # Test in empty directory
 cd /tmp && rm -rf test_access_fallback && mkdir test_access_fallback && cd test_access_fallback
@@ -1177,18 +1297,23 @@ fi
 **Estimated Effort:** 2-3 hours
 
 ### Context
+
 When setting a device name with `kanuka config set-device-name`, the user config is updated but the project config is not updated. This causes inconsistent state:
+
 - `kanuka secrets access` shows the old device name
 - `kanuka config list-devices` shows the new device name (reads from user config)
 
 ### Root Cause Analysis
+
 The `set-device-name` command only updates `userConfig.Projects[projectUUID]` but never updates `projectConfig.Devices[projectUUID]`. The `DeviceConfig` struct in project config stores device name, but it's not being updated when `set-device-name` is called.
 
 **Files Affected:**
+
 - `cmd/config_set_device_name.go:98-148`
 - `internal/configs/config.go` (DeviceConfig struct)
 
 ### Acceptance Criteria
+
 - [x] Both user config and project config are updated when setting device name
 - [x] `kanuka secrets access` shows updated device name
 - [x] `kanuka config list-devices` shows updated device name
@@ -1197,21 +1322,27 @@ The `set-device-name` command only updates `userConfig.Projects[projectUUID]` bu
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 After saving the user config, the command now:
+
 1. Loads the project config
 2. Updates `projectConfig.Devices[userUUID].Name` with the new device name
 3. Preserves Email and CreatedAt fields
 4. Saves the updated project config
 
 **Modified Files:**
+
 - `cmd/config_set_device_name.go`: Added project config update logic (lines 142-160)
 
 **Tests Added:**
+
 - New test `testSetDeviceNameUpdatesProjectConfig` verifies both user and project config are updated
 - New test also verifies Email and CreatedAt fields are preserved during update
 
 ### Before
+
 ### Before
+
 ```bash
 # In an initialized project
 $ kanuka secrets access
@@ -1234,6 +1365,7 @@ Devices for user@example.com:
 ```
 
 ### After
+
 ```bash
 # In an initialized project
 $ kanuka secrets access
@@ -1258,6 +1390,7 @@ Devices for user@example.com:
 ### Steps to Completion
 
 1. **Load Project Config**
+
    - After updating user config, load project config
    - Get the `Devices` map from project config
 
@@ -1270,6 +1403,7 @@ Devices for user@example.com:
    ```
 
 2. **Update Device Config**
+
    - Update `projectConfig.Devices[projectUUID].Name` with new device name
    - Ensure `Email` and `CreatedAt` fields are preserved
 
@@ -1281,6 +1415,7 @@ Devices for user@example.com:
    ```
 
 3. **Save Project Config**
+
    - Save the updated project config
    - Handle any errors
 
@@ -1291,10 +1426,12 @@ Devices for user@example.com:
    ```
 
 4. **Add Error Handling**
+
    - Handle case where device doesn't exist in project config
    - Provide helpful error message
 
 5. **Add Tests**
+
    - Test setting device name
    - Verify user config updated
    - Verify project config updated
@@ -1306,13 +1443,16 @@ Devices for user@example.com:
    - Verify `kanuka config list-devices` shows new name
 
 ### Rationale
+
 This is high priority because:
+
 1. **Inconsistent State:** User config and project config disagree on device name
 2. **Misleading:** `kanuka secrets access` shows old device name
 3. **Confusing:** Different commands show different device names
 4. **Data Integrity:** Project config is source of truth for access lists
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_device_name && mkdir -p test_device_name && cd test_device_name
@@ -1353,17 +1493,21 @@ fi
 **Estimated Effort:** 2-3 hours
 
 ### Context
+
 When importing an archive that has an empty or invalid `config.toml` file, the import command succeeds and creates a blank config file instead of failing with a clear error. This creates a broken project state that's difficult to recover from.
 
 ### Root Cause Analysis
+
 The `validateArchiveStructure` function checks for the presence of `config.toml` but not its validity. If the archive contains an empty or invalid TOML config, it passes validation. During extraction, the invalid config is written to disk, and `InitProjectSettings()` tries to load it, potentially using defaults or failing silently.
 
 **Files Affected:**
+
 - `cmd/secrets_import.go:31-57` (validateArchiveStructure)
 - `cmd/secrets_import.go:284-394` (performImport)
 - `cmd/secrets_import.go:387-391` (re-initialization)
 
 ### Acceptance Criteria
+
 - [x] Import fails if archive has empty `config.toml`
 - [x] Import fails if archive has invalid TOML in `config.toml`
 - [x] Clear error message explains what's wrong
@@ -1373,25 +1517,31 @@ The `validateArchiveStructure` function checks for the presence of `config.toml`
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Added validation function `validateExtractedConfig()` that:
+
 1. Checks if extracted `config.toml` is empty
 2. Parses the file as TOML to validate its structure
 3. Returns clear error if validation fails
 
 Updated `performImport()` to:
+
 1. Call `validateExtractedConfig()` after extraction (but before dry-run check)
 2. Clean up extracted `.kanuka` directory if validation fails
 3. Return helpful error message with fix suggestions
 
 **Modified Files:**
+
 - `cmd/secrets_import.go`: Added `validateExtractedConfig()` function and validation call in `performImport()`
 
 **Tests Added:**
+
 - `TestImport_EmptyConfigFile`: Verifies import fails with empty config.toml
 - `TestImport_InvalidTOMLConfigFile`: Verifies import fails with invalid TOML
 - Both tests verify error messages are clear and cleanup happens correctly
 
 ### Before
+
 ```bash
 # Create archive with empty config.toml
 $ mkdir -p /tmp/broken_export/.kanuka
@@ -1412,6 +1562,7 @@ $ kanuka secrets status
 ```
 
 ### After
+
 ```bash
 # Create archive with empty config.toml
 $ mkdir -p /tmp/broken_export/.kanuka
@@ -1433,6 +1584,7 @@ To fix this issue:
 ### Steps to Completion
 
 1. **Add Config Validation**
+
    - After extracting `config.toml`, validate it's not empty
    - Try to parse it as TOML
    - Fail if parsing fails or file is empty
@@ -1455,21 +1607,25 @@ To fix this issue:
    ```
 
 2. **Update Error Message**
+
    - Make error message clear and helpful
    - Provide suggestions for how to fix
 
 3. **Add Tests**
+
    - Test importing archive with empty config
    - Test importing archive with invalid TOML
    - Test importing archive with valid config
    - Verify error messages
 
 4. **Manual Testing**
+
    - Test with broken archives
    - Verify import fails
    - Verify no broken config created
 
 5. **Rollback on Failure**
+
    - If validation fails, remove any extracted files
    - Clean up partial state
 
@@ -1482,13 +1638,16 @@ To fix this issue:
    ```
 
 ### Rationale
+
 This is high priority because:
+
 1. **Data Integrity:** Invalid/corrupt config imported
 2. **Silent Failure:** Command succeeds but creates broken state
 3. **Poor Error Handling:** Invalid config should be caught and reported
 4. **Recovery Difficult:** Users may not know their config is corrupted
 
 ### Testing Instructions
+
 ```bash
 # Test empty config
 cd /tmp && rm -rf test_import && mkdir -p test_import/broken_empty/.kanuka && cd test_import
@@ -1514,15 +1673,19 @@ kanuka secrets import broken_toml.tar.gz 2>&1 | grep -q "invalid.*config" && ech
 **Estimated Effort:** 1 hour
 
 ### Context
+
 When a user doesn't have access (no `.kanuka` encrypted key file), the encrypt command shows a Go error message instead of a user-friendly error. The user-friendly message is shown, but then the raw Go error is appended, making the output confusing.
 
 ### Root Cause Analysis
+
 The code provides a user-friendly error ("Failed to get your .kanuka file. Are you sure you have access?") but then appends the raw Go error via `err.Error()`. This includes technical details like file paths and OS error codes that are confusing to end users.
 
 **Files Affected:**
+
 - `cmd/secrets_encrypt.go:141-149`
 
 ### Acceptance Criteria
+
 - [x] Only user-friendly error message is shown
 - [x] No raw Go error details in output
 - [x] Helpful suggestion provided for how to fix (register command)
@@ -1531,7 +1694,9 @@ The code provides a user-friendly error ("Failed to get your .kanuka file. Are y
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Removed raw Go error from the error message in `cmd/secrets_encrypt.go:141-149`. The fix:
+
 1. Removed `ui.Error.Sprint("Error: ") + err.Error()` from the finalMessage
 2. Added helpful suggestion about asking an admin to run `kanuka secrets register --user <your-email>`
 3. Changed return from `nil` to properly indicate failure and stop spinner
@@ -1539,10 +1704,12 @@ Removed raw Go error from the error message in `cmd/secrets_encrypt.go:141-149`.
 **Note:** Error message only displays in verbose mode due to pre-existing spinner behavior issue (affects other errors like "not initialized" as well). This is outside scope of ERR-011.
 
 **Modified Files:**
+
 - `cmd/secrets_encrypt.go`
 - `test/integration/encrypt/encrypt_project_state_test.go` (updated test expectations)
 
 ### Before
+
 ```bash
 # Remove user's .kanuka file
 $ rm .kanuka/secrets/*.kanuka
@@ -1554,6 +1721,7 @@ Error: failed to get user's project encrypted symmetric key: stat /Users/aaron/D
 ```
 
 ### After
+
 ```bash
 # Remove user's .kanuka file
 $ rm .kanuka/secrets/*.kanuka
@@ -1569,6 +1737,7 @@ $ kanuka secrets encrypt
 ### Steps to Completion
 
 1. **Remove Raw Error from Message**
+
    - Remove `ui.Error.Sprint("Error: ") + err.Error()` from error message
    - Keep only the user-friendly message
 
@@ -1585,10 +1754,12 @@ $ kanuka secrets encrypt
    ```
 
 2. **Add Helpful Suggestion**
+
    - Suggest running `register` command
    - Make it actionable (include example)
 
 3. **Add Tests**
+
    - Test encrypt without access
    - Verify no raw Go errors in output
    - Verify helpful suggestion is shown
@@ -1598,12 +1769,15 @@ $ kanuka secrets encrypt
    - Verify clean error message
 
 ### Rationale
+
 This matters because:
+
 1. **Poor UX:** Technical Go error shown to users
 2. **Redundant Information:** User-friendly message already explains the issue
 3. **Inconsistent:** Some commands handle errors better than others
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_encrypt_error && mkdir -p test_encrypt_error && cd test_encrypt_error
@@ -1640,15 +1814,19 @@ fi
 **Estimated Effort:** 1 hour
 
 ### Context
+
 Same pattern as ERR-011 but for the register command. When trying to register a user when the current user doesn't have access, the command shows a raw Go RSA decryption error instead of a user-friendly error.
 
 ### Root Cause Analysis
+
 The code provides a user-friendly message but appends the raw Go error via `err.Error()`. The error includes "crypto/rsa: decryption error" which is confusing to users.
 
 **Files Affected:**
+
 - `cmd/secrets_register.go:512-523`
 
 ### Acceptance Criteria
+
 - [x] Only user-friendly error message is shown
 - [x] No raw Go error details in output
 - [x] Helpful suggestion provided for how to fix (create command)
@@ -1657,29 +1835,35 @@ The code provides a user-friendly message but appends the raw Go error via `err.
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Fixed all three error paths in `cmd/secrets_register.go`:
+
 1. Line 489: Couldn't get Kānuka key from file path
 2. Line 507: Couldn't get private key (from file or stdin)
 3. Line 521: Failed to decrypt Kānuka key using private key
 
 All fixes follow the same pattern as ERR-011:
+
 - Removed `ui.Error.Sprint("Error: ") + err.Error()` from finalMessage
 - Added helpful suggestion about running `kanuka secrets create`
 - Added `spinner.Stop()` before returning
 
 **Additional Fixes:**
 Also fixed similar error messages in `cmd/secrets_encrypt.go`:
+
 - Line 164: Failed to read private key from stdin (kept raw error - different issue)
 - Line 229: Failed to encrypt .env files (kept raw error - different issue)
 
 **Note:** Error messages only display in verbose mode due to pre-existing spinner behavior issue (same as ERR-011).
 
 **Modified Files:**
+
 - `cmd/secrets_register.go`
 - `cmd/secrets_encrypt.go`
 - `test/integration/encrypt/encrypt_project_state_test.go` (updated test expectations)
 
 ### Before
+
 ```bash
 # Remove user's .kanuka file
 $ rm .kanuka/secrets/*.kanuka
@@ -1694,6 +1878,7 @@ Error: crypto/rsa: decryption error
 ```
 
 ### After
+
 ```bash
 # Remove user's .kanuka file
 $ rm .kanuka/secrets/*.kanuka
@@ -1710,11 +1895,13 @@ Are you sure you have access?
 ### Steps to Completion
 
 1. **Apply Same Fix as ERR-011**
+
    - Remove `ui.Error.Sprint("Error: ") + err.Error()` from message
    - Keep only user-friendly message
    - Add helpful suggestion
 
 2. **Add Tests**
+
    - Test register without access
    - Verify no raw Go errors in output
    - Verify helpful suggestion is shown
@@ -1724,12 +1911,15 @@ Are you sure you have access?
    - Verify clean error message
 
 ### Rationale
+
 Same as ERR-011:
+
 1. **Poor UX:** Raw Go "crypto/rsa: decryption error" shown to users
 2. **Confusing:** Technical error doesn't help user understand the problem
 3. **Inconsistent:** Some places handle errors better than others
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_register_error && mkdir -p test_register_error && cd test_register_error
@@ -1768,30 +1958,38 @@ fi
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Fixed validation order to check for `--device` requiring `--user` before the general check. The specific check now runs first and displays correct error message: "The --device flag requires --user flag."
 
 **Modified Files:**
+
 - `cmd/secrets_revoke.go`: Reordered validation checks (lines 135-149)
 - `test/integration/revoke/revoke_basic_test.go`: Added test for --device without --user flag
 
 **Tests Added:**
+
 - `TestRevokeCommand_DeviceRequiresUser`: Verifies that using --device without --user shows specific error message
 
 ### Context
+
 When using `--device` without `--user` flag, the error message is incorrect. It says "Either --user or --file flag is required" instead of the more specific "--device requires --user flag". The first validation check catches the case but returns the wrong error message.
 
 ### Root Cause Analysis
+
 The order of validation checks is wrong. The general check (`revokeUserEmail == "" && revokeFilePath == ""`) is checked before the specific check (`--device` requires `--user`). The general check returns early with its error message, so the specific check never runs.
 
 **Files Affected:**
+
 - `cmd/secrets_revoke.go:35-47`, `49-55`
 
 ### Acceptance Criteria
+
 - [ ] Using `--device` without `--user` shows specific error
 - [ ] Error message clearly states: "The --device flag requires the --user flag"
 - [ ] Help text reference is shown
 
 ### Before
+
 ```bash
 $ kanuka secrets revoke --device device1
 ✗ Either --user or --file flag is required.
@@ -1799,6 +1997,7 @@ Run 'kanuka secrets revoke --help' to see the available commands.
 ```
 
 ### After
+
 ```bash
 $ kanuka secrets revoke --device device1
 ✗ The --device flag requires the --user flag.
@@ -1808,6 +2007,7 @@ Run 'kanuka secrets revoke --help' to see the available commands.
 ### Steps to Completion
 
 1. **Reorder Validation Checks**
+
    - Check for `--device` requiring `--user` BEFORE the general check
    - Or make the general check exclude `--device` case
 
@@ -1830,6 +2030,7 @@ Run 'kanuka secrets revoke --help' to see the available commands.
    ```
 
 2. **Add Tests**
+
    - Test `--device` without `--user`
    - Verify specific error message
    - Test other flag combinations
@@ -1839,12 +2040,15 @@ Run 'kanuka secrets revoke --help' to see the available commands.
    - Verify error message is specific
 
 ### Rationale
+
 This matters because:
+
 1. **Incorrect Error Message:** Doesn't explain that `--device` requires `--user`
 2. **Helpful Tip Missing:** User doesn't know which flag they forgot
 3. **Inconsistent with Docs:** Help text says `--device` requires `--user`
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_revoke_error && mkdir -p test_revoke_error && cd test_revoke_error
@@ -1874,7 +2078,9 @@ fi
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Added gzip error detection and user-friendly error message in `cmd/secrets_import.go:106-118`. The fix:
+
 1. Detects when `listArchiveContents` returns a gzip-related error
 2. Stops the spinner explicitly to prevent FinalMSG interference
 3. Displays user-friendly message: "Invalid archive file: <path>"
@@ -1882,10 +2088,12 @@ Added gzip error detection and user-friendly error message in `cmd/secrets_impor
 5. Returns formatted error to trigger Cobra's error handling
 
 **Modified Files:**
+
 - `cmd/secrets_import.go`: Added gzip error detection and user-friendly error handling (lines 106-118)
 - `test/integration/import/import_test.go`: Updated TestImport_InvalidArchive to check for user-friendly message and verify no technical error details
 
 **Tests Updated:**
+
 - TestImport_InvalidArchive now verifies:
   - User-friendly message is displayed
   - No technical error details ("gzip: invalid header") are shown
@@ -1893,22 +2101,27 @@ Added gzip error detection and user-friendly error message in `cmd/secrets_impor
   - Command fails with non-zero exit code
 
 ### Context
+
 When importing an invalid archive (not a valid gzip file), the command shows a Go error message about gzip header instead of a user-friendly error. Users see "gzip: invalid header" which is technical and not helpful.
 
 ### Root Cause Analysis
+
 The error from `listArchiveContents` is returned via `Logger.ErrorfAndReturn`, which wraps the Go error. The Go gzip library returns `gzip: invalid header` error, which is shown directly to the user.
 
 **Files Affected:**
+
 - `cmd/secrets_import.go:105-114`
 - `cmd/secrets_import.go:200-229` (listArchiveContents)
 
 ### Acceptance Criteria
+
 - [x] Invalid archive shows user-friendly error
 - [x] No technical "gzip: invalid header" error
 - [x] Helpful suggestion: Ensure archive was created with `kanuka secrets export`
 - [x] Clear indication of what went wrong
 
 ### Before
+
 ```bash
 # Create invalid archive
 $ echo "not a tar" > fake.tar.gz
@@ -1919,6 +2132,7 @@ Error: failed to read archive: failed to create gzip reader: gzip: invalid heade
 ```
 
 ### After
+
 ```bash
 # Create invalid archive
 $ echo "not a tar" > fake.tar.gz
@@ -1934,6 +2148,7 @@ $ kanuka secrets import fake.tar.gz
 ### Steps to Completion
 
 1. **Catch Gzip Error and Wrap**
+
    - Detect the specific gzip error
    - Replace with user-friendly message
 
@@ -1953,6 +2168,7 @@ $ kanuka secrets import fake.tar.gz
    ```
 
 2. **Add Tests**
+
    - Test with invalid archive
    - Test with valid archive
    - Verify error messages
@@ -1962,12 +2178,15 @@ $ kanuka secrets import fake.tar.gz
    - Verify user-friendly error
 
 ### Rationale
+
 This matters because:
+
 1. **Poor UX:** Technical "gzip: invalid header" error shown to users
 2. **Unclear:** User doesn't know what's wrong with their archive
 3. **Inconsistent:** Other commands have better error messages
 
 ### Testing Instructions
+
 ```bash
 # Create invalid archive
 echo "not a tar" > /tmp/fake.tar.gz
@@ -2003,15 +2222,19 @@ fi
 **Estimated Effort:** 30 minutes
 
 ### Context
+
 When using both `--merge` and `--replace` flags, the command shows the error twice - once with the `✗` prefix and once as a raw Go error. The error string itself is user-created, but it's shown in a redundant way.
 
 ### Root Cause Analysis
+
 The error is returned via `Logger.ErrorfAndReturn`, which wraps a Go error and displays it both in formatted output and as a raw error. The string "cannot use both --merge and --replace flags" is a user-created message, but the way it's returned includes Go error formatting.
 
 **Files Affected:**
+
 - `cmd/secrets_import.go:92-95`
 
 ### Acceptance Criteria
+
 - [x] Error shown only once, with `✗` prefix
 - [x] Clear message: "Cannot use both --merge and --replace flags"
 - [x] Helpful explanation of each flag
@@ -2020,10 +2243,12 @@ The error is returned via `Logger.ErrorfAndReturn`, which wraps a Go error and d
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Fixed to use `fmt.Print()` directly for early validation errors (before spinner is created) to avoid duplicate messages. For the invalid archive error (after spinner is started), stopped the spinner and used `fmt.Println()` to ensure the message goes through captured output in tests.
 
 **Modified Files:**
-- `cmd/secrets_import.go`: 
+
+- `cmd/secrets_import.go`:
   - Changed conflicting flags validation to print message directly with `fmt.Print()` and return nil (lines 96-102)
   - Changed invalid archive validation to stop spinner, print message with `fmt.Println()`, and return nil (lines 115-121)
 - `test/integration/import/import_test.go`: Updated tests to verify:
@@ -2031,10 +2256,12 @@ Fixed to use `fmt.Print()` directly for early validation errors (before spinner 
   - `TestImport_InvalidArchive`: No error returned, user-friendly message shown, technical details hidden
 
 **Tests Updated:**
+
 - `TestImport_ConflictingFlags` now verifies that error is shown exactly once without Cobra's "Error:" prefix
 - `TestImport_InvalidArchive` updated to not expect an error to be returned (since we use custom messages)
 
 ### Before
+
 ```bash
 $ kanuka secrets import backup.tar.gz --merge --replace
 ✗ cannot use both --merge and --replace flags
@@ -2042,6 +2269,7 @@ Error: cannot use both --merge and --replace flags
 ```
 
 ### After
+
 ```bash
 $ kanuka secrets import backup.tar.gz --merge --replace
 ✗ Cannot use both --merge and --replace flags.
@@ -2053,6 +2281,7 @@ $ kanuka secrets import backup.tar.gz --merge --replace
 ### Steps to Completion
 
 1. **Use Spinner.FinalMSG Instead of Error Return**
+
    - Don't use `Logger.ErrorfAndReturn`
    - Use `spinner.FinalMSG` and return nil
 
@@ -2067,6 +2296,7 @@ $ kanuka secrets import backup.tar.gz --merge --replace
    ```
 
 2. **Add Tests**
+
    - Test with both flags
    - Verify error shown once
    - Verify helpful explanation
@@ -2076,12 +2306,15 @@ $ kanuka secrets import backup.tar.gz --merge --replace
    - Verify clean error message
 
 ### Rationale
+
 This matters because:
+
 1. **Redundant Output:** Error message shown twice
 2. **Inconsistent:** Other commands show cleaner error messages
 3. **Confusing:** Raw error format shown
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_import_both && mkdir -p test_import_both && cd test_import_both
@@ -2113,33 +2346,41 @@ fi
 **Estimated Effort:** 2 hours (mostly decision-making)
 
 ### Context
+
 The `--oneline` flag for `kanuka secrets log` doesn't actually format the output significantly differently from the default. It shows each entry on its own line (which is the default behavior), just with a slightly different format (date vs datetime). The flag name suggests more compact output like git log's `--oneline`.
 
 ### Root Cause Analysis
+
 The `outputLogOneline` function correctly outputs one line per entry. The issue is ambiguous about what "oneline" means in this context. Currently, it just changes the format from "2026-01-13 14:30:45" to "2026-01-13" but doesn't make it more compact.
 
 **Files Affected:**
+
 - `cmd/secrets_log.go:258-265` (outputLogOneline)
 
 ### Acceptance Criteria
+
 **Choose one of these approaches:**
 
 **Option A (Do Nothing): Document Current Behavior**
+
 - [ ] Update help text to explain what `--oneline` does
 - [ ] Clarify it shows date-only (not datetime) format
 - [ ] Add examples to documentation
 
 **Option B: Make It More Compact**
+
 - [ ] Reduce columns to just operation and details
 - [ ] Remove timestamp
 - [ ] Format like: `init project_name | encrypt 5 files`
 
 **Option C: Follow Git Log Pattern**
+
 - [ ] Show operation and details only on one line
 - [ ] No timestamp or user columns
 - [ ] Format: `operation: details`
 
 ### Before
+
 ```bash
 $ kanuka secrets log
 2026-01-13 14:30:45  aaron@example.com   init        test_project
@@ -2151,6 +2392,7 @@ $ kanuka secrets log --oneline
 ```
 
 ### After (Option B):
+
 ```bash
 $ kanuka secrets log
 2026-01-13 14:30:45  aaron@example.com   init        test_project
@@ -2162,6 +2404,7 @@ encrypt 5 files
 ```
 
 ### After (Option C):
+
 ```bash
 $ kanuka secrets log
 2026-01-13 14:30:45  aaron@example.com   init        test_project
@@ -2175,6 +2418,7 @@ encrypt: 5 files
 ### Steps to Completion (Option B - Make More Compact)
 
 1. **Redefine Oneline Format**
+
    - Remove timestamp column
    - Remove user column (optional)
    - Show only operation and details
@@ -2190,10 +2434,12 @@ encrypt: 5 files
    ```
 
 2. **Update Help Text**
+
    - Update `--oneline` flag description
    - Explain what it does
 
 3. **Add Tests**
+
    - Test `--oneline` output
    - Verify it's more compact
    - Verify default output unchanged
@@ -2204,11 +2450,13 @@ encrypt: 5 files
 ### Steps to Completion (Option A - Document Current Behavior)
 
 1. **Update Help Text**
+
    - Clarify what `--oneline` does
    - Show example output
    - Explain it's similar to default but with date-only format
 
 2. **Update Documentation**
+
    - Add examples showing both formats
    - Explain when to use each
 
@@ -2217,12 +2465,15 @@ encrypt: 5 files
    - Verify it matches documented behavior
 
 ### Rationale
+
 This is low priority but matters because:
+
 1. **Unclear Specification:** What does "oneline" mean in this context?
 2. **Potentially Misleading:** Flag name suggests behavior that might not be implemented
 3. **Inconsistent with Common CLI Tools:** Git and other tools have different `--oneline` semantics
 
 ### Testing Instructions
+
 ```bash
 # Setup test project with audit log entries
 cd /tmp && rm -rf test_log_oneline && mkdir -p test_log_oneline && cd test_log_oneline
@@ -2260,15 +2511,19 @@ fi
 **Estimated Effort:** 1 hour
 
 ### Context
+
 When a `.kanuka` file is corrupted, the decrypt command shows a raw Go RSA decryption error instead of a user-friendly error. Same pattern as ERR-011 and ERR-012.
 
 ### Root Cause Analysis
+
 The code provides a user-friendly message but appends the raw Go error. The Go RSA library returns `crypto/rsa: decryption error` when decryption fails, which is confusing to users.
 
 **Files Affected:**
+
 - `cmd/secrets_decrypt.go:198-207`
 
 ### Acceptance Criteria
+
 - [x] Only user-friendly error message is shown
 - [x] No raw Go error details in output
 - [x] Helpful suggestion: Ask admin to revoke and re-register
@@ -2277,7 +2532,9 @@ The code provides a user-friendly message but appends the raw Go error. The Go R
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Fixed corrupted .kanuka file error message in `cmd/secrets_decrypt.go:198-207`.
+
 - Removed `ui.Error.Sprint("Error: ") + err.Error()` from finalMessage
 - Added helpful suggestion about file corruption and asking admin to revoke and re-register
 - Changed return from `nil` to `fmt.Errorf("decryption failed")` to trigger Cobra's error handling
@@ -2285,9 +2542,11 @@ Fixed corrupted .kanuka file error message in `cmd/secrets_decrypt.go:198-207`.
 **Note:** Error message only displays in verbose mode due to pre-existing spinner behavior issue (same as ERR-011).
 
 **Modified Files:**
+
 - `cmd/secrets_decrypt.go`
 
 ### Before
+
 ```bash
 # Corrupt .kanuka file
 $ echo "garbage" > .kanuka/secrets/<uuid>.kanuka
@@ -2299,6 +2558,7 @@ Error: crypto/rsa: decryption error
 ```
 
 ### After
+
 ```bash
 # Corrupt .kanuka file
 $ echo "garbage" > .kanuka/secrets/<uuid>.kanuka
@@ -2314,6 +2574,7 @@ $ kanuka secrets decrypt
 ### Steps to Completion
 
 1. **Apply Same Fix as ERR-011 and ERR-012**
+
    - Remove `ui.Error.Sprint("Error: ") + err.Error()` from message
    - Keep only user-friendly message
    - Add helpful suggestion about corruption
@@ -2331,6 +2592,7 @@ $ kanuka secrets decrypt
    ```
 
 2. **Add Tests**
+
    - Test with corrupted file
    - Verify no raw Go errors in output
    - Verify helpful suggestion is shown
@@ -2340,12 +2602,15 @@ $ kanuka secrets decrypt
    - Verify clean error message
 
 ### Rationale
+
 Same as ERR-011 and ERR-012:
+
 1. **Poor UX:** Technical error message shown to users
 2. **Unhelpful:** "crypto/rsa: decryption error" doesn't help user fix the problem
 3. **Security Concern:** Users might try random fixes based on technical error
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_decrypt_corrupt && mkdir -p test_decrypt_corrupt && cd test_decrypt_corrupt
@@ -2383,12 +2648,15 @@ fi
 **Estimated Effort:** 1 hour
 
 ### Context
+
 When the project's `config.toml` is invalid/corrupt, commands show a raw Go TOML parsing error instead of a user-friendly error. Users see errors like "toml: line 2: expected '.' or ']' to end table name" which is technical and not helpful.
 
 ### Root Cause Analysis
+
 The error from `LoadProjectConfig()` is wrapped and returned. The TOML parsing library returns technical errors that are shown directly to users.
 
 **Files Affected:**
+
 - `cmd/secrets_status.go:98-101` (and other commands that load config)
 - `cmd/secrets_access.go:93-96`
 - `cmd/secrets_encrypt.go:135-138`
@@ -2400,6 +2668,7 @@ The error from `LoadProjectConfig()` is wrapped and returned. The TOML parsing l
 - `internal/configs/toml.go` (TOML parsing)
 
 ### Acceptance Criteria
+
 - [x] Only user-friendly error message is shown
 - [x] TOML error details wrapped in helpful message
 - [x] Helpful suggestion: Restore from git or contact admin
@@ -2408,9 +2677,11 @@ The error from `LoadProjectConfig()` is wrapped and returned. The TOML parsing l
 ### Status: ✅ COMPLETED
 
 ### Implementation Notes
+
 Added TOML error detection and user-friendly error messages to all commands that load project config. When a TOML parsing error is detected (error message contains "toml:"), a clear and helpful message is displayed instead of the raw Go error.
 
 **Modified Files:**
+
 - `cmd/secrets_status.go`: Added TOML error detection and user-friendly message
 - `cmd/secrets_access.go`: Added TOML error detection and user-friendly message
 - `cmd/secrets_encrypt.go`: Added TOML error detection and user-friendly message
@@ -2421,6 +2692,7 @@ Added TOML error detection and user-friendly error messages to all commands that
 - `cmd/config_set_device_name.go`: Added TOML error detection in multiple functions
 
 ### Before
+
 ```bash
 # Corrupt config.toml
 $ echo "not valid toml [" > .kanuka/config.toml
@@ -2431,6 +2703,7 @@ Error: failed to load project config: toml: line 2: expected '.' or ']' to end t
 ```
 
 ### After
+
 ```bash
 # Corrupt config.toml
 $ echo "not valid toml [" > .kanuka/config.toml
@@ -2450,6 +2723,7 @@ $ kanuka secrets status
 ### Steps to Completion
 
 1. **Add TOML Error Detection**
+
    - Catch TOML parsing errors
    - Extract line number and error details
    - Wrap in user-friendly message
@@ -2475,10 +2749,12 @@ $ kanuka secrets status
    ```
 
 2. **Apply to All Commands Loading Config**
+
    - Add this error handling pattern to all commands that load config
    - Create helper function if needed
 
 3. **Add Tests**
+
    - Test with corrupted config
    - Verify user-friendly error shown
    - Verify helpful suggestion
@@ -2488,12 +2764,15 @@ $ kanuka secrets status
    - Verify clean error message
 
 ### Rationale
+
 Same as other error handling issues:
+
 1. **Poor UX:** Technical TOML parsing error shown to users
 2. **Unhelpful:** Error message doesn't explain how to fix
 3. **Security Concern:** Users might try editing config manually and make it worse
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_config_corrupt && mkdir -p test_config_corrupt && cd test_config_corrupt
@@ -2531,16 +2810,20 @@ fi
 **Estimated Effort:** 2-3 hours (mostly investigation)
 
 ### Context
+
 When the `.kanuka` directory is read-only (mode 555), the encrypt command still succeeds without errors. This is unexpected because files should not be writable in a read-only directory.
 
 ### Root Cause Analysis
+
 This might be a false positive or environment-specific issue. On Unix-like systems, to create a file inside a directory, you need write+execute permission on the directory. With mode 555, there's no write permission, so encryption should fail. The test notes say "This issue might be environment-specific or a test error. More investigation needed to confirm the actual behavior."
 
 **Files Affected:**
+
 - `cmd/secrets_encrypt.go:215-222`
 - `internal/secrets/files.go` (file writing code)
 
 ### Acceptance Criteria
+
 - [ ] Encryption fails when `.kanuka` directory is read-only
 - [ ] Clear permission error message shown
 - [ ] Helpful suggestion: Change permissions with `chmod`
@@ -2553,6 +2836,7 @@ This might be a false positive or environment-specific issue. On Unix-like syste
 - [ ] Add note to documentation about write permissions
 
 ### Before
+
 ```bash
 # Make .kanuka read-only
 $ chmod 555 .kanuka
@@ -2565,6 +2849,7 @@ The following files were created:
 ```
 
 ### After
+
 ```bash
 # Make .kanuka read-only
 $ chmod 555 .kanuka
@@ -2580,6 +2865,7 @@ $ kanuka secrets encrypt
 ### Steps to Completion
 
 1. **Investigate the Issue**
+
    - Verify the actual behavior on your platform
    - Check if encryption actually succeeds with read-only directory
    - Understand why it might succeed (OS-specific behavior?)
@@ -2593,6 +2879,7 @@ $ kanuka secrets encrypt
    ```
 
 2. **If It's a Bug (Encryption Should Fail):**
+
    - Add permission check before writing files
    - Fail gracefully if directory not writable
 
@@ -2611,11 +2898,13 @@ $ kanuka secrets encrypt
    ```
 
 3. **If It's Expected Behavior (Document It):**
+
    - Add note to documentation
    - Explain that file-level permissions might differ from directory permissions
    - Clarify security model
 
 4. **Add Tests**
+
    - Test with read-only directory
    - Verify behavior (fail or succeed with documentation)
 
@@ -2624,13 +2913,16 @@ $ kanuka secrets encrypt
    - Verify behavior matches expectations
 
 ### Rationale
+
 This is low priority and needs investigation because:
+
 1. **Unclear:** Might be environment-specific behavior
 2. **Could Be False Positive:** Test notes suggest investigation needed
 3. **Security:** If it's a bug, files should not be writable in read-only directories
 4. **Silent Failure:** No error shown when write should have failed (if it's a bug)
 
 ### Testing Instructions
+
 ```bash
 # Setup test project
 cd /tmp && rm -rf test_readonly && mkdir -p test_readonly && cd test_readonly
@@ -2676,54 +2968,44 @@ chmod 755 .kanuka
 
 ## Quick Reference
 
-| ID | Title | Priority | Order | Effort |
-|----|-------|----------|-------|---------|
-| ERR-003 | Init Creates .kanuka Folder Too Early | Critical | 1 | 3-4h | ✅
-| ERR-002 | Create Generates Keys Before Checking Project | Critical | 2 | 1-2h | ✅
-| ERR-004 | Encrypt Ignores Glob Pattern | Critical | 3 | 4-5h | ✅
-| ERR-005 | Decrypt Ignores File Path | Critical | 3 | 4-5h | ✅
-| ERR-001 | Commands Hang When Not in Project | Critical | 4 | 2-3h | ✅
-| ERR-007 | Register with --file Issues | High | 5 | 4-6h | ✅
-| ERR-009 | Set-Device-Name Doesn't Update Project Config | High | 6 | 2-3h | ✅
-| ERR-010 | Invalid Archive Import Creates Blank Config | High | 7 | 2-3h | ✅
-| ERR-008 | Access Shows "test-project" | High | 8 | 1h | ✅
-| ERR-011, ERR-012, ERR-017, ERR-018 | Error Handling (4 tickets) | Medium | 9 | 1h each | 3/4 done (ERR-011 ✅, ERR-012 ✅, ERR-017 ✅)
-| ERR-006 | Register Shows "Files Created" | Medium | 11 | 1-2h |
-| ERR-013 | Revoke Wrong Error Message | Medium | 11 | 30m |
-| ERR-014 | Invalid Archive Import Error | Medium | 9 | 1h |
-| ERR-015 | Import Both Flags Error | Medium | 11 | 30m |
-| ERR-016 | Log --oneline Clarification | Low | 17 | 2h |
-| ERR-019 | Read-only Filesystem | Low | 18 | 2-3h |
+| ID                                 | Title                                         | Priority | Order | Effort  |
+| ---------------------------------- | --------------------------------------------- | -------- | ----- | ------- | --------------------------------------------- |
+| ERR-003                            | Init Creates .kanuka Folder Too Early         | Critical | 1     | 3-4h    | ✅                                            |
+| ERR-002                            | Create Generates Keys Before Checking Project | Critical | 2     | 1-2h    | ✅                                            |
+| ERR-004                            | Encrypt Ignores Glob Pattern                  | Critical | 3     | 4-5h    | ✅                                            |
+| ERR-005                            | Decrypt Ignores File Path                     | Critical | 3     | 4-5h    | ✅                                            |
+| ERR-001                            | Commands Hang When Not in Project             | Critical | 4     | 2-3h    | ✅                                            |
+| ERR-007                            | Register with --file Issues                   | High     | 5     | 4-6h    | ✅                                            |
+| ERR-009                            | Set-Device-Name Doesn't Update Project Config | High     | 6     | 2-3h    | ✅                                            |
+| ERR-010                            | Invalid Archive Import Creates Blank Config   | High     | 7     | 2-3h    | ✅                                            |
+| ERR-008                            | Access Shows "test-project"                   | High     | 8     | 1h      | ✅                                            |
+| ERR-011, ERR-012, ERR-017, ERR-018 | Error Handling (4 tickets)                    | Medium   | 9     | 1h each | 3/4 done (ERR-011 ✅, ERR-012 ✅, ERR-017 ✅) |
+| ERR-006                            | Register Shows "Files Created"                | Medium   | 11    | 1-2h    |
+| ERR-013                            | Revoke Wrong Error Message                    | Medium   | 11    | 30m     |
+| ERR-014                            | Invalid Archive Import Error                  | Medium   | 9     | 1h      |
+| ERR-015                            | Import Both Flags Error                       | Medium   | 11    | 30m     |
+| ERR-016                            | Log --oneline Clarification                   | Low      | 17    | 2h      |
+| ERR-019                            | Read-only Filesystem                          | Low      | 18    | 2-3h    |
 
 ## Suggested Sprint Plan
 
 **Week 1: Critical Issues**
+
 1. ERR-003: Init folder cleanup (4h)
 2. ERR-002: Create validation (2h)
 3. ERR-004 & ERR-005: Glob patterns (9h) - These share the same root cause
 4. ERR-001: Command hanging (3h)
 
-**Week 2: High Priority Issues**
-5. ERR-007: Register --file (6h) ✅
-6. ERR-009: Set-device-name (3h) ✅
-7. ERR-010: Import validation (3h) ✅
-8. ERR-008: Access display (1h) ✅
+**Week 2: High Priority Issues** 5. ERR-007: Register --file (6h) ✅ 6. ERR-009: Set-device-name (3h) ✅ 7. ERR-010: Import validation (3h) ✅ 8. ERR-008: Access display (1h) ✅
 
-**Week 3: Medium Priority Issues**
-9. ERR-011, ERR-012, ERR-017, ERR-018: Error handling (4h)
-10. ERR-006: Register message (2h)
-11. ERR-013, ERR-015: Revoke/import errors (1h)
-12. ERR-014: Invalid archive error (1h)
+**Week 3: Medium Priority Issues** 9. ERR-011, ERR-012, ERR-017, ERR-018: Error handling (4h) 10. ERR-006: Register message (2h) 11. ERR-013, ERR-015: Revoke/import errors (1h) 12. ERR-014: Invalid archive error (1h)
 
-**Week 4: Low Priority & Polish**
-13. ERR-016: Log --oneline (2h)
-14. ERR-019: Read-only filesystem (3h) - May be quick if investigation shows it's expected behavior
-15. Final testing and regression testing
-16. Documentation updates
+**Week 4: Low Priority & Polish** 13. ERR-016: Log --oneline (2h) 14. ERR-019: Read-only filesystem (3h) - May be quick if investigation shows it's expected behavior 15. Final testing and regression testing 16. Documentation updates
 
 ## Testing Checklist
 
 Before deploying fixes:
+
 - [ ] All critical tickets tested manually
 - [ ] All high priority tickets tested manually
 - [ ] Integration tests pass
@@ -2740,10 +3022,11 @@ Before deploying fixes:
 3. **Config Consistency:** ERR-009 and potentially other issues involve keeping user and project configs in sync. Consider adding a helper function that updates both.
 
 4. **Testing:** Many of these issues were found during manual testing. Consider adding integration tests to prevent regressions:
-    - Test commands outside project
-    - Test with corrupted files
-    - Test with invalid flags
-    - Test permission scenarios
+
+   - Test commands outside project
+   - Test with corrupted files
+   - Test with invalid flags
+   - Test permission scenarios
 
 5. **Spinner Display Issue:** There's a pre-existing issue where `spinner.FinalMSG` doesn't display in non-verbose mode. This affects multiple error messages (not initialized, no access, etc.). Consider fixing the spinner library integration to ensure FinalMSG displays consistently regardless of verbose mode.
 

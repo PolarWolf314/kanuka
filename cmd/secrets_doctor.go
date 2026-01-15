@@ -135,11 +135,13 @@ Use --json for machine-readable output.`,
 		// Calculate summary.
 		summary := calculateDoctorSummary(results)
 
-		// Collect suggestions.
+		// Collect suggestions (deduplicated).
 		var suggestions []string
+		seen := make(map[string]bool)
 		for _, result := range results {
-			if result.Suggestion != "" && result.Status != CheckPass {
+			if result.Suggestion != "" && result.Status != CheckPass && !seen[result.Suggestion] {
 				suggestions = append(suggestions, result.Suggestion)
+				seen[result.Suggestion] = true
 			}
 		}
 
@@ -280,7 +282,7 @@ func checkPrivateKeyExists() CheckResult {
 			Name:       "Private key exists",
 			Status:     CheckError,
 			Message:    "Cannot check private key: project not initialized",
-			Suggestion: "Run 'kanuka secrets init' to initialize the project",
+			Suggestion: "Run 'kanuka secrets init' to initialize a project",
 		}
 	}
 
@@ -309,7 +311,7 @@ func checkPrivateKeyPermissions() CheckResult {
 			Name:       "Private key permissions",
 			Status:     CheckError,
 			Message:    "Cannot check private key permissions: project not initialized",
-			Suggestion: "Run 'kanuka secrets init' to initialize the project",
+			Suggestion: "Run 'kanuka secrets init' to initialize a project",
 		}
 	}
 
