@@ -529,7 +529,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	if err != nil {
 		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUserUUID, err)
 		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(kanukaKeyPath) + "\n\n" +
-			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
+			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys\n"
 		spinner.FinalMSG = finalMessage
 		spinner.Stop()
 		return nil
@@ -547,7 +547,7 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 			errorSource = "from stdin"
 		}
 		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your private key " + errorSource + "\n\n" +
-			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
+			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys\n"
 		spinner.FinalMSG = finalMessage
 		spinner.Stop()
 		return nil
