@@ -13,8 +13,10 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
-
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/utils"
+
+	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
 )
 
@@ -73,12 +75,10 @@ Examples:
 		spinner, cleanup := startSpinner("Exporting secrets...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
+		projectPath, err := utils.FindProjectKanukaRoot()
+		if err != nil {
+			return Logger.ErrorfAndReturn("failed to find project root: %v", err)
 		}
-
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
@@ -86,6 +86,20 @@ Examples:
 				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
+		}
+
+		configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			return Logger.ErrorfAndReturn("config.toml not found at %s\n\nTo fix this issue:\n  1. Run 'kanuka secrets init' to initialize the project\n  2. Or restore config.toml from git: git checkout .kanuka/config.toml", configPath)
+		}
+
+		if err := validateProjectConfig(configPath); err != nil {
+			return Logger.ErrorfAndReturn("failed to validate project config: %w", err)
+		}
+
+		Logger.Debugf("Initializing project settings")
+		if err := configs.InitProjectSettings(); err != nil {
+			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 
 		// Determine output path.
@@ -259,6 +273,24 @@ func addFileToTar(tw *tar.Writer, projectPath, filePath string) error {
 	// Copy file contents.
 	if _, err := io.Copy(tw, file); err != nil {
 		return fmt.Errorf("failed to write file contents: %w", err)
+	}
+
+	return nil
+}
+
+func validateProjectConfig(configPath string) error {
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config.toml: %w", err)
+	}
+
+	if len(configContent) == 0 {
+		return fmt.Errorf("config.toml is empty")
+	}
+
+	var decoded map[string]interface{}
+	if _, err := toml.Decode(string(configContent), &decoded); err != nil {
+		return fmt.Errorf("config.toml is invalid: %w\n\nTo fix this issue:\n  1. Restore from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance", err)
 	}
 
 	return nil
