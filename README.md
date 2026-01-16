@@ -108,9 +108,9 @@ You can also download pre-built binaries from the [GitHub Releases page](https:/
 
 ### Configuration Commands
 
-- `kanuka config list-devices`: List all devices in the project
-- `kanuka config set-device-name <name>`: Set your device name for the current project
-- `kanuka config rename-device --user <email> <new-name>`: Rename a device in the project
+- `kanuka config list-devices`: List all devices in project
+- `kanuka config set-default-device <name>`: Set your default device name for new projects
+- `kanuka config set-project-device <name>`: Set your device name for an existing project
 
 ### General Commands
 

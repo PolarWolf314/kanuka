@@ -35,6 +35,14 @@ func (f Formatter) Sprintf(format string, a ...interface{}) string {
 	return f.color.Sprint(text)
 }
 
+// EnsureNewline ensures the string ends with a newline character.
+func EnsureNewline(s string) string {
+	if len(s) == 0 || s[len(s)-1] != '\n' {
+		return s + "\n"
+	}
+	return s
+}
+
 // noColor returns true if color output should be disabled.
 func noColor() bool {
 	// Check NO_COLOR environment variable (https://no-color.org/).

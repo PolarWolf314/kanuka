@@ -146,7 +146,7 @@ func testConfigShowNoUserConfig(t *testing.T, originalWd string, originalUserSet
 	}
 
 	// Verify output indicates no config found.
-	if !strings.Contains(output, "No user configuration found") {
+	if !strings.Contains(output, "⚠ No user configuration found") {
 		t.Errorf("Expected 'No user configuration found' in output, got: %s", output)
 	}
 	if !strings.Contains(output, "config init") {
@@ -266,7 +266,7 @@ func testConfigShowProjectConfigNotInProject(t *testing.T, originalWd string, or
 	}
 
 	// Verify output indicates not in a project.
-	if !strings.Contains(output, "Not in a Kanuka project directory") {
+	if !strings.Contains(output, "✗ Not in a Kanuka project directory") {
 		t.Errorf("Expected 'Not in a Kanuka project directory' in output, got: %s", output)
 	}
 	if !strings.Contains(output, "secrets init") {

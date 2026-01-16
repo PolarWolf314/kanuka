@@ -88,10 +88,21 @@ Examples:
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
 			spinner.FinalMSG = finalMessage
 			return nil
+		}
+
+		projectConfigPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+		if _, err := os.Stat(projectConfigPath); err != nil {
+			if os.IsNotExist(err) {
+				finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
+					"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+			return Logger.ErrorfAndReturn("failed to check project config: %v", err)
 		}
 
 		Logger.Debugf("Ensuring user settings")
@@ -128,8 +139,8 @@ Examples:
 
 		// Validate email format
 		if !utils.IsValidEmail(userEmail) {
-			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(userEmail) + "\n" +
-				ui.Info.Sprint("→") + " Please provide a valid email address"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(userEmail) +
+				"\n" + ui.Info.Sprint("→") + " Please provide a valid email address"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -147,7 +158,10 @@ Examples:
 		Logger.Debugf("Loading project config for device name validation")
 		projectConfig, err := configs.LoadProjectConfig()
 		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
+			if strings.Contains(err.Error(), "toml:") {
+				return fmt.Errorf("failed to load project config: .kanuka/config.toml is not valid TOML\n\nTo fix this issue:\n  1. Restore the file from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance\n\nDetails: %v", err)
+			}
+			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
 		}
 
 		// Determine device name: use flag, or auto-generate from hostname
@@ -161,8 +175,8 @@ Examples:
 
 			// Check if device name is already taken by this user
 			if projectConfig.IsDeviceNameTakenByEmail(userEmail, deviceName) {
-				finalMessage := ui.Error.Sprint("✗") + " Device name " + ui.Highlight.Sprint(deviceName) + " is already in use for " + ui.Highlight.Sprint(userEmail) + "\n" +
-					ui.Info.Sprint("→") + " Choose a different device name with " + ui.Flag.Sprint("--device-name")
+				finalMessage := ui.Error.Sprint("✗") + " Device name " + ui.Highlight.Sprint(deviceName) + " is already in use for " + ui.Highlight.Sprint(userEmail) +
+					"\n" + ui.Info.Sprint("→") + " Choose a different device name with " + ui.Flag.Sprint("--device-name")
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -187,8 +201,8 @@ Examples:
 			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
 
 			if userPublicKey != nil {
-				finalMessage := ui.Error.Sprint("✗ ") + ui.Path.Sprint(userUUID+".pub ") + "already exists\n" +
-					"To override, run: " + ui.Code.Sprint("kanuka secrets create --force")
+				finalMessage := ui.Error.Sprint("✗ ") + ui.Path.Sprint(userUUID+".pub ") + "already exists" +
+					"\nTo override, run: " + ui.Code.Sprint("kanuka secrets create --force")
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -268,12 +282,12 @@ Examples:
 		auditEntry.DeviceName = deviceName
 		audit.Log(auditEntry)
 
-		finalMessage := ui.Success.Sprint("✓") + " Keys created for " + ui.Highlight.Sprint(userEmail) + " (device: " + ui.Highlight.Sprint(deviceName) + ")\n" +
-			"    created: " + ui.Path.Sprint(destPath) + "\n" + deletedMessage +
-			ui.Info.Sprint("To gain access to the secrets in this project:\n") +
-			"  1. Commit your " + ui.Path.Sprint(".kanuka/public_keys/"+userUUID+".pub") + " file to your version control system\n" +
-			"  2. Ask someone with permissions to grant you access with:\n" +
-			"     " + ui.Code.Sprint("kanuka secrets register --user "+userEmail)
+		finalMessage := ui.Success.Sprint("✓") + " Keys created for " + ui.Highlight.Sprint(userEmail) + " (device: " + ui.Highlight.Sprint(deviceName) + ")" +
+			"\n    created: " + ui.Path.Sprint(destPath) + "\n" + deletedMessage +
+			ui.Info.Sprint("To gain access to secrets in this project:") +
+			"\n  1. Commit your " + ui.Path.Sprint(".kanuka/public_keys/"+userUUID+".pub") + " file to your version control system" +
+			"\n  2. Ask someone with permissions to grant you access with:" +
+			"\n     " + ui.Code.Sprint("kanuka secrets register --user "+userEmail)
 
 		spinner.FinalMSG = finalMessage
 		return nil

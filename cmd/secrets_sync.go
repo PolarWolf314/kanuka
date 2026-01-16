@@ -48,8 +48,8 @@ Use --dry-run to preview what would happen without making changes.`,
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -68,8 +68,8 @@ Use --dry-run to preview what would happen without making changes.`,
 		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
 			Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to load your private key. Are you sure you have access?\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load your private key. Are you sure you have access?" +
+				"\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -86,8 +86,8 @@ Use --dry-run to preview what would happen without making changes.`,
 		result, err := secrets.SyncSecrets(privateKey, opts)
 		if err != nil {
 			Logger.Errorf("Sync failed: %v", err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to sync secrets\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to sync secrets" +
+				"\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -113,9 +113,9 @@ Use --dry-run to preview what would happen without making changes.`,
 		auditEntry.FilesCount = result.SecretsProcessed
 		audit.Log(auditEntry)
 
-		finalMessage := ui.Success.Sprint("✓") + " Secrets synced successfully\n" +
-			fmt.Sprintf("  Re-encrypted %d secret file(s) for %d user(s).\n", result.SecretsProcessed, result.UsersProcessed) +
-			"  New encryption key generated and distributed to all users."
+		finalMessage := ui.Success.Sprint("✓") + " Secrets synced successfully" +
+			fmt.Sprintf("\n  Re-encrypted %d secret file(s) for %d user(s).", result.SecretsProcessed, result.UsersProcessed) +
+			"\n  New encryption key generated and distributed to all users."
 		spinner.FinalMSG = finalMessage
 		return nil
 	},

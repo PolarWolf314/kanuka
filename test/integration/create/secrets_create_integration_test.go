@@ -56,16 +56,21 @@ func testCreateInUninitializedProject(t *testing.T, originalWd string, originalU
 		cmd := shared.CreateTestCLI("create", nil, nil, true, false)
 		return cmd.Execute()
 	})
+
 	if err != nil {
-		t.Errorf("Command failed unexpectedly: %v", err)
+		t.Errorf("Expected command to succeed (error shown in output), but got error: %v", err)
 	}
 
 	if !strings.Contains(output, "Kānuka has not been initialized") {
 		t.Errorf("Expected 'not initialized' message not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "kanuka secrets init") {
-		t.Errorf("Expected init instruction not found in output: %s", output)
+	if !strings.Contains(output, "first to create a project") {
+		t.Errorf("Expected 'first to create a project' suggestion not found in output: %s", output)
+	}
+
+	if !strings.Contains(output, "✗") {
+		t.Errorf("Expected error indicator '✗' not found in output: %s", output)
 	}
 }
 
@@ -124,7 +129,7 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 		t.Errorf("Expected file creation message not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "To gain access to the secrets") {
+	if !strings.Contains(output, "To gain access to secrets") {
 		t.Errorf("Expected instructions not found in output: %s", output)
 	}
 

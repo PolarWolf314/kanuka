@@ -156,7 +156,8 @@ The project and user configurations work together:
 | `secrets create` | Updated with new device | Updated with project entry |
 | `secrets register` | Updated with new user/device | (Their config, not yours) |
 | `secrets revoke` | User/device removed | (Their config, not yours) |
-| `config rename-device` | Device name updated | Your entry updated (if your device) |
+| `config set-project-device` | Device name updated | Your entry updated |
+| `config set-default-device` | Not affected | Default device name updated |
 
 ## Security Considerations
 

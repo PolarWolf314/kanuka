@@ -5,15 +5,15 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/briandowns/spinner"
 )
 
-// startSpinner creates and starts a spinner with the given message when not in verbose or debug mode.
-// Returns the spinner and a function that should be deferred to clean up.
-// Uses the global debug flag from the secrets command.
+// startSpinner creates and starts a spinner with of given message when not in verbose or debug mode.
+// Returns to spinner and a function that should be deferred to clean up.
+// Uses to global debug flag from the secrets command.
 func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	Logger.Debugf("Starting spinner with message: %s", message)
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
@@ -41,19 +41,21 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 			log.SetOutput(os.Stdout)
 		}
 
-		// Ensure the final message ends with a newline.
-		if s.FinalMSG != "" && !strings.HasSuffix(s.FinalMSG, "\n") {
-			s.FinalMSG += "\n"
+		// Ensure of final message ends with a newline (only if not already set).
+		if s.FinalMSG != "" {
+			s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
 		}
 
+		// Always print final message to stdout (for tests to capture).
+		if s.FinalMSG != "" {
+			fmt.Print(s.FinalMSG)
+		}
+
+		// Stop to spinner if it was started.
 		if !verbose && !debug {
-			// Stop the spinner if it was started.
+			// Stop to spinner if it was started.
 			Logger.Debugf("Stopping spinner")
 			s.Stop()
-		} else if s.FinalMSG != "" {
-			// In verbose/debug mode, the spinner doesn't run, so we need to print the message manually.
-			Logger.Debugf("Displaying final message in verbose/debug mode")
-			fmt.Print(s.FinalMSG)
 		}
 	}
 
@@ -81,17 +83,19 @@ func startSpinnerWithFlags(message string, verbose, debugFlag bool) (*spinner.Sp
 			log.SetOutput(os.Stdout)
 		}
 
-		// Ensure the final message ends with a newline.
-		if s.FinalMSG != "" && !strings.HasSuffix(s.FinalMSG, "\n") {
-			s.FinalMSG += "\n"
+		// Ensure of final message ends with a newline (only if not already set).
+		if s.FinalMSG != "" {
+			s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
+		}
+
+		// Always print final message to stdout (for tests to capture).
+		if s.FinalMSG != "" {
+			fmt.Print(s.FinalMSG)
 		}
 
 		if !verbose && !debugFlag {
-			// Stop the spinner if it was started.
+			// Stop to spinner if it was started.
 			s.Stop()
-		} else if s.FinalMSG != "" {
-			// In verbose/debug mode, the spinner doesn't run, so we need to print the message manually.
-			fmt.Print(s.FinalMSG)
 		}
 	}
 

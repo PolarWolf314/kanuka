@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 
@@ -91,7 +92,19 @@ Examples:
 
 		// Validate flags - can't use both merge and replace.
 		if importMergeFlag && importReplaceFlag {
-			return Logger.ErrorfAndReturn("cannot use both --merge and --replace flags")
+			finalMessage := ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags." +
+				"\n\n" + ui.Info.Sprint("→") + " Use --merge to add new files while keeping existing files," +
+				"\n   or use --replace to delete existing files and use only of backup."
+			fmt.Print(finalMessage)
+			return nil
+		}
+
+		spinner, cleanup := startSpinner("Importing secrets...", verbose)
+		defer cleanup()
+
+		// Check archive exists.
+		if _, err := os.Stat(archivePath); os.IsNotExist(err) {
+			return Logger.ErrorfAndReturn("archive file not found: %s", archivePath)
 		}
 
 		// Check archive exists.
@@ -99,13 +112,18 @@ Examples:
 			return Logger.ErrorfAndReturn("archive file not found: %s", archivePath)
 		}
 
-		spinner, cleanup := startSpinner("Importing secrets...", verbose)
-		defer cleanup()
-
 		// Validate archive structure.
 		Logger.Debugf("Validating archive structure")
 		archiveFiles, err := listArchiveContents(archivePath)
 		if err != nil {
+			if strings.Contains(err.Error(), "gzip") || strings.Contains(err.Error(), "invalid header") {
+				spinner.Stop()
+				finalMessage := ui.Error.Sprint("✗") + " Invalid archive file: " + ui.Path.Sprint(archivePath) +
+					"\n\n" + ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:" +
+					"\n   " + ui.Code.Sprint("kanuka secrets export")
+				fmt.Println(finalMessage)
+				return nil
+			}
 			return Logger.ErrorfAndReturn("failed to read archive: %v", err)
 		}
 
@@ -159,7 +177,8 @@ Examples:
 		// Build summary message.
 		var finalMessage string
 		if importDryRunFlag {
-			finalMessage = ui.Info.Sprint("Dry run") + " - no changes made\n\n"
+			finalMessage = ui.Info.Sprint("Dry run") + " - no changes made" +
+				"\n\n"
 		} else {
 			// Log to audit trail.
 			modeStr := "merge"
@@ -178,14 +197,14 @@ Examples:
 		if mode == ReplaceMode {
 			modeStr = "Replace"
 		}
-		finalMessage += fmt.Sprintf("Mode: %s\n", modeStr)
-		finalMessage += fmt.Sprintf("Total files in archive: %d\n", result.TotalFiles)
+		finalMessage += fmt.Sprintf("Mode: %s", modeStr) + "\n"
+		finalMessage += fmt.Sprintf("Total files in archive: %d", result.TotalFiles)
 
 		if mode == MergeMode {
-			finalMessage += fmt.Sprintf("  Added: %d\n", result.FilesAdded)
-			finalMessage += fmt.Sprintf("  Skipped (already exist): %d\n", result.FilesSkipped)
+			finalMessage += fmt.Sprintf("  Added: %d", result.FilesAdded) + "\n"
+			finalMessage += fmt.Sprintf("  Skipped (already exist): %d", result.FilesSkipped) + "\n"
 		} else {
-			finalMessage += fmt.Sprintf("  Extracted: %d\n", result.FilesReplaced)
+			finalMessage += fmt.Sprintf("  Extracted: %d", result.FilesReplaced) + "\n"
 		}
 
 		if !importDryRunFlag {
@@ -251,6 +270,27 @@ func validateArchiveStructure(files []string) error {
 
 	if !hasContent {
 		return fmt.Errorf("archive contains no encrypted content (public_keys, secrets, or .kanuka files)")
+	}
+
+	return nil
+}
+
+// validateExtractedConfig validates that the extracted config.toml is not empty and is valid TOML.
+func validateExtractedConfig(projectPath string) error {
+	configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config.toml: %w", err)
+	}
+
+	if len(configContent) == 0 {
+		return fmt.Errorf("config.toml is empty")
+	}
+
+	var decoded map[string]interface{}
+	if _, err := toml.Decode(string(configContent), &decoded); err != nil {
+		return fmt.Errorf("config.toml is invalid: %w", err)
 	}
 
 	return nil
@@ -383,8 +423,18 @@ func performImport(archivePath, projectPath string, archiveFiles []string, mode 
 		Logger.Debugf("Extracted: %s", header.Name)
 	}
 
-	// Re-initialize project settings after import.
+	// Validate extracted config.toml if not in dry-run mode.
 	if !dryRun {
+		if err := validateExtractedConfig(projectPath); err != nil {
+			os.RemoveAll(kanukaDir)
+			return nil, fmt.Errorf("invalid archive: %w\n\n"+
+				"The archive contains an invalid .kanuka/config.toml file.\n"+
+				"Ensure your backup was created with 'kanuka secrets export'\n\n"+
+				"To fix this issue:\n"+
+				"  1. Restore from a good backup\n"+
+				"  2. Or re-export from a working project: kanuka secrets export", err)
+		}
+
 		if err := configs.InitProjectSettings(); err != nil {
 			Logger.Debugf("Warning: failed to reinitialize project settings: %v", err)
 		}

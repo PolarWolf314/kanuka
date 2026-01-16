@@ -215,8 +215,8 @@ func TestRevokeCommand_SuccessfulRemoval(t *testing.T) {
 		t.Fatal("Kanuka key file should exist before removal")
 	}
 
-	// Remove the user using --file flag (points to .kanuka file)
-	// Use relative path as the revoke command expects paths relative to project root
+	// Remove a user using --file flag (points to .kanuka file)
+	// Use relative path as revoke command expects paths relative to project root
 	relativeKanukaKeyPath := filepath.Join(".kanuka", "secrets", testUserUUID+".kanuka")
 	cmd.ResetGlobalState()
 	secretsCmd := cmd.GetSecretsCmd()
@@ -231,8 +231,71 @@ func TestRevokeCommand_SuccessfulRemoval(t *testing.T) {
 	if _, err := os.Stat(publicKeyPath); !os.IsNotExist(err) {
 		t.Error("Public key file should be revoked")
 	}
-
 	if _, err := os.Stat(kanukaKeyPath); !os.IsNotExist(err) {
 		t.Error("Kanuka key file should be revoked")
+	}
+}
+
+func TestRevokeCommand_DeviceRequiresUser(t *testing.T) {
+	// Setup test environment
+	tempDir, err := os.MkdirTemp("", "kanuka-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp user directory: %v", err)
+	}
+	defer os.RemoveAll(tempUserDir)
+
+	originalWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get working directory: %v", err)
+	}
+	defer func() {
+		if err := os.Chdir(originalWd); err != nil {
+			t.Fatalf("Failed to restore working directory: %v", err)
+		}
+	}()
+
+	// Change to temp directory
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("Failed to change to temp directory: %v", err)
+	}
+
+	// Setup user settings
+	originalUserSettings := configs.UserKanukaSettings
+	defer func() {
+		configs.UserKanukaSettings = originalUserSettings
+	}()
+
+	configs.UserKanukaSettings = &configs.UserSettings{
+		UserKeysPath:    filepath.Join(tempUserDir, "keys"),
+		UserConfigsPath: filepath.Join(tempUserDir, "config"),
+		Username:        "testuser",
+	}
+
+	// Create kanuka directories
+	kanukaDir := filepath.Join(tempDir, ".kanuka")
+	publicKeysDir := filepath.Join(kanukaDir, "public_keys")
+	secretsDir := filepath.Join(kanukaDir, "secrets")
+
+	if err := os.MkdirAll(publicKeysDir, 0755); err != nil {
+		t.Fatalf("Failed to create public keys directory: %v", err)
+	}
+	if err := os.MkdirAll(secretsDir, 0755); err != nil {
+		t.Fatalf("Failed to create secrets directory: %v", err)
+	}
+
+	// Test revoke command with --device flag but no --user flag
+	cmd.ResetGlobalState()
+	secretsCmd := cmd.GetSecretsCmd()
+	secretsCmd.SetArgs([]string{"revoke", "--device", "test-device"})
+
+	err = secretsCmd.Execute()
+	if err != nil {
+		t.Errorf("Command should not return error, but should show help message: %v", err)
 	}
 }

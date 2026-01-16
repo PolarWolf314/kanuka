@@ -10,7 +10,6 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/ui"
-
 	"github.com/spf13/cobra"
 )
 
@@ -51,15 +50,19 @@ Use --force to skip the confirmation prompt.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting clean command")
 
+		spinner, cleanup := startSpinner("Scanning for orphaned entries...", verbose)
+		defer cleanup()
+
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings."
 			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			fmt.Println(ui.Error.Sprint("✗") + " Kanuka has not been initialized")
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kanuka has not been initialized."
 			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
@@ -67,11 +70,12 @@ Use --force to skip the confirmation prompt.`,
 		// Find orphaned entries.
 		orphans, err := findOrphanedEntries()
 		if err != nil {
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to find orphaned entries\n"
 			return Logger.ErrorfAndReturn("failed to find orphaned entries: %v", err)
 		}
 
 		if len(orphans) == 0 {
-			fmt.Println(ui.Success.Sprint("✓") + " No orphaned entries found. Nothing to clean.")
+			spinner.FinalMSG = ui.Success.Sprint("✓") + " No orphaned entries found. Nothing to clean."
 			return nil
 		}
 
@@ -115,7 +119,7 @@ Use --force to skip the confirmation prompt.`,
 		auditEntry.RemovedCount = len(orphans)
 		audit.Log(auditEntry)
 
-		fmt.Printf("%s Removed %d orphaned file(s)\n", ui.Success.Sprint("✓"), len(orphans))
+		spinner.FinalMSG = ui.Success.Sprint("✓") + fmt.Sprintf(" Removed %d orphaned file(s)", len(orphans))
 		return nil
 	},
 }

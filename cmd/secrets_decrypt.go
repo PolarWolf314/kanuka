@@ -80,9 +80,10 @@ Examples:
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 
@@ -132,6 +133,18 @@ Examples:
 		// Load project config for project UUID
 		projectConfig, err := configs.LoadProjectConfig()
 		if err != nil {
+			if strings.Contains(err.Error(), "toml:") {
+				Logger.Errorf("Failed to load project config: %v", err)
+				finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+					ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.\n" +
+					"   " + ui.Code.Sprint(err.Error()) + "\n\n" +
+					"   To fix this issue:\n" +
+					"   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+					"   2. Or contact your project administrator for assistance"
+				spinner.FinalMSG = finalMessage
+				spinner.Stop()
+				return nil
+			}
 			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
 		}
 		projectUUID := projectConfig.Project.UUID
@@ -143,8 +156,8 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to obtain your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?" +
+				"\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -156,16 +169,16 @@ Examples:
 			keyData, err := utils.ReadStdin()
 			if err != nil {
 				Logger.Errorf("Failed to read private key from stdin: %v", err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin" +
+					"\n" + ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 			privateKey, err = secrets.LoadPrivateKeyFromBytesWithTTYPrompt(keyData)
 			if err != nil {
 				Logger.Errorf("Failed to parse private key from stdin: %v", err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to parse private key from stdin\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to parse private key from stdin" +
+					"\n" + ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -176,8 +189,8 @@ Examples:
 			privateKey, err = secrets.LoadPrivateKey(privateKeyPath)
 			if err != nil {
 				Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?" +
+					"\n" + ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -199,10 +212,11 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to decrypt symmetric key: %v", err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
-
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?" +
+				"\n\n" + ui.Info.Sprint("→") + " Your encrypted key file appears to be corrupted." +
+				"\n   Try asking the project administrator to revoke and re-register your access."
 			spinner.FinalMSG = finalMessage
+			spinner.Stop()
 			return nil
 		}
 		Logger.Infof("Symmetric key decrypted successfully")
@@ -222,11 +236,10 @@ Examples:
 			return nil
 		}
 
-		// we can be sure they exist if the previous function ran without errors
-		Logger.Debugf("Finding decrypted environment files")
-		listOfEnvFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to find environment files after decryption: %v", err)
+		// Convert .kanuka files to .env file paths for display.
+		listOfEnvFiles := make([]string, len(listOfKanukaFiles))
+		for i, kanukaFile := range listOfKanukaFiles {
+			listOfEnvFiles[i] = strings.TrimSuffix(kanukaFile, ".kanuka")
 		}
 
 		formattedListOfFiles := utils.FormatPaths(listOfEnvFiles)
@@ -234,7 +247,7 @@ Examples:
 
 		// Log to audit trail.
 		auditEntry := audit.LogWithUser("decrypt")
-		auditEntry.Files = listOfEnvFiles
+		auditEntry.Files = listOfKanukaFiles
 		audit.Log(auditEntry)
 
 		spinner.Stop()
@@ -242,9 +255,9 @@ Examples:
 		Logger.WarnfUser("Decrypted .env files contain sensitive data - ensure they're in your .gitignore")
 		spinner.Restart()
 
-		finalMessage := ui.Success.Sprint("✓") + " Environment files decrypted successfully!\n" +
-			"The following files were created:" + formattedListOfFiles +
-			ui.Info.Sprint("→") + " Your environment files are now ready to use"
+		finalMessage := ui.Success.Sprint("✓") + " Environment files decrypted successfully!" +
+			"\nThe following files were created:" + formattedListOfFiles +
+			"\n" + ui.Info.Sprint("→") + " Your environment files are now ready to use"
 
 		spinner.FinalMSG = finalMessage
 		return nil

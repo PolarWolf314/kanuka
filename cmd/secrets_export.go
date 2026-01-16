@@ -13,14 +13,14 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
-
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/utils"
+
+	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
 )
 
-var (
-	exportOutputPath string
-)
+var exportOutputPath string
 
 func init() {
 	exportCmd.Flags().StringVarP(&exportOutputPath, "output", "o", "", "output path for the archive (default: kanuka-secrets-YYYY-MM-DD.tar.gz)")
@@ -73,19 +73,42 @@ Examples:
 		spinner, cleanup := startSpinner("Exporting secrets...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
+		projectPath, err := utils.FindProjectKanukaRoot()
+		if err != nil {
+			return Logger.ErrorfAndReturn("failed to find project root: %v", err)
 		}
-
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
+		}
+
+		configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			finalMessage := ui.Error.Sprint("✗") + " config.toml not found\n" +
+				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " to initialize the project\n"
+			spinner.FinalMSG = finalMessage
+			spinner.Stop()
+			return nil
+		}
+
+		if err := validateProjectConfig(configPath); err != nil {
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration." +
+				"\n\n" + ui.Info.Sprint("→") + " " + ui.Code.Sprint(err.Error()) +
+				"\n\n" + ui.Info.Sprint("→") + " To fix this issue:" +
+				"\n   1. Restore from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") +
+				"\n   2. Or contact your project administrator for assistance"
+			spinner.FinalMSG = finalMessage
+			spinner.Stop()
+			return nil
+		}
+
+		Logger.Debugf("Initializing project settings")
+		if err := configs.InitProjectSettings(); err != nil {
+			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 
 		// Determine output path.
@@ -103,7 +126,7 @@ Examples:
 		result.OutputPath = outputPath
 
 		if result.TotalFilesCount == 0 {
-			finalMessage := ui.Warning.Sprint("⚠") + " No files found to export"
+			finalMessage := ui.Warning.Sprint("⚠") + " No files found to export."
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -123,24 +146,24 @@ Examples:
 		audit.Log(auditEntry)
 
 		// Build summary message.
-		finalMessage := ui.Success.Sprint("✓") + " Exported secrets to " + ui.Path.Sprint(outputPath) + "\n\n" +
-			"Archive contents:\n"
+		finalMessage := ui.Success.Sprint("✓") + " Exported secrets to " + ui.Path.Sprint(outputPath) +
+			"\n\nArchive contents:\n"
 
 		if result.ConfigIncluded {
-			finalMessage += "  .kanuka/config.toml\n"
+			finalMessage += "  .kanuka/config.toml"
 		}
 		if result.PublicKeyCount > 0 {
-			finalMessage += fmt.Sprintf("  .kanuka/public_keys/ (%d file(s))\n", result.PublicKeyCount)
+			finalMessage += fmt.Sprintf("\n  .kanuka/public_keys/ (%d file(s))", result.PublicKeyCount)
 		}
 		if result.UserKeyCount > 0 {
-			finalMessage += fmt.Sprintf("  .kanuka/secrets/ (%d user key(s))\n", result.UserKeyCount)
+			finalMessage += fmt.Sprintf("\n  .kanuka/secrets/ (%d user key(s))", result.UserKeyCount)
 		}
 		if result.SecretFileCount > 0 {
-			finalMessage += fmt.Sprintf("  %d encrypted secret file(s)\n", result.SecretFileCount)
+			finalMessage += fmt.Sprintf("\n  %d encrypted secret file(s)", result.SecretFileCount)
 		}
 
-		finalMessage += "\n" + ui.Info.Sprint("Note:") + " This archive contains encrypted data only.\n" +
-			"      Private keys are NOT included."
+		finalMessage += "\n\n" + ui.Info.Sprint("Note:") + " This archive contains encrypted data only." +
+			"\n      Private keys are NOT included."
 
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -259,6 +282,24 @@ func addFileToTar(tw *tar.Writer, projectPath, filePath string) error {
 	// Copy file contents.
 	if _, err := io.Copy(tw, file); err != nil {
 		return fmt.Errorf("failed to write file contents: %w", err)
+	}
+
+	return nil
+}
+
+func validateProjectConfig(configPath string) error {
+	configContent, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config.toml: %w", err)
+	}
+
+	if len(configContent) == 0 {
+		return fmt.Errorf("config.toml is empty")
+	}
+
+	var decoded map[string]interface{}
+	if _, err := toml.Decode(string(configContent), &decoded); err != nil {
+		return fmt.Errorf("config.toml is invalid: %w", err)
 	}
 
 	return nil

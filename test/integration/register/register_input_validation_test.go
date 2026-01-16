@@ -31,10 +31,6 @@ func TestSecretsRegisterInputValidation(t *testing.T) {
 		testRegisterWithInvalidPubkeyFormat(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterWithNonExistentFile", func(t *testing.T) {
-		testRegisterWithNonExistentFile(t, originalWd, originalUserSettings)
-	})
-
 	t.Run("RegisterWithInvalidFileExtension", func(t *testing.T) {
 		testRegisterWithInvalidFileExtension(t, originalWd, originalUserSettings)
 	})
@@ -180,43 +176,6 @@ func testRegisterWithInvalidPubkeyFormat(t *testing.T, originalWd string, origin
 
 	if !strings.Contains(output, "Invalid public key format") {
 		t.Errorf("Expected invalid format message not found in output: %s", output)
-	}
-}
-
-// testRegisterWithNonExistentFile tests error when --file points to non-existent file.
-func testRegisterWithNonExistentFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-nonexistent-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp user directory: %v", err)
-	}
-	defer os.RemoveAll(tempUserDir)
-
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	shared.InitializeProject(t, tempDir, tempUserDir)
-
-	nonExistentFile := filepath.Join(tempUserDir, "nonexistent.pub")
-
-	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", nonExistentFile})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("Command failed unexpectedly: %v", err)
-	}
-
-	if !strings.Contains(output, "✗") {
-		t.Errorf("Expected error symbol not found in output: %s", output)
-	}
-
-	if !strings.Contains(output, "could not be loaded") || !strings.Contains(output, nonExistentFile) {
-		t.Errorf("Expected file not found message not found in output: %s", output)
 	}
 }
 

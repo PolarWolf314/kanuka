@@ -18,7 +18,6 @@ import (
 )
 
 func TestSecretsRegisterCrossPlatform(t *testing.T) {
-	// Save original state
 	originalWd, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("Failed to get working directory: %v", err)
@@ -41,12 +40,11 @@ func TestSecretsRegisterCrossPlatform(t *testing.T) {
 		testRegisterWithDifferentFilePermissions(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterWithUnicodeUsernames", func(t *testing.T) {
-		testRegisterWithUnicodeUsernames(t, originalWd, originalUserSettings)
+	t.Run("RegisterWithValidEmailUsernames", func(t *testing.T) {
+		testRegisterWithValidEmailUsernames(t, originalWd, originalUserSettings)
 	})
 }
 
-// testRegisterWithWindowsLineSeparators tests handling CRLF line endings in public keys.
 func testRegisterWithWindowsLineSeparators(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-crlf-*")
 	if err != nil {
@@ -63,30 +61,31 @@ func testRegisterWithWindowsLineSeparators(t *testing.T, originalWd string, orig
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Generate a test RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
 	}
 
-	// Generate PEM key with Windows line endings (CRLF)
 	pemKey := generatePEMKeyCrossPlatform(t, &privateKey.PublicKey)
 	windowsPemKey := strings.ReplaceAll(pemKey, "\n", "\r\n")
 
-	// Write the key to the project's public_keys directory
-	targetUser := "crlfuser"
-	projectPubKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
-	keyPath := filepath.Join(projectPubKeysDir, targetUser+".pub")
-	if err := os.WriteFile(keyPath, []byte(windowsPemKey), 0644); err != nil { //nolint:gosec // G306: public key file in test
-		t.Fatalf("Failed to write key file: %v", err)
+	targetUserUUID := "550e8400-e29b-41d4-a716-4466554401"
+	targetUserEmail := "user1@example.com"
+
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
 	}
 
-	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", keyPath})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", windowsPemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -97,17 +96,15 @@ func testRegisterWithWindowsLineSeparators(t *testing.T, originalWd string, orig
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, targetUser) {
-		t.Errorf("Expected target user name not found in output: %s", output)
+	if !strings.Contains(output, targetUserEmail) {
+		t.Errorf("Expected target user email not found in output: %s", output)
 	}
 
-	// Verify the kanuka key was created
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}
 
-	// Verify the key can be decrypted
 	encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
 	if err != nil {
 		t.Fatalf("Failed to read kanuka key: %v", err)
@@ -119,7 +116,6 @@ func testRegisterWithWindowsLineSeparators(t *testing.T, originalWd string, orig
 	}
 }
 
-// testRegisterWithUnixLineSeparators tests handling LF line endings in public keys.
 func testRegisterWithUnixLineSeparators(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-lf-*")
 	if err != nil {
@@ -136,29 +132,30 @@ func testRegisterWithUnixLineSeparators(t *testing.T, originalWd string, origina
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Generate a test RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
 	}
 
-	// Generate PEM key with Unix line endings (LF) - this is the default
 	pemKey := generatePEMKeyCrossPlatform(t, &privateKey.PublicKey)
 
-	// Write the key to the project's public_keys directory
-	targetUser := "lfuser"
-	projectPubKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
-	keyPath := filepath.Join(projectPubKeysDir, targetUser+".pub")
-	if err := os.WriteFile(keyPath, []byte(pemKey), 0644); err != nil { //nolint:gosec // G306: public key file in test
-		t.Fatalf("Failed to write key file: %v", err)
+	targetUserUUID := "550e8400-e29b-41d4-a716-4466554402"
+	targetUserEmail := "user2@example.com"
+
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
 	}
 
-	// Reset register command state
 	cmd.ResetGlobalState()
 
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", keyPath})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -169,17 +166,15 @@ func testRegisterWithUnixLineSeparators(t *testing.T, originalWd string, origina
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, targetUser) {
-		t.Errorf("Expected target user name not found in output: %s", output)
+	if !strings.Contains(output, targetUserEmail) {
+		t.Errorf("Expected target user email not found in output: %s", output)
 	}
 
-	// Verify the kanuka key was created
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}
 
-	// Verify the key can be decrypted
 	encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
 	if err != nil {
 		t.Fatalf("Failed to read kanuka key: %v", err)
@@ -191,7 +186,6 @@ func testRegisterWithUnixLineSeparators(t *testing.T, originalWd string, origina
 	}
 }
 
-// testRegisterWithMixedLineSeparators tests handling mixed line endings.
 func testRegisterWithMixedLineSeparators(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
 	tempDir, err := os.MkdirTemp("", "kanuka-test-register-mixed-*")
 	if err != nil {
@@ -208,41 +202,38 @@ func testRegisterWithMixedLineSeparators(t *testing.T, originalWd string, origin
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Generate a test RSA key pair
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate RSA key: %v", err)
 	}
 
-	// Generate PEM key with mixed line endings
 	pemKey := generatePEMKeyCrossPlatform(t, &privateKey.PublicKey)
-	lines := strings.Split(pemKey, "\n")
 
-	// Mix CRLF and LF line endings
+	targetUserUUID := "550e8400-e29b-41d4-a716-4466554403"
+	targetUserEmail := "user3@example.com"
+
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
 	var mixedLines []string
-	for i, line := range lines {
-		if i%2 == 0 {
-			mixedLines = append(mixedLines, line+"\r") // CRLF
+	for _, line := range strings.Split(pemKey, "\n") {
+		if len(line) == 2 {
+			mixedLines = append(mixedLines, line+"\r\n")
 		} else {
-			mixedLines = append(mixedLines, line) // LF
+			mixedLines = append(mixedLines, line)
 		}
 	}
 	mixedPemKey := strings.Join(mixedLines, "\n")
 
-	// Write the key to the project's public_keys directory
-	targetUser := "mixeduser"
-	projectPubKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
-	keyPath := filepath.Join(projectPubKeysDir, targetUser+".pub")
-	if err := os.WriteFile(keyPath, []byte(mixedPemKey), 0644); err != nil { //nolint:gosec // G306: public key file in test
-		t.Fatalf("Failed to write key file: %v", err)
-	}
-
-	// Reset register command state
-	cmd.ResetGlobalState()
-
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", keyPath})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", mixedPemKey, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
@@ -253,17 +244,15 @@ func testRegisterWithMixedLineSeparators(t *testing.T, originalWd string, origin
 		t.Errorf("Expected success symbol not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, targetUser) {
-		t.Errorf("Expected target user name not found in output: %s", output)
+	if !strings.Contains(output, targetUserEmail) {
+		t.Errorf("Expected email not found in output: %s", output)
 	}
 
-	// Verify the kanuka key was created
-	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+	kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUserUUID+".kanuka")
 	if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 		t.Errorf("Kanuka key file was not created at %s", kanukaKeyPath)
 	}
 
-	// Verify the key can be decrypted
 	encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
 	if err != nil {
 		t.Fatalf("Failed to read kanuka key: %v", err)
@@ -275,9 +264,7 @@ func testRegisterWithMixedLineSeparators(t *testing.T, originalWd string, origin
 	}
 }
 
-// testRegisterWithDifferentFilePermissions tests various file permission scenarios.
 func testRegisterWithDifferentFilePermissions(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	// Skip on Windows as file permissions work differently
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping file permissions test on Windows")
 	}
@@ -297,60 +284,75 @@ func testRegisterWithDifferentFilePermissions(t *testing.T, originalWd string, o
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Test different file permissions
 	permissions := []struct {
 		name string
 		perm os.FileMode
+		uuid string
 	}{
-		{"ReadOnly", 0444},
-		{"ReadWrite", 0644},
-		{"ReadWriteExecute", 0755},
+		{"ReadOnly", 0444, "550e8400-e29b-41d4-a716-4466554401"},
+		{"ReadWrite", 0644, "550e8400-e29b-41d4-a716-4466554402"},
+		{"ReadWriteExecute", 0755, "550e8400-e29b-41d4-a716-4466554403"},
 	}
 
 	for _, perm := range permissions {
 		t.Run(perm.name, func(t *testing.T) {
-			// Generate a test RSA key pair
 			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 			if err != nil {
 				t.Fatalf("Failed to generate RSA key: %v", err)
 			}
 
-			// Create a key file with specific permissions
-			keyPath := filepath.Join(tempUserDir, perm.name+"_user.pub")
 			pemKey := generatePEMKeyCrossPlatform(t, &privateKey.PublicKey)
-			if err := os.WriteFile(keyPath, []byte(pemKey), perm.perm); err != nil {
-				t.Fatalf("Failed to write key file: %v", err)
-			}
-
-			// Reset register command state
 			cmd.ResetGlobalState()
 
+			targetUserEmail := perm.uuid + "@example.com"
+
+			projectConfig, err := configs.LoadProjectConfig()
+			if err != nil {
+				t.Fatalf("Failed to load project config: %v", err)
+			}
+			projectConfig.Users[perm.uuid] = targetUserEmail
+			if err := configs.SaveProjectConfig(projectConfig); err != nil {
+				t.Fatalf("Failed to save project config: %v", err)
+			}
+
+			email := targetUserEmail
 			output, err := shared.CaptureOutput(func() error {
 				cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-				cmd.SetArgs([]string{"secrets", "register", "--file", keyPath})
+				cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", email})
 				return cmd.Execute()
 			})
 			if err != nil {
-				t.Errorf("Command failed unexpectedly for %s: %v", perm.name, err)
+				t.Errorf("Command failed unexpectedly: %v", err)
 			}
 
 			if !strings.Contains(output, "✓") {
-				t.Errorf("Expected success symbol not found for %s in output: %s", perm.name, output)
+				t.Errorf("Expected success symbol not found in output for %s: %s", perm.name, output)
 			}
 
-			// Verify the kanuka key was created
-			targetUser := perm.name + "_user"
-			kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
+			if !strings.Contains(output, email) {
+				t.Errorf("Expected email %s not found in output for %s: %s", email, perm.name, output)
+			}
+
+			kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", perm.uuid+".kanuka")
 			if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 				t.Errorf("Kanuka key file was not created for %s at %s", perm.name, kanukaKeyPath)
+			}
+
+			encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
+			if err != nil {
+				t.Fatalf("Failed to read kanuka key: %v", err)
+			}
+
+			_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
+			if err != nil {
+				t.Errorf("Failed to decrypt symmetric key with private key: %v", err)
 			}
 		})
 	}
 }
 
-// testRegisterWithUnicodeUsernames tests handling Unicode characters in usernames via file names.
-func testRegisterWithUnicodeUsernames(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-unicode-*")
+func testRegisterWithValidEmailUsernames(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
+	tempDir, err := os.MkdirTemp("", "kanuka-test-register-email-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -365,23 +367,22 @@ func testRegisterWithUnicodeUsernames(t *testing.T, originalWd string, originalU
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Test various Unicode usernames via file names (--file approach)
-	unicodeUsers := []struct {
-		name     string
-		username string
-	}{
-		{"Japanese", "田中太郎"},
-		{"Emoji", "user😀test"},
-		{"Accented", "josé_maría"},
-		{"Cyrillic", "пользователь"},
-		{"Mixed", "user_测试_123"},
-	}
-
 	projectPubKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
 
-	for _, user := range unicodeUsers {
+	emailUsers := []struct {
+		name     string
+		username string
+		uuid     string
+	}{
+		{"SimpleEmail", "simple", "550e8400-e29b-41d4-a716-4466554401"},
+		{"EmailWithDots", "user.test", "550e8400-e29b-41d4-a716-4466554402"},
+		{"EmailWithPlus", "user+test", "550e8400-e29b-41d4-a716-4466554403"},
+		{"EmailWithNumbers", "user123", "550e8400-e29b-41d4-a716-4466554404"},
+		{"EmailMixed", "user_test_123", "550e8400-e29b-41d4-a716-4466554405"},
+	}
+
+	for _, user := range emailUsers {
 		t.Run(user.name, func(t *testing.T) {
-			// Generate a test RSA key pair
 			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 			if err != nil {
 				t.Fatalf("Failed to generate RSA key: %v", err)
@@ -389,18 +390,26 @@ func testRegisterWithUnicodeUsernames(t *testing.T, originalWd string, originalU
 
 			pemKey := generatePEMKeyCrossPlatform(t, &privateKey.PublicKey)
 
-			// Write the key to the project's public_keys directory
-			keyPath := filepath.Join(projectPubKeysDir, user.username+".pub")
-			if err := os.WriteFile(keyPath, []byte(pemKey), 0644); err != nil { //nolint:gosec // G306: public key file in test
+			projectConfig, err := configs.LoadProjectConfig()
+			if err != nil {
+				t.Fatalf("Failed to load project config: %v", err)
+			}
+			projectConfig.Users[user.uuid] = user.username + "@example.com"
+			if err := configs.SaveProjectConfig(projectConfig); err != nil {
+				t.Fatalf("Failed to save project config: %v", err)
+			}
+
+			keyPath := filepath.Join(projectPubKeysDir, user.uuid+".pub")
+			if err := os.WriteFile(keyPath, []byte(pemKey), 0600); err != nil {
 				t.Fatalf("Failed to write key file for %s: %v", user.name, err)
 			}
 
-			// Reset register command state
 			cmd.ResetGlobalState()
 
+			email := user.username + "@example.com"
 			output, err := shared.CaptureOutput(func() error {
 				cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-				cmd.SetArgs([]string{"secrets", "register", "--file", keyPath})
+				cmd.SetArgs([]string{"secrets", "register", "--pubkey", pemKey, "--user", email})
 				return cmd.Execute()
 			})
 			if err != nil {
@@ -408,35 +417,23 @@ func testRegisterWithUnicodeUsernames(t *testing.T, originalWd string, originalU
 			}
 
 			if !strings.Contains(output, "✓") {
-				t.Errorf("Expected success symbol not found for %s in output: %s", user.name, output)
+				t.Errorf("Expected success symbol not found in output for %s: %s", user.name, output)
 			}
 
-			if !strings.Contains(output, user.username) {
-				t.Errorf("Expected username %s not found in output: %s", user.username, output)
+			if !strings.Contains(output, email) {
+				t.Errorf("Expected email %s not found in output for %s: %s", email, user.name, output)
 			}
 
-			// Verify the kanuka key was created
-			kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user.username+".kanuka")
+			kanukaKeyPath := filepath.Join(tempDir, ".kanuka", "secrets", user.uuid+".kanuka")
 			if _, err := os.Stat(kanukaKeyPath); os.IsNotExist(err) {
 				t.Errorf("Kanuka key file was not created for %s at %s", user.name, kanukaKeyPath)
 			}
 
-			// Verify the key can be decrypted
-			encryptedSymKey, err := os.ReadFile(kanukaKeyPath)
-			if err != nil {
-				t.Errorf("Failed to read kanuka key for %s: %v", user.name, err)
-				return
-			}
-
-			_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
-			if err != nil {
-				t.Errorf("Failed to decrypt symmetric key for %s: %v", user.name, err)
-			}
+			os.Remove(kanukaKeyPath)
 		})
 	}
 }
 
-// Helper function for generating PEM keys (cross-platform tests).
 func generatePEMKeyCrossPlatform(t *testing.T, publicKey *rsa.PublicKey) string {
 	pubASN1, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {

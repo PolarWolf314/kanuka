@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
-
 	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -42,18 +41,21 @@ Examples:
 		ConfigLogger.Infof("Starting list-devices command")
 		ConfigLogger.Debugf("Flags: user=%s", listDevicesUserEmail)
 
+		spinner, cleanup := startSpinnerWithFlags("Loading devices...", configVerbose, configDebug)
+		defer cleanup()
+
 		// Initialize project settings.
 		ConfigLogger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
 			ConfigLogger.Infof("Failed to initialize project settings: %v", err)
-			fmt.Println(ui.Error.Sprint("✗") + " Failed to initialize project settings")
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings\n"
 			fmt.Println(ui.Info.Sprint("→") + " Make sure you're in a Kānuka project directory")
 			return nil
 		}
 
 		if configs.ProjectKanukaSettings.ProjectPath == "" {
 			ConfigLogger.Infof("Not in a Kanuka project directory")
-			fmt.Println(ui.Error.Sprint("✗") + " Not in a Kānuka project directory")
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Not in a Kānuka project directory\n"
 			fmt.Println(ui.Info.Sprint("→") + " Run this command from within a Kānuka project")
 			return nil
 		}
@@ -70,7 +72,7 @@ Examples:
 		ConfigLogger.Infof("Project config loaded: %d devices found", len(projectConfig.Devices))
 
 		if len(projectConfig.Devices) == 0 {
-			fmt.Println(ui.Warning.Sprint("⚠") + " No devices found in this project")
+			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " No devices found in this project\n"
 			return nil
 		}
 
@@ -92,7 +94,7 @@ Examples:
 			ConfigLogger.Infof("Filtering devices by user: %s", listDevicesUserEmail)
 			devices, exists := devicesByEmail[listDevicesUserEmail]
 			if !exists {
-				fmt.Println(ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(listDevicesUserEmail) + " not found in this project")
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(listDevicesUserEmail) + " not found in this project\n"
 				return nil
 			}
 			ConfigLogger.Debugf("Found %d devices for user %s", len(devices), listDevicesUserEmail)
@@ -137,6 +139,7 @@ Examples:
 			fmt.Println()
 		}
 
+		spinner.FinalMSG = ui.Success.Sprint("✓") + " Devices listed successfully\n"
 		return nil
 	},
 }

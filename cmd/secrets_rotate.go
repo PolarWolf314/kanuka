@@ -97,8 +97,8 @@ Examples:
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -138,8 +138,8 @@ Examples:
 
 		oldPrivateKey, err := secrets.LoadPrivateKey(privateKeyPath)
 		if err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Couldn't load your private key from " + ui.Path.Sprint(privateKeyPath) + "\n\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Couldn't load your private key from " + ui.Path.Sprint(privateKeyPath) +
+				"\n\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -149,8 +149,8 @@ Examples:
 		Logger.Debugf("Getting encrypted symmetric key")
 		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
 		if err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kanuka key from " + ui.Path.Sprint(userKanukaKeyPath) + "\n\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kanuka key from " + ui.Path.Sprint(userKanukaKeyPath) +
+				"\n\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -158,8 +158,8 @@ Examples:
 		Logger.Debugf("Decrypting symmetric key with old private key")
 		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, oldPrivateKey)
 		if err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kanuka key\n\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kanuka key" +
+				"\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -168,7 +168,7 @@ Examples:
 		// Confirmation prompt (unless --force)
 		if !rotateForce {
 			if !confirmRotate(spinner) {
-				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Keypair rotation cancelled.\n"
+				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Keypair rotation cancelled."
 				return nil
 			}
 		}

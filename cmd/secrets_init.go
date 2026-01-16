@@ -47,8 +47,8 @@ var initCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("Failed to check if project kanuka settings exists: %v", err)
 		}
 		if kanukaExists {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka has already been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has already been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -71,8 +71,8 @@ var initCmd = &cobra.Command{
 
 			// If --yes flag is set, fail with clear error.
 			if initYes {
-				spinner.FinalMSG = ui.Error.Sprint("✗") + " User configuration is incomplete\n" +
-					ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka config init") + " first to set up your identity"
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " User configuration is incomplete" +
+					"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka config init") + " first to set up your identity"
 				return fmt.Errorf("user configuration required: run 'kanuka config init' first")
 			}
 
@@ -96,12 +96,6 @@ var initCmd = &cobra.Command{
 			fmt.Println("Initializing project...")
 			spinner.Restart()
 		}
-
-		Logger.Debugf("Ensuring kanuka settings and creating .kanuka folders")
-		if err := secrets.EnsureKanukaSettings(); err != nil {
-			return Logger.ErrorfAndReturn("Failed to create .kanuka folders: %v", err)
-		}
-		Logger.Infof("Kanuka settings and folders created successfully")
 
 		// Ensure user config has UUID
 		Logger.Debugf("Ensuring user config with UUID")
@@ -151,6 +145,23 @@ var initCmd = &cobra.Command{
 			return Logger.ErrorfAndReturn("Project name cannot be empty")
 		}
 		Logger.Infof("Using project name: %s", projectName)
+
+		Logger.Debugf("Ensuring kanuka settings and creating .kanuka folders")
+		kanukaDir := filepath.Join(wd, ".kanuka")
+
+		cleanupNeeded := false
+		defer func() {
+			if cleanupNeeded {
+				Logger.Infof("Cleaning up incomplete .kanuka directory")
+				os.RemoveAll(kanukaDir)
+			}
+		}()
+
+		if err := secrets.EnsureKanukaSettings(); err != nil {
+			return Logger.ErrorfAndReturn("Failed to create .kanuka folders: %v", err)
+		}
+		cleanupNeeded = true
+		Logger.Infof("Kanuka settings and folders created successfully")
 
 		projectConfig := &configs.ProjectConfig{
 			Project: configs.Project{
@@ -237,14 +248,15 @@ var initCmd = &cobra.Command{
 		Logger.WarnfUser("Remember to never commit .env files to version control - only commit .kanuka files")
 		spinner.Restart()
 
-		finalMessage := ui.Success.Sprint("✓") + " Kānuka initialized successfully!\n\n" +
-			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets encrypt") + " to encrypt your existing .env files\n\n" +
-			ui.Info.Sprint("Tip:") + " Working in a monorepo? You have two options:\n" +
-			"  1. Keep this single .kanuka at the root and use selective encryption:\n" +
-			"     " + ui.Code.Sprint("kanuka secrets encrypt services/api/.env") + "\n" +
-			"  2. Initialize separate .kanuka stores in each service:\n" +
-			"     " + ui.Code.Sprint("cd services/api && kanuka secrets init")
+		finalMessage := ui.Success.Sprint("✓") + " Kānuka initialized successfully!" +
+			"\n\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets encrypt") + " to encrypt your existing .env files" +
+			"\n\n" + ui.Info.Sprint("Tip:") + " Working in a monorepo? You have two options:" +
+			"\n  1. Keep this single .kanuka at the root and use selective encryption:" +
+			"\n     " + ui.Code.Sprint("kanuka secrets encrypt services/api/.env") +
+			"\n  2. Initialize separate .kanuka stores in each service:" +
+			"\n     " + ui.Code.Sprint("cd services/api && kanuka secrets init")
 
+		cleanupNeeded = false
 		spinner.FinalMSG = finalMessage
 		return nil
 	},

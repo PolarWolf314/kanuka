@@ -10,7 +10,6 @@ import (
 	"github.com/PolarWolf314/kanuka/internal/audit"
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/ui"
-
 	"github.com/spf13/cobra"
 )
 
@@ -72,8 +71,12 @@ Examples:
 func runLog(cmd *cobra.Command, args []string) error {
 	Logger.Infof("Starting log command")
 
+	spinner, cleanup := startSpinner("Loading audit log...", verbose)
+	defer cleanup()
+
 	Logger.Debugf("Initializing project settings")
 	if err := configs.InitProjectSettings(); err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings\n"
 		return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 	}
 
@@ -81,7 +84,7 @@ func runLog(cmd *cobra.Command, args []string) error {
 	Logger.Debugf("Project path: %s", projectPath)
 
 	if projectPath == "" {
-		fmt.Println(ui.Error.Sprint("✗") + " Kānuka has not been initialized")
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Kānuka has not been initialized\n"
 		fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 		return nil
 	}
@@ -89,17 +92,18 @@ func runLog(cmd *cobra.Command, args []string) error {
 	// Get audit log path.
 	logPath := audit.LogPath()
 	if logPath == "" {
-		fmt.Println("No audit log found. Operations will be logged after running any secrets command.")
+		spinner.FinalMSG = ui.Info.Sprint("ℹ") + " No audit log found. Operations will be logged after running any secrets command.\n"
 		return nil
 	}
 
 	// Read log file.
 	data, err := os.ReadFile(logPath)
 	if os.IsNotExist(err) {
-		fmt.Println("No audit log found. Operations will be logged after running any secrets command.")
+		spinner.FinalMSG = ui.Info.Sprint("ℹ") + " No audit log found. Operations will be logged after running any secrets command.\n"
 		return nil
 	}
 	if err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to read audit log\n"
 		return Logger.ErrorfAndReturn("failed to read audit log: %v", err)
 	}
 
@@ -175,14 +179,27 @@ func runLog(cmd *cobra.Command, args []string) error {
 
 	// Output.
 	if logJSON {
-		return outputLogJSON(filtered)
+		if err := outputLogJSON(filtered); err != nil {
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output log\n"
+			return err
+		}
+		return nil
 	}
 
 	if logOneline {
-		return outputLogOneline(filtered)
+		if err := outputLogOneline(filtered); err != nil {
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output log\n"
+			return err
+		}
+		return nil
 	}
 
-	return outputLogDefault(filtered)
+	if err := outputLogDefault(filtered); err != nil {
+		spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output log\n"
+		return err
+	}
+	spinner.FinalMSG = ui.Success.Sprint("✓") + " Audit log displayed\n"
+	return nil
 }
 
 func filterByUser(entries []audit.Entry, user string) []audit.Entry {

@@ -9,7 +9,6 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
-
 	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -113,6 +112,9 @@ Use --json for machine-readable output.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Logger.Infof("Starting doctor command")
 
+		spinner, cleanup := startSpinner("Running health checks...", verbose)
+		defer cleanup()
+
 		// Run all health checks.
 		checks := []HealthCheck{
 			checkProjectConfig,
@@ -135,11 +137,13 @@ Use --json for machine-readable output.`,
 		// Calculate summary.
 		summary := calculateDoctorSummary(results)
 
-		// Collect suggestions.
+		// Collect suggestions (deduplicated).
 		var suggestions []string
+		seen := make(map[string]bool)
 		for _, result := range results {
-			if result.Suggestion != "" && result.Status != CheckPass {
+			if result.Suggestion != "" && result.Status != CheckPass && !seen[result.Suggestion] {
 				suggestions = append(suggestions, result.Suggestion)
+				seen[result.Suggestion] = true
 			}
 		}
 
@@ -153,10 +157,18 @@ Use --json for machine-readable output.`,
 		// Output results.
 		if doctorJSONOutput {
 			if err := outputDoctorJSON(doctorResult); err != nil {
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output doctor results\n"
 				return err
 			}
 		} else {
 			printDoctorResults(doctorResult)
+			if summary.Errors > 0 {
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " Health checks completed with errors\n"
+			} else if summary.Warnings > 0 {
+				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Health checks completed with warnings\n"
+			} else {
+				spinner.FinalMSG = ui.Success.Sprint("✓") + " Health checks completed\n"
+			}
 		}
 
 		// Set exit code based on results.
@@ -280,7 +292,7 @@ func checkPrivateKeyExists() CheckResult {
 			Name:       "Private key exists",
 			Status:     CheckError,
 			Message:    "Cannot check private key: project not initialized",
-			Suggestion: "Run 'kanuka secrets init' to initialize the project",
+			Suggestion: "Run 'kanuka secrets init' to initialize a project",
 		}
 	}
 
@@ -309,7 +321,7 @@ func checkPrivateKeyPermissions() CheckResult {
 			Name:       "Private key permissions",
 			Status:     CheckError,
 			Message:    "Cannot check private key permissions: project not initialized",
-			Suggestion: "Run 'kanuka secrets init' to initialize the project",
+			Suggestion: "Run 'kanuka secrets init' to initialize a project",
 		}
 	}
 

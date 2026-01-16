@@ -25,10 +25,6 @@ func TestSecretsRegisterIntegration(t *testing.T) {
 		testRegisterExistingUser(t, originalWd, originalUserSettings)
 	})
 
-	t.Run("RegisterWithCustomFile", func(t *testing.T) {
-		testRegisterWithCustomFile(t, originalWd, originalUserSettings)
-	})
-
 	t.Run("RegisterWithPubkeyText", func(t *testing.T) {
 		testRegisterWithPubkeyText(t, originalWd, originalUserSettings)
 	})
@@ -104,60 +100,6 @@ func testRegisterExistingUser(t *testing.T, originalWd string, originalUserSetti
 
 	// Verify the target user can actually decrypt the symmetric key
 	verifyUserCanDecrypt(t, targetUserUUID, targetUserKeyPair.privateKey)
-}
-
-// testRegisterWithCustomFile tests registering using --file flag with a custom public key file.
-func testRegisterWithCustomFile(t *testing.T, originalWd string, originalUserSettings *configs.UserSettings) {
-	tempDir, err := os.MkdirTemp("", "kanuka-test-register-file-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	tempUserDir, err := os.MkdirTemp("", "kanuka-user-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp user directory: %v", err)
-	}
-	defer os.RemoveAll(tempUserDir)
-
-	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
-	shared.InitializeProject(t, tempDir, tempUserDir)
-
-	// Create a custom public key file outside the project
-	customKeyFile := filepath.Join(tempUserDir, "custom_user.pub")
-	targetUser := "custom_user"
-	targetUserKeyPair := generateTestKeyPair(t)
-
-	if err := secrets.SavePublicKeyToFile(targetUserKeyPair.publicKey, customKeyFile); err != nil {
-		t.Fatalf("Failed to save custom public key: %v", err)
-	}
-
-	output, err := shared.CaptureOutput(func() error {
-		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", customKeyFile})
-		return cmd.Execute()
-	})
-	if err != nil {
-		t.Errorf("Command failed: %v", err)
-		t.Errorf("Output: %s", output)
-	}
-
-	if !strings.Contains(output, "✓") {
-		t.Errorf("Expected success message not found in output: %s", output)
-	}
-
-	if !strings.Contains(output, targetUser) || !strings.Contains(output, "has been granted access successfully") {
-		t.Errorf("Expected registration success message not found in output: %s", output)
-	}
-
-	// Verify the .kanuka file was created for the target user
-	targetKanukaFile := filepath.Join(tempDir, ".kanuka", "secrets", targetUser+".kanuka")
-	if _, err := os.Stat(targetKanukaFile); os.IsNotExist(err) {
-		t.Errorf("Target user's .kanuka file was not created at %s", targetKanukaFile)
-	}
-
-	// Verify the target user can actually decrypt the symmetric key
-	verifyUserCanDecrypt(t, targetUser, targetUserKeyPair.privateKey)
 }
 
 // testRegisterWithPubkeyText tests registering using --pubkey and --user flags.
@@ -244,20 +186,29 @@ func testRegisterWithVerboseFlag(t *testing.T, originalWd string, originalUserSe
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Create a target user's public key using their UUID
 	targetUserUUID := shared.TestUser2UUID
-	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUserUUID)
-	publicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", targetUserUUID+".pub")
+	targetUserEmail := shared.TestUser2Email
 
-	// Use --file flag instead of --user to avoid needing email lookup
+	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUserUUID)
+
+	pubkeyText := convertPublicKeyToPEM(t, targetUserKeyPair.publicKey)
+
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, true, false)
-		cmd.SetArgs([]string{"secrets", "register", "--file", publicKeyPath})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pubkeyText, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
-		t.Errorf("Output: %s", output)
 	}
 
 	if !strings.Contains(output, "[info]") {
@@ -267,9 +218,6 @@ func testRegisterWithVerboseFlag(t *testing.T, originalWd string, originalUserSe
 	if !strings.Contains(output, "✓") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
-
-	// Suppress unused variable warning - keypair is created for side effect of placing public key
-	_ = targetUserKeyPair
 }
 
 // testRegisterWithDebugFlag tests register command with debug flag.
@@ -289,27 +237,35 @@ func testRegisterWithDebugFlag(t *testing.T, originalWd string, originalUserSett
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 	shared.InitializeProject(t, tempDir, tempUserDir)
 
-	// Create a target user's public key using their UUID
 	targetUserUUID := shared.TestUser2UUID
-	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUserUUID)
-	publicKeyPath := filepath.Join(tempDir, ".kanuka", "public_keys", targetUserUUID+".pub")
+	targetUserEmail := shared.TestUser2Email
 
-	// Use --file flag instead of --user to avoid needing email lookup
+	targetUserKeyPair := createTestUserKeyPair(t, tempDir, targetUserUUID)
+
+	pubkeyText := convertPublicKeyToPEM(t, targetUserKeyPair.publicKey)
+
+	projectConfig, err := configs.LoadProjectConfig()
+	if err != nil {
+		t.Fatalf("Failed to load project config: %v", err)
+	}
+	projectConfig.Users[targetUserUUID] = targetUserEmail
+	if err := configs.SaveProjectConfig(projectConfig); err != nil {
+		t.Fatalf("Failed to save project config: %v", err)
+	}
+
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLI("register", nil, nil, false, true)
-		cmd.SetArgs([]string{"secrets", "register", "--file", publicKeyPath})
+		cmd.SetArgs([]string{"secrets", "register", "--pubkey", pubkeyText, "--user", targetUserEmail})
 		return cmd.Execute()
 	})
 	if err != nil {
 		t.Errorf("Command failed: %v", err)
-		t.Errorf("Output: %s", output)
 	}
 
 	if !strings.Contains(output, "[debug]") {
 		t.Errorf("Expected debug [debug] messages not found in output: %s", output)
 	}
 
-	// Debug should also include info messages
 	if !strings.Contains(output, "[info]") {
 		t.Errorf("Expected [info] messages not found in debug output: %s", output)
 	}
@@ -317,9 +273,6 @@ func testRegisterWithDebugFlag(t *testing.T, originalWd string, originalUserSett
 	if !strings.Contains(output, "✓") {
 		t.Errorf("Expected success message not found in output: %s", output)
 	}
-
-	// Suppress unused variable warning - keypair is created for side effect of placing public key
-	_ = targetUserKeyPair
 }
 
 // Helper types and functions
