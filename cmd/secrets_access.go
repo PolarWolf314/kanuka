@@ -76,7 +76,7 @@ Use --json for machine-readable output.`,
 
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings\n"
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings."
 			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
@@ -87,7 +87,7 @@ Use --json for machine-readable output.`,
 				fmt.Println(`{"error": "Kanuka has not been initialized"}`)
 				return nil
 			}
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kanuka has not been initialized\n"
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kanuka has not been initialized."
 			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
@@ -100,7 +100,7 @@ Use --json for machine-readable output.`,
 					fmt.Println(`{"error": "Failed to load project configuration: config.toml is not valid TOML"}`)
 					return nil
 				}
-				spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to load project configuration.\n"
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to load project configuration."
 				fmt.Println()
 				fmt.Println(ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.")
 				fmt.Println("   " + ui.Code.Sprint(err.Error()))
@@ -138,14 +138,14 @@ Use --json for machine-readable output.`,
 		// Output results.
 		if accessJSONOutput {
 			if err := outputJSON(result); err != nil {
-				spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output access information\n"
+				spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to output access information."
 				return err
 			}
 			return nil
 		}
 
 		printAccessTable(result)
-		spinner.FinalMSG = ui.Success.Sprint("✓") + " Access information displayed\n"
+		spinner.FinalMSG = ui.Success.Sprint("✓") + " Access information displayed."
 		return nil
 	},
 }

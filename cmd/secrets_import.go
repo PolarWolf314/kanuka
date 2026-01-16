@@ -92,9 +92,9 @@ Examples:
 
 		// Validate flags - can't use both merge and replace.
 		if importMergeFlag && importReplaceFlag {
-			finalMessage := ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags.\n\n" +
-				ui.Info.Sprint("→") + " Use --merge to add new files while keeping existing files,\n" +
-				"   or use --replace to delete existing files and use only of backup.\n"
+			finalMessage := ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags." +
+				"\n\n" + ui.Info.Sprint("→") + " Use --merge to add new files while keeping existing files," +
+				"\n   or use --replace to delete existing files and use only of backup."
 			fmt.Print(finalMessage)
 			return nil
 		}
@@ -118,9 +118,9 @@ Examples:
 		if err != nil {
 			if strings.Contains(err.Error(), "gzip") || strings.Contains(err.Error(), "invalid header") {
 				spinner.Stop()
-				finalMessage := ui.Error.Sprint("✗") + " Invalid archive file: " + ui.Path.Sprint(archivePath) + "\n\n" +
-					ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:\n" +
-					"   " + ui.Code.Sprint("kanuka secrets export")
+				finalMessage := ui.Error.Sprint("✗") + " Invalid archive file: " + ui.Path.Sprint(archivePath) +
+					"\n\n" + ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:" +
+					"\n   " + ui.Code.Sprint("kanuka secrets export")
 				fmt.Println(finalMessage)
 				return nil
 			}
@@ -177,7 +177,8 @@ Examples:
 		// Build summary message.
 		var finalMessage string
 		if importDryRunFlag {
-			finalMessage = ui.Info.Sprint("Dry run") + " - no changes made\n\n"
+			finalMessage = ui.Info.Sprint("Dry run") + " - no changes made" +
+				"\n\n"
 		} else {
 			// Log to audit trail.
 			modeStr := "merge"
@@ -196,14 +197,14 @@ Examples:
 		if mode == ReplaceMode {
 			modeStr = "Replace"
 		}
-		finalMessage += fmt.Sprintf("Mode: %s\n", modeStr)
-		finalMessage += fmt.Sprintf("Total files in archive: %d\n", result.TotalFiles)
+		finalMessage += fmt.Sprintf("Mode: %s", modeStr) + "\n"
+		finalMessage += fmt.Sprintf("Total files in archive: %d", result.TotalFiles)
 
 		if mode == MergeMode {
-			finalMessage += fmt.Sprintf("  Added: %d\n", result.FilesAdded)
-			finalMessage += fmt.Sprintf("  Skipped (already exist): %d\n", result.FilesSkipped)
+			finalMessage += fmt.Sprintf("  Added: %d", result.FilesAdded) + "\n"
+			finalMessage += fmt.Sprintf("  Skipped (already exist): %d", result.FilesSkipped) + "\n"
 		} else {
-			finalMessage += fmt.Sprintf("  Extracted: %d\n", result.FilesReplaced)
+			finalMessage += fmt.Sprintf("  Extracted: %d", result.FilesReplaced) + "\n"
 		}
 
 		if !importDryRunFlag {

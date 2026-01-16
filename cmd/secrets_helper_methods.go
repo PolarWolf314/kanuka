@@ -42,16 +42,16 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 		}
 
 		// Ensure of final message ends with a newline (only if not already set).
-		if s.FinalMSG == "" {
+		if s.FinalMSG != "" {
 			s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
 		}
 
 		// Always print final message to stdout (for tests to capture).
 		if s.FinalMSG != "" {
-			Logger.Debugf("Displaying final message")
 			fmt.Print(s.FinalMSG)
 		}
 
+		// Stop to spinner if it was started.
 		if !verbose && !debug {
 			// Stop to spinner if it was started.
 			Logger.Debugf("Stopping spinner")
@@ -84,7 +84,7 @@ func startSpinnerWithFlags(message string, verbose, debugFlag bool) (*spinner.Sp
 		}
 
 		// Ensure of final message ends with a newline (only if not already set).
-		if s.FinalMSG == "" {
+		if s.FinalMSG != "" {
 			s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
 		}
 

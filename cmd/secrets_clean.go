@@ -55,14 +55,14 @@ Use --force to skip the confirmation prompt.`,
 
 		Logger.Debugf("Initializing project settings")
 		if err := configs.InitProjectSettings(); err != nil {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings\n"
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings."
 			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
 		}
 		projectPath := configs.ProjectKanukaSettings.ProjectPath
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kanuka has not been initialized\n"
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kanuka has not been initialized."
 			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
 			return nil
 		}
@@ -75,7 +75,7 @@ Use --force to skip the confirmation prompt.`,
 		}
 
 		if len(orphans) == 0 {
-			spinner.FinalMSG = ui.Success.Sprint("✓") + " No orphaned entries found. Nothing to clean.\n"
+			spinner.FinalMSG = ui.Success.Sprint("✓") + " No orphaned entries found. Nothing to clean."
 			return nil
 		}
 
@@ -119,7 +119,7 @@ Use --force to skip the confirmation prompt.`,
 		auditEntry.RemovedCount = len(orphans)
 		audit.Log(auditEntry)
 
-		spinner.FinalMSG = ui.Success.Sprint("✓") + fmt.Sprintf(" Removed %d orphaned file(s)\n", len(orphans))
+		spinner.FinalMSG = ui.Success.Sprint("✓") + fmt.Sprintf(" Removed %d orphaned file(s)", len(orphans))
 		return nil
 	},
 }

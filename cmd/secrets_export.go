@@ -80,8 +80,8 @@ Examples:
 		Logger.Debugf("Project path: %s", projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -96,11 +96,11 @@ Examples:
 		}
 
 		if err := validateProjectConfig(configPath); err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
-				ui.Info.Sprint("→") + " " + ui.Code.Sprint(err.Error()) + "\n\n" +
-				ui.Info.Sprint("→") + " To fix this issue:\n" +
-				"   1. Restore from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
-				"   2. Or contact your project administrator for assistance\n"
+			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration." +
+				"\n\n" + ui.Info.Sprint("→") + " " + ui.Code.Sprint(err.Error()) +
+				"\n\n" + ui.Info.Sprint("→") + " To fix this issue:" +
+				"\n   1. Restore from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") +
+				"\n   2. Or contact your project administrator for assistance"
 			spinner.FinalMSG = finalMessage
 			spinner.Stop()
 			return nil
@@ -126,7 +126,7 @@ Examples:
 		result.OutputPath = outputPath
 
 		if result.TotalFilesCount == 0 {
-			finalMessage := ui.Warning.Sprint("⚠") + " No files found to export"
+			finalMessage := ui.Warning.Sprint("⚠") + " No files found to export."
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -146,24 +146,24 @@ Examples:
 		audit.Log(auditEntry)
 
 		// Build summary message.
-		finalMessage := ui.Success.Sprint("✓") + " Exported secrets to " + ui.Path.Sprint(outputPath) + "\n\n" +
-			"Archive contents:\n"
+		finalMessage := ui.Success.Sprint("✓") + " Exported secrets to " + ui.Path.Sprint(outputPath) +
+			"\n\nArchive contents:\n"
 
 		if result.ConfigIncluded {
-			finalMessage += "  .kanuka/config.toml\n"
+			finalMessage += "  .kanuka/config.toml"
 		}
 		if result.PublicKeyCount > 0 {
-			finalMessage += fmt.Sprintf("  .kanuka/public_keys/ (%d file(s))\n", result.PublicKeyCount)
+			finalMessage += fmt.Sprintf("\n  .kanuka/public_keys/ (%d file(s))", result.PublicKeyCount)
 		}
 		if result.UserKeyCount > 0 {
-			finalMessage += fmt.Sprintf("  .kanuka/secrets/ (%d user key(s))\n", result.UserKeyCount)
+			finalMessage += fmt.Sprintf("\n  .kanuka/secrets/ (%d user key(s))", result.UserKeyCount)
 		}
 		if result.SecretFileCount > 0 {
-			finalMessage += fmt.Sprintf("  %d encrypted secret file(s)\n", result.SecretFileCount)
+			finalMessage += fmt.Sprintf("\n  %d encrypted secret file(s)", result.SecretFileCount)
 		}
 
-		finalMessage += "\n" + ui.Info.Sprint("Note:") + " This archive contains encrypted data only.\n" +
-			"      Private keys are NOT included."
+		finalMessage += "\n\n" + ui.Info.Sprint("Note:") + " This archive contains encrypted data only." +
+			"\n      Private keys are NOT included."
 
 		spinner.FinalMSG = finalMessage
 		return nil

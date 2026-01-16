@@ -140,24 +140,24 @@ Examples:
 		// Check for required flags
 		Logger.Debugf("Checking command flags: registerUserEmail=%s, customFilePath=%s, publicKeyText provided=%t", registerUserEmail, customFilePath, publicKeyText != "")
 		if registerUserEmail == "" && customFilePath == "" && publicKeyText == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + ", " + ui.Flag.Sprint("--file") + ", or " + ui.Flag.Sprint("--pubkey") + " must be specified.\n" +
-				"Run " + ui.Code.Sprint("kanuka secrets register --help") + " to see the available commands"
+			finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + ", " + ui.Flag.Sprint("--file") + ", or " + ui.Flag.Sprint("--pubkey") + " must be specified." +
+				"\nRun " + ui.Code.Sprint("kanuka secrets register --help") + " to see the available commands"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		// When using --pubkey, user email is required
 		if publicKeyText != "" && registerUserEmail == "" {
-			finalMessage := ui.Error.Sprint("✗") + " When using " + ui.Flag.Sprint("--pubkey") + ", the " + ui.Flag.Sprint("--user") + " flag is required.\n" +
-				"Specify a user email with " + ui.Flag.Sprint("--user")
+			finalMessage := ui.Error.Sprint("✗") + " When using " + ui.Flag.Sprint("--pubkey") + ", the " + ui.Flag.Sprint("--user") + " flag is required." +
+				"\nSpecify a user email with " + ui.Flag.Sprint("--user")
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
 
 		// Validate email format if provided
 		if registerUserEmail != "" && !utils.IsValidEmail(registerUserEmail) {
-			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(registerUserEmail) + "\n" +
-				ui.Info.Sprint("→") + " Please provide a valid email address"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(registerUserEmail) +
+				"\n" + ui.Info.Sprint("→") + " Please provide a valid email address"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -168,8 +168,8 @@ Examples:
 			// We're already in the pubkey path, so this validation is handled below
 		} else if cmd.Flags().Changed("pubkey") {
 			// The pubkey flag was explicitly set but is empty
-			finalMessage := ui.Error.Sprint("✗") + " Invalid public key format provided\n" +
-				ui.Error.Sprint("Error: ") + "public key text cannot be empty"
+			finalMessage := ui.Error.Sprint("✗") + " Invalid public key format provided" +
+				"\n" + ui.Error.Sprint("Error: ") + "public key text cannot be empty"
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -185,8 +185,8 @@ Examples:
 			keyData, err := utils.ReadStdin()
 			if err != nil {
 				Logger.Errorf("Failed to read private key from stdin: %v", err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin" +
+					"\n" + ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -243,8 +243,8 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	publicKey, err := secrets.ParsePublicKeyText(publicKeyText)
 	if err != nil {
 		Logger.Errorf("Invalid public key format provided: %v", err)
-		finalMessage := ui.Error.Sprint("✗") + " Invalid public key format provided\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+		finalMessage := ui.Error.Sprint("✗") + " Invalid public key format provided" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -266,8 +266,8 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
 	if err != nil {
 		currentKanukaKeyPath := filepath.Join(projectSecretsPath, currentUserUUID+".kanuka")
-		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(currentKanukaKeyPath) + "\n\n" +
-			"Are you sure you have access?\n\n" +
+		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(currentKanukaKeyPath) +
+			"\n\nAre you sure you have access?\n\n" +
 			ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -291,10 +291,10 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
 		currentKanukaKeyPath := filepath.Join(projectSecretsPath, currentUserUUID+".kanuka")
-		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
-			"    Kānuka key path: " + ui.Path.Sprint(currentKanukaKeyPath) + "\n" +
-			"    Private key path: " + ui.Path.Sprint(privateKeyPath) + "\n\n" +
-			"Are you sure you have access?\n\n" +
+		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key:" +
+			"\n    Kānuka key path: " + ui.Path.Sprint(currentKanukaKeyPath) +
+			"\n    Private key path: " + ui.Path.Sprint(privateKeyPath) +
+			"\n\nAre you sure you have access?\n\n" +
 			ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -309,7 +309,7 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	// If user already has access and not forced, prompt for confirmation
 	if userAlreadyHasAccess && !registerForce && !registerDryRun {
 		if !confirmRegisterOverwrite(spinner, registerUserEmail) {
-			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Registration cancelled.\n"
+			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Registration cancelled."
 			return nil
 		}
 	}
@@ -324,8 +324,8 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	Logger.Debugf("Saving public key to: %s", pubKeyFilePath)
 	if err := secrets.SavePublicKeyToFile(publicKey, pubKeyFilePath); err != nil {
 		Logger.Errorf("Failed to save public key to %s: %v", pubKeyFilePath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to save public key to " + ui.Path.Sprint(pubKeyFilePath) + "\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+		finalMessage := ui.Error.Sprint("✗") + " Failed to save public key to " + ui.Path.Sprint(pubKeyFilePath) +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -335,8 +335,8 @@ func handlePubkeyTextRegistration(spinner *spinner.Spinner) error {
 	Logger.Debugf("Registering user %s (UUID: %s) with public key", registerUserEmail, targetUserUUID)
 	if err := registerUserWithPublicKey(targetUserUUID, publicKey); err != nil {
 		Logger.Errorf("Failed to register user %s with public key: %v", registerUserEmail, err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to register user with the provided public key\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+		finalMessage := ui.Error.Sprint("✗") + " Failed to register user with the provided public key" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -514,8 +514,8 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	targetUserPublicKey, err := secrets.LoadPublicKey(targetPubkeyPath)
 	if err != nil {
 		Logger.Errorf("Failed to load public key for user %s from %s: %v", registerUserEmail, targetPubkeyPath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Public key for user " + ui.Highlight.Sprint(registerUserEmail) + " not found\n" +
-			"They must first run: " + ui.Code.Sprint("kanuka secrets create --email "+registerUserEmail)
+		finalMessage := ui.Error.Sprint("✗") + " Public key for user " + ui.Highlight.Sprint(registerUserEmail) + " not found" +
+			"\nThey must first run: " + ui.Code.Sprint("kanuka secrets create --email "+registerUserEmail)
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -528,8 +528,8 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
 	if err != nil {
 		Logger.Errorf("Failed to get kanuka key for current user %s: %v", currentUserUUID, err)
-		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(kanukaKeyPath) + "\n\n" +
-			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys\n"
+		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(kanukaKeyPath) +
+			"\n\n" + ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 		spinner.FinalMSG = finalMessage
 		spinner.Stop()
 		return nil
@@ -546,8 +546,8 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 		if registerPrivateKeyStdin {
 			errorSource = "from stdin"
 		}
-		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your private key " + errorSource + "\n\n" +
-			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys\n"
+		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your private key " + errorSource +
+			"\n\n" + ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 		spinner.FinalMSG = finalMessage
 		spinner.Stop()
 		return nil
@@ -558,10 +558,10 @@ func handleUserRegistration(spinner *spinner.Spinner) error {
 	_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
 		Logger.Errorf("Failed to decrypt symmetric key: %v", err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
-			"    Kānuka key path: " + ui.Path.Sprint(kanukaKeyPath) + "\n" +
-			"    Private key path: " + ui.Path.Sprint(privateKeyPath) + "\n\n" +
-			ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
+		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key:" +
+			"\n    Kānuka key path: " + ui.Path.Sprint(kanukaKeyPath) +
+			"\n    Private key path: " + ui.Path.Sprint(privateKeyPath) +
+			"\n\n" + ui.Info.Sprint("→") + " You don't have access to this project. Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 		spinner.FinalMSG = finalMessage
 		spinner.Stop()
 		return nil
@@ -700,7 +700,7 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	}
 
 	if !strings.HasSuffix(customFilePath, ".pub") {
-		finalMessage := ui.Error.Sprint("✗ ") + ui.Path.Sprint(customFilePath) + " is not a valid path to a public key file"
+		finalMessage := ui.Error.Sprint("✗ ") + ui.Path.Sprint(customFilePath) + " is not a valid path to a public key file."
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -710,13 +710,13 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	uuidRegex := regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	if !uuidRegex.MatchString(targetUserUUID) {
-		finalMessage := ui.Error.Sprint("✗") + " Public key file must be named <uuid>.pub\n\n" +
-			ui.Info.Sprint("→") + " Rename your public key file to use UUID, or use --user and --pubkey flags instead\n\n" +
-			"Example:\n" +
-			"  mv /tmp/mykey.pub /tmp/550e8400-e29b-41d4-a716-446655440000.pub\n" +
-			"  kanuka secrets register --file /tmp/550e8400-e29b-41d4-a716-446655440000.pub\n\n" +
-			"Or:\n" +
-			"  kanuka secrets register --user user@example.com --pubkey \"$(cat /tmp/mykey.pub)\""
+		finalMessage := ui.Error.Sprint("✗") + " Public key file must be named <uuid>.pub" +
+			"\n\n" + ui.Info.Sprint("→") + " Rename your public key file to use UUID, or use --user and --pubkey flags instead" +
+			"\n\nExample:" +
+			"\n  mv /tmp/mykey.pub /tmp/550e8400-e29b-41d4-a716-4466554400000.pub" +
+			"\n  kanuka secrets register --file /tmp/550e8400-e29b-41d4-a716-4466554400000.pub" +
+			"\n\nOr:" +
+			"\n  kanuka secrets register --user user@example.com --pubkey \"$(cat /tmp/mykey.pub)\""
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -726,8 +726,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	targetUserPublicKey, err := secrets.LoadPublicKey(customFilePath)
 	if err != nil {
 		Logger.Errorf("Failed to load public key from %s: %v", customFilePath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Public key could not be loaded from " + ui.Path.Sprint(customFilePath) + "\n\n" +
-			ui.Error.Sprint("Error: ") + err.Error()
+		finalMessage := ui.Error.Sprint("✗") + " Public key could not be loaded from " + ui.Path.Sprint(customFilePath) +
+			"\n\n" + ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
 	}
@@ -738,8 +738,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 
 	encryptedSymKey, err := secrets.GetProjectKanukaKey(currentUserUUID)
 	if err != nil {
-		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(kanukaKeyPath) + "\n\n" +
-			"Are you sure you have access?\n\n" +
+		finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kānuka key from " + ui.Path.Sprint(kanukaKeyPath) +
+			"\n\nAre you sure you have access?\n\n" +
 			ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -764,10 +764,10 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	// Decrypt symmetric key with current user's private key
 	_, err = secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
-		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key: \n" +
-			"    Kānuka key path: " + ui.Path.Sprint(kanukaKeyPath) + "\n" +
-			"    Private key path: " + ui.Path.Sprint(privateKeyPath) + "\n\n" +
-			"Are you sure you have access?\n\n" +
+		finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key using your private key:" +
+			"\n    Kānuka key path: " + ui.Path.Sprint(kanukaKeyPath) +
+			"\n    Private key path: " + ui.Path.Sprint(privateKeyPath) +
+			"\n\nAre you sure you have access?\n\n" +
 			ui.Error.Sprint("Error: ") + err.Error()
 		spinner.FinalMSG = finalMessage
 		return nil
@@ -778,9 +778,9 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 	displayName := targetEmail
 	if displayName == "" {
 		if registerUserEmail == "" {
-			finalMessage := ui.Error.Sprint("✗") + " UUID " + ui.Highlight.Sprint(targetUserUUID) + " not found in project\n\n" +
-				ui.Info.Sprint("→") + " To register a new user with this UUID, provide the --user flag:\n" +
-				"   " + ui.Code.Sprint("kanuka secrets register --file "+customFilePath+" --user <email>")
+			finalMessage := ui.Error.Sprint("✗") + " UUID " + ui.Highlight.Sprint(targetUserUUID) + " not found in project" +
+				"\n\n" + ui.Info.Sprint("→") + " To register a new user with this UUID, provide the --user flag:" +
+				"\n   " + ui.Code.Sprint("kanuka secrets register --file "+customFilePath+" --user <email>")
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -816,8 +816,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		Logger.Debugf("Copying public key to project directory: %s", targetPubkeyPath)
 		if err := secrets.SavePublicKeyToFile(targetUserPublicKey, targetPubkeyPath); err != nil {
 			Logger.Errorf("Failed to copy public key to project: %v", err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to copy public key to " + ui.Path.Sprint(targetPubkeyPath) + "\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+			finalMessage := ui.Error.Sprint("✗") + " Failed to copy public key to " + ui.Path.Sprint(targetPubkeyPath) +
+				"\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			return nil
 		}
@@ -827,8 +827,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 			projectConfig.Users[targetUserUUID] = registerUserEmail
 			if err := configs.SaveProjectConfig(projectConfig); err != nil {
 				Logger.Errorf("Failed to update project config: %v", err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to update project config\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to update project config" +
+					"\n" + ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
@@ -890,7 +890,8 @@ func handleCustomFileRegistration(spinner *spinner.Spinner) error {
 		}
 	}
 
-	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(displayName) + " " + successVerb + " successfully!\n\n"
+	finalMessage := ui.Success.Sprint("✓") + " " + ui.Highlight.Sprint(displayName) + " " + successVerb + " successfully!" +
+		"\n\n"
 
 	if len(filesCreated) > 0 {
 		finalMessage += "Files created:\n" + strings.Join(filesCreated, "\n") + "\n\n"

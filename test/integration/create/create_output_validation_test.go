@@ -329,7 +329,7 @@ func testInstructionsDisplay(t *testing.T, originalWd string, originalUserSettin
 
 	// Test that instructions are provided
 	expectedInstructions := []string{
-		"To gain access to the secrets in this project",
+		"To gain access to secrets in this project",
 		"Commit your",
 		".kanuka/public_keys/" + userUUID + ".pub",
 		"file to your version control system",

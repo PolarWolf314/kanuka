@@ -82,8 +82,8 @@ Examples:
 		Logger.Debugf("Project name: %s, Project path: %s", projectName, projectPath)
 
 		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first\n"
+			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
+				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 			spinner.FinalMSG = finalMessage
 			spinner.Stop()
 			return nil
@@ -158,9 +158,9 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to obtain kanuka key for user %s: %v", userUUID, err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to get your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n\n" +
-				ui.Info.Sprint("→") + " You don't have access to this project. Ask someone with access to run:\n" +
-				"   " + ui.Code.Sprint("kanuka secrets register --user <your-email>\n")
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?" +
+				"\n\n" + ui.Info.Sprint("→") + " You don't have access to this project. Ask someone with access to run:" +
+				"\n   " + ui.Code.Sprint("kanuka secrets register --user <your-email>")
 			spinner.FinalMSG = finalMessage
 			spinner.Stop()
 			return nil
@@ -173,16 +173,16 @@ Examples:
 			keyData, err := utils.ReadStdin()
 			if err != nil {
 				Logger.Errorf("Failed to read private key from stdin: %v", err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin\n" +
-					ui.Error.Sprint("Error: ") + err.Error()
+				finalMessage := ui.Error.Sprint("✗") + " Failed to read private key from stdin" +
+					"\n" + ui.Error.Sprint("Error: ") + err.Error()
 				spinner.FinalMSG = finalMessage
 				return nil
 			}
 			privateKey, err = secrets.LoadPrivateKeyFromBytesWithTTYPrompt(keyData)
 			if err != nil {
 				Logger.Errorf("Failed to parse private key from stdin: %v", err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to parse private key from stdin\n" +
-					ui.Info.Sprint("→") + " Ensure your private key is in valid format (PEM or OpenSSH)"
+				finalMessage := ui.Error.Sprint("✗") + " Failed to parse private key from stdin" +
+					"\n" + ui.Info.Sprint("→") + " Ensure your private key is in valid format (PEM or OpenSSH)"
 				spinner.FinalMSG = finalMessage
 				spinner.Stop()
 				return nil
@@ -194,9 +194,9 @@ Examples:
 			privateKey, err = secrets.LoadPrivateKey(privateKeyPath)
 			if err != nil {
 				Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?\n\n" +
-					ui.Info.Sprint("→") + " You don't have access to this project. Ask someone with access to run:\n" +
-					"   " + ui.Code.Sprint("kanuka secrets register --user <your-email>")
+				finalMessage := ui.Error.Sprint("✗") + " Failed to get your private key file. Are you sure you have access?" +
+					"\n\n" + ui.Info.Sprint("→") + " You don't have access to this project. Ask someone with access to run:" +
+					"\n   " + ui.Code.Sprint("kanuka secrets register --user <your-email>")
 				spinner.FinalMSG = finalMessage
 				spinner.Stop()
 				return nil
@@ -219,9 +219,9 @@ Examples:
 		if err != nil {
 			Logger.Errorf("Failed to decrypt symmetric key: %v", err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your " +
-				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?\n\n" +
-				ui.Info.Sprint("→") + " Your encrypted key file appears to be corrupted.\n" +
-				"   Try asking the project administrator to revoke and re-register your access."
+				ui.Path.Sprint(".kanuka") + " file. Are you sure you have access?" +
+				"\n\n" + ui.Info.Sprint("→") + " Your encrypted key file appears to be corrupted." +
+				"\n   Try asking the project administrator to revoke and re-register your access."
 			spinner.FinalMSG = finalMessage
 			spinner.Stop()
 			return nil
@@ -237,8 +237,8 @@ Examples:
 		if err := secrets.EncryptFiles(symKey, listOfEnvFiles, verbose); err != nil {
 			Logger.Errorf("Failed to encrypt files: %v", err)
 			finalMessage := ui.Error.Sprint("✗") + " Failed to encrypt to project's " +
-				ui.Path.Sprint(".env") + " files. Are you sure you have access?\n\n" +
-				ui.Error.Sprint("Error: ") + err.Error()
+				ui.Path.Sprint(".env") + " files. Are you sure you have access?" +
+				"\n\n" + ui.Error.Sprint("Error: ") + err.Error()
 			spinner.FinalMSG = finalMessage
 			spinner.Stop()
 			return nil
@@ -258,11 +258,11 @@ Examples:
 		auditEntry.Files = listOfKanukaFiles
 		audit.Log(auditEntry)
 
-		finalMessage := ui.Success.Sprint("✓") + " Environment files encrypted successfully!\n" +
-			"The following files were created: " + formattedListOfFiles +
-			ui.Info.Sprint("→") + " You can now safely commit all " + ui.Path.Sprint(".kanuka") + " files to version control\n\n" +
-			ui.Info.Sprint("Note:") + " Encryption is non-deterministic for security reasons.\n" +
-			"       Re-encrypting unchanged files will produce different output."
+		finalMessage := ui.Success.Sprint("✓") + " Environment files encrypted successfully!" +
+			"\nThe following files were created: " + formattedListOfFiles +
+			"\n" + ui.Info.Sprint("→") + " You can now safely commit all " + ui.Path.Sprint(".kanuka") + " files to version control" +
+			"\n\n" + ui.Info.Sprint("Note:") + " Encryption is non-deterministic for security reasons." +
+			"\n       Re-encrypting unchanged files will produce different output."
 
 		spinner.FinalMSG = finalMessage
 		return nil
