@@ -129,7 +129,7 @@ func testCreateInInitializedProject(t *testing.T, originalWd string, originalUse
 		t.Errorf("Expected file creation message not found in output: %s", output)
 	}
 
-	if !strings.Contains(output, "To gain access to the secrets") {
+	if !strings.Contains(output, "To gain access to secrets") {
 		t.Errorf("Expected instructions not found in output: %s", output)
 	}
 
