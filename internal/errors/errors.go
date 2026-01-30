@@ -65,6 +65,12 @@ var (
 	ErrInvalidArchive = errors.New("invalid archive structure")
 )
 
+// Input validation errors indicate issues with user-provided values.
+var (
+	// ErrInvalidDateFormat indicates the date format is invalid.
+	ErrInvalidDateFormat = errors.New("invalid date format")
+)
+
 // User errors indicate issues with user-related operations.
 var (
 	// ErrUserNotFound indicates the specified user could not be found.
