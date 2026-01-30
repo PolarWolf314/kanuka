@@ -2,14 +2,16 @@ package cmd
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/PolarWolf314/kanuka/internal/audit"
-	"github.com/PolarWolf314/kanuka/internal/configs"
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
+
 	"github.com/spf13/cobra"
 )
 
@@ -26,12 +28,6 @@ func init() {
 func resetCleanCommandState() {
 	cleanForce = false
 	cleanDryRun = false
-}
-
-// OrphanEntry represents an orphaned .kanuka file with no corresponding public key.
-type OrphanEntry struct {
-	UUID     string
-	FilePath string
 }
 
 var cleanCmd = &cobra.Command{
@@ -53,44 +49,41 @@ Use --force to skip the confirmation prompt.`,
 		spinner, cleanup := startSpinner("Scanning for orphaned entries...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings."
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
+		// First, do a dry-run to find orphans (regardless of user's dry-run flag).
+		// This lets us display the orphans and prompt for confirmation.
+		previewOpts := workflows.CleanOptions{
+			DryRun: true,
+			Force:  cleanForce,
 		}
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		Logger.Debugf("Project path: %s", projectPath)
 
-		if projectPath == "" {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kanuka has not been initialized."
-			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
+		previewResult, err := workflows.Clean(context.Background(), previewOpts)
+		if err != nil {
+			spinner.FinalMSG = formatCleanError(err)
+			if isCleanUnexpectedError(err) {
+				return err
+			}
 			return nil
 		}
 
-		// Find orphaned entries.
-		orphans, err := findOrphanedEntries()
-		if err != nil {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to find orphaned entries\n"
-			return Logger.ErrorfAndReturn("failed to find orphaned entries: %v", err)
-		}
-
-		if len(orphans) == 0 {
+		if len(previewResult.Orphans) == 0 {
 			spinner.FinalMSG = ui.Success.Sprint("✓") + " No orphaned entries found. Nothing to clean."
 			return nil
 		}
 
 		// Display orphans.
+		spinner.Stop()
 		if cleanDryRun {
-			fmt.Printf("[dry-run] Would remove %d orphaned file(s):\n", len(orphans))
+			fmt.Printf("[dry-run] Would remove %d orphaned file(s):\n", len(previewResult.Orphans))
 		} else {
-			fmt.Printf("Found %d orphaned entry(ies):\n\n", len(orphans))
+			fmt.Printf("Found %d orphaned entry(ies):\n\n", len(previewResult.Orphans))
 		}
 
-		printOrphanTable(orphans, projectPath)
+		printOrphanTable(previewResult.Orphans)
 
 		// Dry run - don't delete anything.
 		if cleanDryRun {
 			fmt.Println("\nNo changes made.")
+			spinner.FinalMSG = ""
 			return nil
 		}
 
@@ -102,81 +95,66 @@ Use --force to skip the confirmation prompt.`,
 
 			if !confirmCleanAction() {
 				fmt.Println("Aborted.")
+				spinner.FinalMSG = ""
 				return nil
 			}
 		}
 
-		// Remove orphaned files.
-		for _, orphan := range orphans {
-			Logger.Debugf("Removing orphaned file: %s", orphan.FilePath)
-			if err := os.Remove(orphan.FilePath); err != nil {
-				return Logger.ErrorfAndReturn("failed to remove %s: %v", orphan.FilePath, err)
-			}
+		spinner.Restart()
+
+		// Now actually clean.
+		cleanOpts := workflows.CleanOptions{
+			DryRun: false,
+			Force:  true, // We already confirmed.
 		}
 
-		// Log to audit trail.
-		auditEntry := audit.LogWithUser("clean")
-		auditEntry.RemovedCount = len(orphans)
-		audit.Log(auditEntry)
+		result, err := workflows.Clean(context.Background(), cleanOpts)
+		if err != nil {
+			spinner.FinalMSG = formatCleanError(err)
+			return err
+		}
 
-		spinner.FinalMSG = ui.Success.Sprint("✓") + fmt.Sprintf(" Removed %d orphaned file(s)", len(orphans))
+		spinner.FinalMSG = ui.Success.Sprint("✓") + fmt.Sprintf(" Removed %d orphaned file(s)", result.RemovedCount)
 		return nil
 	},
 }
 
-// findOrphanedEntries finds .kanuka files in secrets/ that have no corresponding public key.
-func findOrphanedEntries() ([]OrphanEntry, error) {
-	secretsDir := configs.ProjectKanukaSettings.ProjectSecretsPath
-	publicKeysDir := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+// formatCleanError formats workflow errors into user-friendly messages.
+func formatCleanError(err error) string {
+	switch {
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return ui.Error.Sprint("✗") + " Kanuka has not been initialized.\n" +
+			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 
-	Logger.Debugf("Scanning secrets dir for orphans: %s", secretsDir)
-	Logger.Debugf("Checking against public keys dir: %s", publicKeysDir)
+	default:
+		return ui.Error.Sprint("✗") + " Failed to clean\n" +
+			ui.Error.Sprint("Error: ") + err.Error()
+	}
+}
 
-	var orphans []OrphanEntry
-
-	entries, err := os.ReadDir(secretsDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return orphans, nil
-		}
-		return nil, fmt.Errorf("failed to read secrets directory: %w", err)
+// isCleanUnexpectedError returns true if the error is unexpected and should cause a non-zero exit.
+func isCleanUnexpectedError(err error) bool {
+	expectedErrors := []error{
+		kerrors.ErrProjectNotInitialized,
 	}
 
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".kanuka") {
-			continue
-		}
-
-		uuid := strings.TrimSuffix(entry.Name(), ".kanuka")
-		publicKeyPath := filepath.Join(publicKeysDir, uuid+".pub")
-
-		if !fileExists(publicKeyPath) {
-			orphanPath := filepath.Join(secretsDir, entry.Name())
-			orphans = append(orphans, OrphanEntry{
-				UUID:     uuid,
-				FilePath: orphanPath,
-			})
-			Logger.Debugf("Found orphan: UUID=%s, file=%s", uuid, orphanPath)
+	for _, expected := range expectedErrors {
+		if errors.Is(err, expected) {
+			return false
 		}
 	}
-
-	return orphans, nil
+	return true
 }
 
 // printOrphanTable prints a formatted table of orphaned entries.
-func printOrphanTable(orphans []OrphanEntry, projectPath string) {
+func printOrphanTable(orphans []workflows.OrphanEntry) {
 	// Calculate column widths.
 	uuidWidth := 36 // Standard UUID length.
 
 	fmt.Printf("  %-*s  %s\n", uuidWidth, "UUID", "FILE")
 
 	for _, orphan := range orphans {
-		// Show relative path for cleaner output.
-		relPath, err := filepath.Rel(projectPath, orphan.FilePath)
-		if err != nil {
-			relPath = orphan.FilePath
-		}
-		fmt.Printf("  %-*s  %s\n", uuidWidth, orphan.UUID, relPath)
+		fmt.Printf("  %-*s  %s\n", uuidWidth, orphan.UUID, orphan.RelativePath)
 	}
 }
 

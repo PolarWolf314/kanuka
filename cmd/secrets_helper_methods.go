@@ -101,12 +101,3 @@ func startSpinnerWithFlags(message string, verbose, debugFlag bool) (*spinner.Sp
 
 	return s, cleanup
 }
-
-// fileExists checks if a file exists and is not a directory.
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return err == nil && !info.IsDir()
-}
