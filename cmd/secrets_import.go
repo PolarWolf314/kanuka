@@ -1,20 +1,17 @@
 package cmd
 
 import (
-	"archive/tar"
 	"bufio"
-	"compress/gzip"
+	"context"
+	"errors"
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/BurntSushi/toml"
-	"github.com/PolarWolf314/kanuka/internal/audit"
-	"github.com/PolarWolf314/kanuka/internal/configs"
-
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
+
 	"github.com/spf13/cobra"
 )
 
@@ -35,24 +32,6 @@ func resetImportCommandState() {
 	importMergeFlag = false
 	importReplaceFlag = false
 	importDryRunFlag = false
-}
-
-// ImportMode represents the import strategy.
-type ImportMode int
-
-const (
-	// MergeMode adds new files from archive, keeps existing files.
-	MergeMode ImportMode = iota
-	// ReplaceMode deletes existing .kanuka directory and extracts all from archive.
-	ReplaceMode
-)
-
-// ImportResult contains summary information about the import operation.
-type ImportResult struct {
-	FilesAdded    int
-	FilesSkipped  int
-	FilesReplaced int
-	TotalFiles    int
 }
 
 var importCmd = &cobra.Command{
@@ -102,54 +81,23 @@ Examples:
 		spinner, cleanup := startSpinner("Importing secrets...", verbose)
 		defer cleanup()
 
-		// Check archive exists.
-		if _, err := os.Stat(archivePath); os.IsNotExist(err) {
-			return Logger.ErrorfAndReturn("archive file not found: %s", archivePath)
-		}
-
-		// Check archive exists.
-		if _, err := os.Stat(archivePath); os.IsNotExist(err) {
-			return Logger.ErrorfAndReturn("archive file not found: %s", archivePath)
-		}
-
-		// Validate archive structure.
-		Logger.Debugf("Validating archive structure")
-		archiveFiles, err := listArchiveContents(archivePath)
+		// Pre-check the archive.
+		preCheck, err := workflows.ImportPreCheck(context.Background(), archivePath)
 		if err != nil {
-			if strings.Contains(err.Error(), "gzip") || strings.Contains(err.Error(), "invalid header") {
-				spinner.Stop()
-				finalMessage := ui.Error.Sprint("✗") + " Invalid archive file: " + ui.Path.Sprint(archivePath) +
-					"\n\n" + ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:" +
-					"\n   " + ui.Code.Sprint("kanuka secrets export")
-				fmt.Println(finalMessage)
-				return nil
+			spinner.FinalMSG = formatImportError(err, archivePath)
+			if isImportUnexpectedError(err) {
+				return err
 			}
-			return Logger.ErrorfAndReturn("failed to read archive: %v", err)
-		}
-
-		if err := validateArchiveStructure(archiveFiles); err != nil {
-			return Logger.ErrorfAndReturn("invalid archive: %v", err)
-		}
-
-		// Get current working directory as project path.
-		projectPath, err := os.Getwd()
-		if err != nil {
-			return Logger.ErrorfAndReturn("failed to get current directory: %v", err)
-		}
-
-		kanukaDir := filepath.Join(projectPath, ".kanuka")
-		kanukaExists := false
-		if _, err := os.Stat(kanukaDir); err == nil {
-			kanukaExists = true
+			return nil
 		}
 
 		// Determine import mode.
-		var mode ImportMode
+		var mode workflows.ImportMode
 		if importMergeFlag {
-			mode = MergeMode
+			mode = workflows.ImportModeMerge
 		} else if importReplaceFlag {
-			mode = ReplaceMode
-		} else if kanukaExists && !importDryRunFlag {
+			mode = workflows.ImportModeReplace
+		} else if preCheck.KanukaExists && !importDryRunFlag {
 			// Interactive prompt needed - stop spinner first.
 			spinner.Stop()
 			var ok bool
@@ -163,51 +111,49 @@ Examples:
 			defer cleanup()
 		} else {
 			// No existing .kanuka directory or dry-run, default to merge.
-			mode = MergeMode
+			mode = workflows.ImportModeMerge
 		}
 
 		Logger.Debugf("Import mode: %v, dry-run: %v", mode, importDryRunFlag)
 
 		// Perform import.
-		result, err := performImport(archivePath, projectPath, archiveFiles, mode, importDryRunFlag)
+		opts := workflows.ImportOptions{
+			ArchivePath: archivePath,
+			ProjectPath: preCheck.ProjectPath,
+			Mode:        mode,
+			DryRun:      importDryRunFlag,
+		}
+
+		result, err := workflows.Import(context.Background(), opts)
 		if err != nil {
-			return Logger.ErrorfAndReturn("failed to import: %v", err)
+			spinner.FinalMSG = formatImportError(err, archivePath)
+			return err
 		}
 
 		// Build summary message.
 		var finalMessage string
-		if importDryRunFlag {
+		if result.DryRun {
 			finalMessage = ui.Info.Sprint("Dry run") + " - no changes made" +
 				"\n\n"
 		} else {
-			// Log to audit trail.
-			modeStr := "merge"
-			if mode == ReplaceMode {
-				modeStr = "replace"
-			}
-			auditEntry := audit.LogWithUser("import")
-			auditEntry.Mode = modeStr
-			auditEntry.FilesCount = result.TotalFiles
-			audit.Log(auditEntry)
-
 			finalMessage = ui.Success.Sprint("✓") + " Imported secrets from " + ui.Path.Sprint(archivePath) + "\n\n"
 		}
 
 		modeStr := "Merge"
-		if mode == ReplaceMode {
+		if result.Mode == workflows.ImportModeReplace {
 			modeStr = "Replace"
 		}
 		finalMessage += fmt.Sprintf("Mode: %s", modeStr) + "\n"
 		finalMessage += fmt.Sprintf("Total files in archive: %d", result.TotalFiles)
 
-		if mode == MergeMode {
+		if result.Mode == workflows.ImportModeMerge {
 			finalMessage += fmt.Sprintf("  Added: %d", result.FilesAdded) + "\n"
 			finalMessage += fmt.Sprintf("  Skipped (already exist): %d", result.FilesSkipped) + "\n"
 		} else {
 			finalMessage += fmt.Sprintf("  Extracted: %d", result.FilesReplaced) + "\n"
 		}
 
-		if !importDryRunFlag {
+		if !result.DryRun {
 			finalMessage += "\n" + ui.Info.Sprint("Note:") + " You may need to run " + ui.Code.Sprint("kanuka secrets decrypt") + " to decrypt secrets."
 		}
 
@@ -216,88 +162,45 @@ Examples:
 	},
 }
 
-// listArchiveContents returns a list of all file paths in the archive.
-func listArchiveContents(archivePath string) ([]string, error) {
-	file, err := os.Open(archivePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open archive: %w", err)
+// formatImportError formats workflow errors into user-friendly messages.
+func formatImportError(err error, archivePath string) string {
+	switch {
+	case errors.Is(err, kerrors.ErrFileNotFound):
+		return ui.Error.Sprint("✗") + " Archive file not found: " + ui.Path.Sprint(archivePath)
+
+	case errors.Is(err, kerrors.ErrInvalidFileType):
+		return ui.Error.Sprint("✗") + " Invalid archive file: " + ui.Path.Sprint(archivePath) +
+			"\n\n" + ui.Info.Sprint("→") + " The file is not a valid gzip archive. Ensure it was created with:" +
+			"\n   " + ui.Code.Sprint("kanuka secrets export")
+
+	case errors.Is(err, kerrors.ErrInvalidArchive):
+		return ui.Error.Sprint("✗") + " Invalid archive structure" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
+
+	default:
+		return ui.Error.Sprint("✗") + " Failed to import secrets" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
 	}
-	defer file.Close()
-
-	gzReader, err := gzip.NewReader(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-	}
-	defer gzReader.Close()
-
-	tarReader := tar.NewReader(gzReader)
-	var files []string
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to read tar header: %w", err)
-		}
-		files = append(files, header.Name)
-	}
-
-	return files, nil
 }
 
-// validateArchiveStructure checks that the archive contains required files.
-func validateArchiveStructure(files []string) error {
-	hasConfig := false
-	hasContent := false
+// isImportUnexpectedError returns true if the error is unexpected and should cause a non-zero exit.
+func isImportUnexpectedError(err error) bool {
+	expectedErrors := []error{
+		kerrors.ErrFileNotFound,
+		kerrors.ErrInvalidFileType,
+		kerrors.ErrInvalidArchive,
+	}
 
-	for _, f := range files {
-		if f == ".kanuka/config.toml" {
-			hasConfig = true
-		}
-		// Check for any content in public_keys, secrets, or .kanuka files.
-		if strings.HasPrefix(f, ".kanuka/public_keys/") ||
-			strings.HasPrefix(f, ".kanuka/secrets/") ||
-			strings.HasSuffix(f, ".kanuka") {
-			hasContent = true
+	for _, expected := range expectedErrors {
+		if errors.Is(err, expected) {
+			return false
 		}
 	}
-
-	if !hasConfig {
-		return fmt.Errorf("archive missing .kanuka/config.toml")
-	}
-
-	if !hasContent {
-		return fmt.Errorf("archive contains no encrypted content (public_keys, secrets, or .kanuka files)")
-	}
-
-	return nil
-}
-
-// validateExtractedConfig validates that the extracted config.toml is not empty and is valid TOML.
-func validateExtractedConfig(projectPath string) error {
-	configPath := filepath.Join(projectPath, ".kanuka", "config.toml")
-
-	configContent, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read config.toml: %w", err)
-	}
-
-	if len(configContent) == 0 {
-		return fmt.Errorf("config.toml is empty")
-	}
-
-	var decoded map[string]interface{}
-	if _, err := toml.Decode(string(configContent), &decoded); err != nil {
-		return fmt.Errorf("config.toml is invalid: %w", err)
-	}
-
-	return nil
+	return true
 }
 
 // promptForImportMode asks the user how to handle existing .kanuka directory.
-func promptForImportMode() (ImportMode, bool) {
+func promptForImportMode() (workflows.ImportMode, bool) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Found existing .kanuka directory. How do you want to proceed?")
 	fmt.Println("  [m] Merge - Add new files, keep existing")
@@ -313,156 +216,10 @@ func promptForImportMode() (ImportMode, bool) {
 
 	switch response {
 	case "m", "merge":
-		return MergeMode, true
+		return workflows.ImportModeMerge, true
 	case "r", "replace":
-		return ReplaceMode, true
+		return workflows.ImportModeReplace, true
 	default:
 		return 0, false
 	}
-}
-
-// performImport extracts files from the archive to the project directory.
-func performImport(archivePath, projectPath string, archiveFiles []string, mode ImportMode, dryRun bool) (*ImportResult, error) {
-	result := &ImportResult{
-		TotalFiles: len(archiveFiles),
-	}
-
-	kanukaDir := filepath.Join(projectPath, ".kanuka")
-
-	// For replace mode, delete existing .kanuka directory first.
-	if mode == ReplaceMode && !dryRun {
-		if _, err := os.Stat(kanukaDir); err == nil {
-			if err := os.RemoveAll(kanukaDir); err != nil {
-				return nil, fmt.Errorf("failed to remove existing .kanuka directory: %w", err)
-			}
-		}
-	}
-
-	// Open archive for extraction.
-	file, err := os.Open(archivePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open archive: %w", err)
-	}
-	defer file.Close()
-
-	gzReader, err := gzip.NewReader(file)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
-	}
-	defer gzReader.Close()
-
-	tarReader := tar.NewReader(gzReader)
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to read tar header: %w", err)
-		}
-
-		// Skip directories - we'll create them as needed.
-		if header.Typeflag == tar.TypeDir {
-			continue
-		}
-
-		// Validate path to prevent directory traversal attacks.
-		// #nosec G305 -- We validate the path below before using it.
-		targetPath := filepath.Join(projectPath, header.Name)
-
-		// Ensure the target path is within the project directory.
-		if !strings.HasPrefix(filepath.Clean(targetPath), filepath.Clean(projectPath)+string(os.PathSeparator)) &&
-			filepath.Clean(targetPath) != filepath.Clean(projectPath) {
-			return nil, fmt.Errorf("invalid file path in archive (path traversal attempt): %s", header.Name)
-		}
-
-		// Check if file already exists (for merge mode).
-		fileExists := false
-		if _, err := os.Stat(targetPath); err == nil {
-			fileExists = true
-		}
-
-		if mode == MergeMode && fileExists {
-			result.FilesSkipped++
-			Logger.Debugf("Skipping existing file: %s", header.Name)
-			continue
-		}
-
-		if dryRun {
-			if mode == MergeMode {
-				if fileExists {
-					result.FilesSkipped++
-				} else {
-					result.FilesAdded++
-				}
-			} else {
-				result.FilesReplaced++
-			}
-			Logger.Debugf("Would extract: %s", header.Name)
-			continue
-		}
-
-		// Create parent directories.
-		parentDir := filepath.Dir(targetPath)
-		// #nosec G301 -- Directories need to be accessible.
-		if err := os.MkdirAll(parentDir, 0755); err != nil {
-			return nil, fmt.Errorf("failed to create directory %s: %w", parentDir, err)
-		}
-
-		// Extract file.
-		if err := extractFile(tarReader, targetPath, header.Mode); err != nil {
-			return nil, fmt.Errorf("failed to extract %s: %w", header.Name, err)
-		}
-
-		if mode == MergeMode {
-			result.FilesAdded++
-		} else {
-			result.FilesReplaced++
-		}
-		Logger.Debugf("Extracted: %s", header.Name)
-	}
-
-	// Validate extracted config.toml if not in dry-run mode.
-	if !dryRun {
-		if err := validateExtractedConfig(projectPath); err != nil {
-			os.RemoveAll(kanukaDir)
-			return nil, fmt.Errorf("invalid archive: %w\n\n"+
-				"The archive contains an invalid .kanuka/config.toml file.\n"+
-				"Ensure your backup was created with 'kanuka secrets export'\n\n"+
-				"To fix this issue:\n"+
-				"  1. Restore from a good backup\n"+
-				"  2. Or re-export from a working project: kanuka secrets export", err)
-		}
-
-		if err := configs.InitProjectSettings(); err != nil {
-			Logger.Debugf("Warning: failed to reinitialize project settings: %v", err)
-		}
-	}
-
-	return result, nil
-}
-
-// extractFile extracts a single file from the tar reader to the target path.
-func extractFile(tr *tar.Reader, targetPath string, mode int64) error {
-	// Convert mode safely, defaulting to 0600 for invalid values.
-	fileMode := os.FileMode(0600)
-	if mode >= 0 && mode <= 0777 {
-		fileMode = os.FileMode(mode) // #nosec G115 -- We validate mode is in valid range.
-	}
-
-	// Create the file.
-	outFile, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer outFile.Close()
-
-	// Copy contents.
-	// #nosec G110 -- We trust the archive since it was created by export command.
-	if _, err := io.Copy(outFile, tr); err != nil {
-		return fmt.Errorf("failed to write file contents: %w", err)
-	}
-
-	return nil
 }

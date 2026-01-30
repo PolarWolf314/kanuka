@@ -2,17 +2,15 @@ package cmd
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/PolarWolf314/kanuka/internal/audit"
-	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
-	"github.com/PolarWolf314/kanuka/internal/utils"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
 
 	"github.com/spf13/cobra"
 )
@@ -80,216 +78,124 @@ Examples:
 		spinner, cleanup := startSpinner("Creating Kānuka file...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
-		}
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		Logger.Debugf("Project path: %s", projectPath)
-
-		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
-				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
-			spinner.FinalMSG = finalMessage
+		// Pre-check to determine if we need to prompt for email.
+		preCheck, err := workflows.CreatePreCheck(context.Background())
+		if err != nil {
+			spinner.FinalMSG = formatCreateError(err, "")
+			if isCreateUnexpectedError(err) {
+				return err
+			}
 			return nil
 		}
 
-		projectConfigPath := filepath.Join(projectPath, ".kanuka", "config.toml")
-		if _, err := os.Stat(projectConfigPath); err != nil {
-			if os.IsNotExist(err) {
-				finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
-					"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
-				spinner.FinalMSG = finalMessage
-				return nil
-			}
-			return Logger.ErrorfAndReturn("failed to check project config: %v", err)
-		}
-
-		Logger.Debugf("Ensuring user settings")
-		if err := secrets.EnsureUserSettings(); err != nil {
-			return Logger.ErrorfAndReturn("Failed ensuring user settings: %v", err)
-		}
-
-		// Ensure user config has UUID
-		Logger.Debugf("Ensuring user config with UUID")
-		userConfig, err := configs.EnsureUserConfig()
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
-		}
-		userUUID := userConfig.User.UUID
-		Logger.Debugf("Current user UUID: %s", userUUID)
-
-		// Handle email: use flag, existing config, or prompt
+		// Handle email: use flag, existing config, or prompt.
 		userEmail := createEmail
-		if userEmail == "" {
-			userEmail = userConfig.User.Email
+		if userEmail == "" && preCheck.ExistingEmail != "" {
+			userEmail = preCheck.ExistingEmail
 		}
 
-		// If still no email, prompt for it
-		if userEmail == "" {
+		// If still no email, prompt for it.
+		if userEmail == "" && preCheck.NeedsEmail {
 			spinner.Stop()
 			reader := bufio.NewReader(os.Stdin)
-			promptedEmail, err := promptForEmail(reader)
-			if err != nil {
-				return Logger.ErrorfAndReturn("Failed to read email: %v", err)
+			promptedEmail, promptErr := promptForEmail(reader)
+			if promptErr != nil {
+				return Logger.ErrorfAndReturn("Failed to read email: %v", promptErr)
 			}
 			userEmail = promptedEmail
 			spinner.Restart()
 		}
 
-		// Validate email format
-		if !utils.IsValidEmail(userEmail) {
-			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(userEmail) +
-				"\n" + ui.Info.Sprint("→") + " Please provide a valid email address"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Update user config with email if changed
-		if userConfig.User.Email != userEmail {
-			userConfig.User.Email = userEmail
-			if err := configs.SaveUserConfig(userConfig); err != nil {
-				return Logger.ErrorfAndReturn("Failed to save user config: %v", err)
-			}
-			Logger.Infof("User email updated to: %s", userEmail)
-		}
-
-		// Load project config to check existing devices for this user
-		Logger.Debugf("Loading project config for device name validation")
-		projectConfig, err := configs.LoadProjectConfig()
-		if err != nil {
-			if strings.Contains(err.Error(), "toml:") {
-				return fmt.Errorf("failed to load project config: .kanuka/config.toml is not valid TOML\n\nTo fix this issue:\n  1. Restore the file from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance\n\nDetails: %v", err)
-			}
-			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
-		}
-
-		// Determine device name: use flag, or auto-generate from hostname
-		var deviceName string
-		existingDeviceNames := projectConfig.GetDeviceNamesByEmail(userEmail)
-
-		if createDevName != "" {
-			// User provided a device name - sanitize and validate uniqueness
-			deviceName = utils.SanitizeDeviceName(createDevName)
-			Logger.Debugf("Using user-provided device name: %s (sanitized from: %s)", deviceName, createDevName)
-
-			// Check if device name is already taken by this user
-			if projectConfig.IsDeviceNameTakenByEmail(userEmail, deviceName) {
-				finalMessage := ui.Error.Sprint("✗") + " Device name " + ui.Highlight.Sprint(deviceName) + " is already in use for " + ui.Highlight.Sprint(userEmail) +
-					"\n" + ui.Info.Sprint("→") + " Choose a different device name with " + ui.Flag.Sprint("--device-name")
-				spinner.FinalMSG = finalMessage
-				return nil
-			}
-		} else {
-			// Auto-generate device name from hostname
-			deviceName, err = utils.GenerateDeviceName(existingDeviceNames)
-			if err != nil {
-				return Logger.ErrorfAndReturn("Failed to generate device name: %v", err)
-			}
-			Logger.Debugf("Auto-generated device name: %s", deviceName)
-		}
-
-		// If force flag is active, then ignore checking for existing symmetric key
-		if !force {
-			Logger.Debugf("Force flag not set, checking for existing public key")
-			projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-			// Check for public key using user UUID
-			userPublicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
-			Logger.Debugf("Checking for existing public key at: %s", userPublicKeyPath)
-
-			// We are explicitly ignoring errors, because an error means the key doesn't exist, which is what we want.
-			userPublicKey, _ := secrets.LoadPublicKey(userPublicKeyPath)
-
-			if userPublicKey != nil {
-				finalMessage := ui.Error.Sprint("✗ ") + ui.Path.Sprint(userUUID+".pub ") + "already exists" +
-					"\nTo override, run: " + ui.Code.Sprint("kanuka secrets create --force")
-				spinner.FinalMSG = finalMessage
-				return nil
-			}
-		} else {
+		// Warn if using force flag.
+		if force {
 			Logger.Infof("Force flag set, will override existing keys if present")
 			spinner.Stop()
 			Logger.WarnfUser("Using --force flag will overwrite existing keys - ensure you have backups")
 			spinner.Restart()
 		}
 
-		Logger.Debugf("Creating and saving RSA key pair")
-		if err := secrets.CreateAndSaveRSAKeyPair(verbose); err != nil {
-			return Logger.ErrorfAndReturn("Failed to generate and save RSA key pair: %v", err)
+		opts := workflows.CreateOptions{
+			Email:      userEmail,
+			DeviceName: createDevName,
+			Force:      force,
 		}
-		Logger.Infof("RSA key pair created successfully")
 
-		Logger.Debugf("Copying user public key to project")
-		destPath, err := secrets.CopyUserPublicKeyToProject()
+		result, err := workflows.Create(context.Background(), opts)
 		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to copy public key to project: %v", err)
-		}
-		Logger.Infof("Public key copied to: %s", destPath)
-
-		// Add/update user in project config
-		Logger.Debugf("Updating project config with user info")
-		projectConfig.Users[userUUID] = userEmail
-		projectConfig.Devices[userUUID] = configs.DeviceConfig{
-			Email:     userEmail,
-			Name:      deviceName,
-			CreatedAt: time.Now().UTC(),
-		}
-
-		if err := configs.SaveProjectConfig(projectConfig); err != nil {
-			return Logger.ErrorfAndReturn("Failed to save project config: %v", err)
-		}
-		Logger.Infof("Project config updated successfully")
-
-		// Update user config with project entry
-		Logger.Debugf("Updating user config with project entry")
-		if userConfig.Projects == nil {
-			userConfig.Projects = make(map[string]configs.UserProjectEntry)
-		}
-		userConfig.Projects[projectConfig.Project.UUID] = configs.UserProjectEntry{
-			DeviceName:  deviceName,
-			ProjectName: projectConfig.Project.Name,
-		}
-		if err := configs.SaveUserConfig(userConfig); err != nil {
-			return Logger.ErrorfAndReturn("Failed to update user config with project: %v", err)
-		}
-		Logger.Infof("User config updated with project UUID: %s -> device: %s, project: %s", projectConfig.Project.UUID, deviceName, projectConfig.Project.Name)
-
-		didKanukaExist := true
-
-		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-		// Use user UUID for kanuka key path
-		userKanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
-		Logger.Debugf("Attempting to remove existing kanuka key at: %s", userKanukaKeyPath)
-
-		if err := os.Remove(userKanukaKeyPath); err != nil {
-			didKanukaExist = false
-			Logger.Debugf("No existing kanuka key found (this is expected for new users)")
-			// Explicitly ignore error as we want to idempotently delete the file
-			_ = err
-		} else {
-			Logger.Infof("Removed existing kanuka key file")
+			spinner.FinalMSG = formatCreateError(err, userEmail)
+			if isCreateUnexpectedError(err) {
+				return err
+			}
+			return nil
 		}
 
 		deletedMessage := ""
-		if didKanukaExist {
-			deletedMessage = "    deleted: " + ui.Error.Sprint(userKanukaKeyPath) + "\n"
+		if result.KanukaKeyDeleted {
+			deletedMessage = "    deleted: " + ui.Error.Sprint(result.DeletedKanukaKeyPath) + "\n"
 		}
 
-		Logger.Infof("Create command completed successfully for user: %s (%s)", userEmail, userUUID)
+		Logger.Infof("Create command completed successfully for user: %s (%s)", result.Email, result.UserUUID)
 
-		// Log to audit trail.
-		auditEntry := audit.LogWithUser("create")
-		auditEntry.DeviceName = deviceName
-		audit.Log(auditEntry)
-
-		finalMessage := ui.Success.Sprint("✓") + " Keys created for " + ui.Highlight.Sprint(userEmail) + " (device: " + ui.Highlight.Sprint(deviceName) + ")" +
-			"\n    created: " + ui.Path.Sprint(destPath) + "\n" + deletedMessage +
+		finalMessage := ui.Success.Sprint("✓") + " Keys created for " + ui.Highlight.Sprint(result.Email) + " (device: " + ui.Highlight.Sprint(result.DeviceName) + ")" +
+			"\n    created: " + ui.Path.Sprint(result.PublicKeyPath) + "\n" + deletedMessage +
 			ui.Info.Sprint("To gain access to secrets in this project:") +
-			"\n  1. Commit your " + ui.Path.Sprint(".kanuka/public_keys/"+userUUID+".pub") + " file to your version control system" +
+			"\n  1. Commit your " + ui.Path.Sprint(".kanuka/public_keys/"+result.UserUUID+".pub") + " file to your version control system" +
 			"\n  2. Ask someone with permissions to grant you access with:" +
-			"\n     " + ui.Code.Sprint("kanuka secrets register --user "+userEmail)
+			"\n     " + ui.Code.Sprint("kanuka secrets register --user "+result.Email)
 
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
+}
+
+// formatCreateError formats workflow errors into user-friendly messages.
+func formatCreateError(err error, email string) string {
+	switch {
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
+			"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first to create a project"
+
+	case errors.Is(err, kerrors.ErrInvalidProjectConfig):
+		return ui.Error.Sprint("✗") + " Failed to load project config: .kanuka/config.toml is not valid TOML\n\n" +
+			"To fix this issue:\n" +
+			"  1. Restore the file from git: git checkout .kanuka/config.toml\n" +
+			"  2. Or contact your project administrator for assistance"
+
+	case errors.Is(err, kerrors.ErrInvalidEmail):
+		return ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(email) +
+			"\n" + ui.Info.Sprint("→") + " Please provide a valid email address"
+
+	case errors.Is(err, kerrors.ErrDeviceNameTaken):
+		// Extract device name from error message.
+		msg := err.Error()
+		deviceName := strings.TrimPrefix(msg, "device name already in use: ")
+		return ui.Error.Sprint("✗") + " Device name " + ui.Highlight.Sprint(deviceName) + " is already in use for " + ui.Highlight.Sprint(email) +
+			"\n" + ui.Info.Sprint("→") + " Choose a different device name with " + ui.Flag.Sprint("--device-name")
+
+	case errors.Is(err, kerrors.ErrPublicKeyExists):
+		return ui.Error.Sprint("✗ ") + "Public key already exists" +
+			"\nTo override, run: " + ui.Code.Sprint("kanuka secrets create --force")
+
+	default:
+		return ui.Error.Sprint("✗") + " Failed to create keys\n" +
+			ui.Error.Sprint("Error: ") + err.Error()
+	}
+}
+
+// isCreateUnexpectedError returns true if the error is unexpected and should cause a non-zero exit.
+func isCreateUnexpectedError(err error) bool {
+	expectedErrors := []error{
+		kerrors.ErrProjectNotInitialized,
+		kerrors.ErrInvalidProjectConfig,
+		kerrors.ErrInvalidEmail,
+		kerrors.ErrDeviceNameTaken,
+		kerrors.ErrPublicKeyExists,
+	}
+
+	for _, expected := range expectedErrors {
+		if errors.Is(err, expected) {
+			return false
+		}
+	}
+	return true
 }
