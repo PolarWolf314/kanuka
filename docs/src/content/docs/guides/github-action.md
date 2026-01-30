@@ -7,6 +7,11 @@ The official [Kānuka GitHub Action](https://github.com/PolarWolf314/kanuka-acti
 simplifies using Kānuka in your GitHub Actions workflows. It handles installing
 Kānuka and configuring your private key securely.
 
+:::tip[Quick Setup]
+Use `kanuka secrets ci-init` to set up GitHub Actions integration with a single
+command. See the [CI Setup guide](/guides/ci-init/) for details.
+:::
+
 ## Why use the GitHub Action?
 
 While you can manually install Kānuka and configure keys in your workflows, the

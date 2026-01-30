@@ -91,3 +91,12 @@ var (
 	// ErrPublicKeyExists indicates a public key already exists for this user.
 	ErrPublicKeyExists = errors.New("public key already exists")
 )
+
+// CI errors indicate issues with CI integration operations.
+var (
+	// ErrCIAlreadyConfigured is returned when CI integration is already set up.
+	ErrCIAlreadyConfigured = errors.New("CI integration already configured")
+
+	// ErrTTYRequired is returned when a command requires TTY but none is available.
+	ErrTTYRequired = errors.New("this command requires an interactive terminal")
+)

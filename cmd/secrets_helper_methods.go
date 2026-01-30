@@ -41,21 +41,23 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 			log.SetOutput(os.Stdout)
 		}
 
-		// Ensure of final message ends with a newline (only if not already set).
+		// Ensure final message ends with a newline.
+		finalMsg := ""
 		if s.FinalMSG != "" {
-			s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
+			finalMsg = ui.EnsureNewline(s.FinalMSG)
+			// Clear FinalMSG so s.Stop() doesn't print it.
+			s.FinalMSG = ""
 		}
 
-		// Always print final message to stdout (for tests to capture).
-		if s.FinalMSG != "" {
-			fmt.Print(s.FinalMSG)
-		}
-
-		// Stop to spinner if it was started.
+		// Stop the spinner first to clear the spinner line.
 		if !verbose && !debug {
-			// Stop to spinner if it was started.
 			Logger.Debugf("Stopping spinner")
 			s.Stop()
+		}
+
+		// Print final message to stdout (for tests to capture).
+		if finalMsg != "" {
+			fmt.Print(finalMsg)
 		}
 	}
 
@@ -83,19 +85,22 @@ func startSpinnerWithFlags(message string, verbose, debugFlag bool) (*spinner.Sp
 			log.SetOutput(os.Stdout)
 		}
 
-		// Ensure of final message ends with a newline (only if not already set).
+		// Ensure final message ends with a newline.
+		finalMsg := ""
 		if s.FinalMSG != "" {
-			s.FinalMSG = ui.EnsureNewline(s.FinalMSG)
+			finalMsg = ui.EnsureNewline(s.FinalMSG)
+			// Clear FinalMSG so s.Stop() doesn't print it.
+			s.FinalMSG = ""
 		}
 
-		// Always print final message to stdout (for tests to capture).
-		if s.FinalMSG != "" {
-			fmt.Print(s.FinalMSG)
-		}
-
+		// Stop the spinner first to clear the spinner line.
 		if !verbose && !debugFlag {
-			// Stop to spinner if it was started.
 			s.Stop()
+		}
+
+		// Print final message to stdout (for tests to capture).
+		if finalMsg != "" {
+			fmt.Print(finalMsg)
 		}
 	}
 

@@ -55,6 +55,7 @@ export default defineConfig({
             "guides/audit-log",
             "guides/log",
             "guides/monorepo",
+            "guides/ci-init",
             "guides/github-action",
           ],
         },
