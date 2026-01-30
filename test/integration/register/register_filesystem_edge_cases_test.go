@@ -82,7 +82,7 @@ func testRegisterWithReadOnlySecretsDirectory(t *testing.T, originalWd string, o
 	}
 
 	secretsDir := filepath.Join(tempDir, ".kanuka", "secrets")
-	if err := os.Chmod(secretsDir, 0444); err != nil {
+	if err := os.Chmod(secretsDir, 0555); err != nil {
 		t.Fatalf("Failed to make secrets directory read-only: %v", err)
 	}
 	defer func() {
@@ -151,7 +151,7 @@ func testRegisterWithReadOnlyPublicKeysDirectory(t *testing.T, originalWd string
 	}
 
 	publicKeysDir := filepath.Join(tempDir, ".kanuka", "public_keys")
-	if err := os.Chmod(publicKeysDir, 0444); err != nil {
+	if err := os.Chmod(publicKeysDir, 0555); err != nil {
 		t.Fatalf("Failed to make public_keys directory read-only: %v", err)
 	}
 	defer func() {

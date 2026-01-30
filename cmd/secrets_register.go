@@ -183,7 +183,9 @@ func runRegister(cmd *cobra.Command, args []string) error {
 			errors.Is(err, kerrors.ErrNoAccess) ||
 			errors.Is(err, kerrors.ErrPublicKeyNotFound) ||
 			errors.Is(err, kerrors.ErrInvalidFileType) ||
-			strings.Contains(err.Error(), "invalid public key format") {
+			errors.Is(err, kerrors.ErrKeyDecryptFailed) ||
+			strings.Contains(err.Error(), "invalid public key format") ||
+			strings.Contains(err.Error(), "permission denied") {
 			return nil
 		}
 		return err
@@ -218,6 +220,10 @@ func formatRegisterError(err error, userEmail, filePath string) string {
 		return ui.Error.Sprint("✗") + " You don't have access to this project\n" +
 			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 
+	case errors.Is(err, kerrors.ErrKeyDecryptFailed):
+		return ui.Error.Sprint("✗") + " Failed to decrypt your Kānuka key\n" +
+			ui.Info.Sprint("→") + " " + err.Error()
+
 	case errors.Is(err, kerrors.ErrPublicKeyNotFound):
 		if userEmail != "" {
 			return ui.Error.Sprint("✗") + " Public key for user " + ui.Highlight.Sprint(userEmail) + " not found" +
@@ -249,6 +255,10 @@ func formatRegisterError(err error, userEmail, filePath string) string {
 
 	case strings.Contains(err.Error(), "invalid public key format"):
 		return ui.Error.Sprint("✗") + " Invalid public key format provided" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
+
+	case strings.Contains(err.Error(), "permission denied"):
+		return ui.Error.Sprint("✗") + " Failed to save file" +
 			"\n" + ui.Error.Sprint("Error: ") + err.Error()
 
 	default:

@@ -166,7 +166,7 @@ func registerByEmail(ctx context.Context, opts RegisterOptions) (*RegisterResult
 
 	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
-		return nil, fmt.Errorf("%w: cannot decrypt symmetric key", kerrors.ErrNoAccess)
+		return nil, fmt.Errorf("%w: %v", kerrors.ErrKeyDecryptFailed, err)
 	}
 
 	// Compute paths.
@@ -260,7 +260,7 @@ func registerWithPubkeyText(ctx context.Context, opts RegisterOptions) (*Registe
 
 	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
-		return nil, fmt.Errorf("%w: cannot decrypt symmetric key", kerrors.ErrNoAccess)
+		return nil, fmt.Errorf("%w: %v", kerrors.ErrKeyDecryptFailed, err)
 	}
 
 	// Compute paths.
@@ -372,7 +372,7 @@ func registerWithFile(ctx context.Context, opts RegisterOptions) (*RegisterResul
 
 	symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, privateKey)
 	if err != nil {
-		return nil, fmt.Errorf("%w: cannot decrypt symmetric key", kerrors.ErrNoAccess)
+		return nil, fmt.Errorf("%w: %v", kerrors.ErrKeyDecryptFailed, err)
 	}
 
 	// Try to find email for display purposes.
