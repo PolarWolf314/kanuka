@@ -2,18 +2,16 @@ package cmd
 
 import (
 	"bufio"
-	"crypto/rsa"
+	"context"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/PolarWolf314/kanuka/internal/audit"
-	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
 	"github.com/PolarWolf314/kanuka/internal/utils"
-	"github.com/briandowns/spinner"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
 	"github.com/spf13/cobra"
 )
 
@@ -45,16 +43,6 @@ func init() {
 	revokeCmd.Flags().BoolVarP(&revokeYes, "yes", "y", false, "skip confirmation prompts (for automation)")
 	revokeCmd.Flags().BoolVar(&revokeDryRun, "dry-run", false, "preview revocation without making changes")
 	revokeCmd.Flags().BoolVar(&revokePrivateKeyStdin, "private-key-stdin", false, "read private key from stdin instead of from disk")
-}
-
-// loadRevokePrivateKey loads the private key for the revoke command.
-// If --private-key-stdin was used, it uses the stored key data; otherwise loads from disk.
-func loadRevokePrivateKey(projectUUID string) (*rsa.PrivateKey, error) {
-	if revokePrivateKeyStdin {
-		return secrets.LoadPrivateKeyFromBytesWithTTYPrompt(revokePrivateKeyData)
-	}
-	privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
-	return secrets.LoadPrivateKey(privateKeyPath)
 }
 
 var revokeCmd = &cobra.Command{
@@ -112,558 +100,230 @@ Examples:
 
   # Use with a secrets manager
   vault kv get -field=private_key secret/kanuka | kanuka secrets revoke --user alice@example.com --private-key-stdin`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		Logger.Infof("Starting revoke command")
-		spinner, cleanup := startSpinner("Revoking access...", verbose)
-		defer cleanup()
-
-		// Check --device requires --user FIRST (moved outside of revokePrivateKeyStdin block)
-		if revokeDevice != "" && revokeUserEmail == "" {
-			finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires " + ui.Flag.Sprint("--user") + " flag." +
-				"\nRun " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands."
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Then do the general check
-		if revokeUserEmail == "" && revokeFilePath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required." +
-				"\nRun " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands."
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Read private key from stdin early, before any other code can consume stdin
-		if revokePrivateKeyStdin {
-			Logger.Debugf("Reading private key from stdin")
-			keyData, err := utils.ReadStdin()
-			if err != nil {
-				return Logger.ErrorfAndReturn("failed to read private key from stdin: %v", err)
-			}
-			revokePrivateKeyData = keyData
-			Logger.Infof("Read %d bytes of private key data from stdin", len(keyData))
-			Logger.Debugf("Checking command flags: revokeUserEmail=%s, revokeFilePath=%s, revokeDevice=%s, revokeYes=%t",
-				revokeUserEmail, revokeFilePath, revokeDevice, revokeYes)
-		}
-
-		if revokeUserEmail != "" && revokeFilePath != "" {
-			finalMessage := ui.Error.Sprint("✗") + " Cannot specify both " + ui.Flag.Sprint("--user") + " and " + ui.Flag.Sprint("--file") + " flags.\n" +
-				"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Validate email format if provided
-		if revokeUserEmail != "" && !utils.IsValidEmail(revokeUserEmail) {
-			finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(revokeUserEmail) +
-				"\n" + ui.Info.Sprint("→") + " Please provide a valid email address"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
-		}
-
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
-				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		exists, err := secrets.DoesProjectKanukaSettingsExist()
-		if err != nil {
-			return Logger.ErrorfAndReturn("failed to check if project exists: %v", err)
-		}
-		if !exists {
-			finalMessage := ui.Error.Sprint("✗") + " Kānuka project not found" +
-				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		ctx, err := getFilesToRevoke(spinner)
-		if err != nil {
-			return err
-		}
-
-		if ctx == nil || len(ctx.Files) == 0 {
-			return nil
-		}
-
-		return revokeFiles(spinner, ctx)
-	},
+	RunE: runRevoke,
 }
 
-type fileToRevoke struct {
-	Path string
-	Name string
-}
+func runRevoke(cmd *cobra.Command, args []string) error {
+	Logger.Infof("Starting revoke command")
+	spinner, cleanup := startSpinner("Revoking access...", verbose)
+	defer cleanup()
 
-type revokeContext struct {
-	DisplayName  string
-	Files        []fileToRevoke
-	UUIDsRevoked []string // UUIDs to remove from project config
-}
-
-func getFilesToRevoke(spinner *spinner.Spinner) (*revokeContext, error) {
-	if revokeUserEmail != "" {
-		return getFilesByUserEmail(spinner)
-	}
-	return getFilesByPath(spinner)
-}
-
-func getFilesByUserEmail(spinner *spinner.Spinner) (*revokeContext, error) {
-	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-
-	Logger.Debugf("Project public key path: %s, Project secrets path: %s", projectPublicKeyPath, projectSecretsPath)
-
-	// Load project config to look up user by email
-	projectConfig, err := configs.LoadProjectConfig()
-	if err != nil {
-		if strings.Contains(err.Error(), "toml:") {
-			return nil, fmt.Errorf("failed to load project config: .kanuka/config.toml is not valid TOML\n\nTo fix this issue:\n  1. Restore the file from git: git checkout .kanuka/config.toml\n  2. Or contact your project administrator for assistance\n\nDetails: %v", err)
-		}
-		return nil, Logger.ErrorfAndReturn("failed to load project config: %v", err)
-	}
-
-	// Get all devices for this email
-	devices := projectConfig.GetDevicesByEmail(revokeUserEmail)
-	if len(devices) == 0 {
-		finalMessage := ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(revokeUserEmail) + " not found in this project" +
-			"\n" + ui.Info.Sprint("→") + " No devices found for this user"
+	// Validate flags early.
+	if revokeDevice != "" && revokeUserEmail == "" {
+		finalMessage := ui.Error.Sprint("✗") + " The " + ui.Flag.Sprint("--device") + " flag requires " + ui.Flag.Sprint("--user") + " flag." +
+			"\nRun " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands."
 		spinner.FinalMSG = finalMessage
-		return nil, nil
+		return nil
 	}
 
-	// If --device is specified, find that specific device
-	if revokeDevice != "" {
-		targetUserUUID, found := projectConfig.GetUserUUIDByEmailAndDevice(revokeUserEmail, revokeDevice)
-		if !found {
-			finalMessage := ui.Error.Sprint("✗") + " Device " + ui.Highlight.Sprint(revokeDevice) + " not found for user " + ui.Highlight.Sprint(revokeUserEmail) +
-				"\n" + ui.Info.Sprint("→") + " Available devices:\n"
+	if revokeUserEmail == "" && revokeFilePath == "" {
+		finalMessage := ui.Error.Sprint("✗") + " Either " + ui.Flag.Sprint("--user") + " or " + ui.Flag.Sprint("--file") + " flag is required." +
+			"\nRun " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands."
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	if revokeUserEmail != "" && revokeFilePath != "" {
+		finalMessage := ui.Error.Sprint("✗") + " Cannot specify both " + ui.Flag.Sprint("--user") + " and " + ui.Flag.Sprint("--file") + " flags.\n" +
+			"Run " + ui.Code.Sprint("kanuka secrets revoke --help") + " to see the available commands.\n"
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	// Validate email format if provided.
+	if revokeUserEmail != "" && !utils.IsValidEmail(revokeUserEmail) {
+		finalMessage := ui.Error.Sprint("✗") + " Invalid email format: " + ui.Highlight.Sprint(revokeUserEmail) +
+			"\n" + ui.Info.Sprint("→") + " Please provide a valid email address"
+		spinner.FinalMSG = finalMessage
+		return nil
+	}
+
+	// Read private key from stdin early, before any other code can consume stdin.
+	if revokePrivateKeyStdin {
+		Logger.Debugf("Reading private key from stdin")
+		keyData, err := utils.ReadStdin()
+		if err != nil {
+			return Logger.ErrorfAndReturn("failed to read private key from stdin: %v", err)
+		}
+		revokePrivateKeyData = keyData
+		Logger.Infof("Read %d bytes of private key data from stdin", len(keyData))
+	}
+
+	// Handle multi-device confirmation prompt (interactive - must stay in cmd layer).
+	if revokeUserEmail != "" && revokeDevice == "" && !revokeYes && !revokeDryRun {
+		devices, err := workflows.GetDevicesForUser(revokeUserEmail)
+		if err == nil && len(devices) > 1 {
+			spinner.Stop()
+
+			fmt.Printf("\n%s Warning: %s has %d devices:\n", ui.Warning.Sprint("⚠"), revokeUserEmail, len(devices))
 			for _, device := range devices {
-				finalMessage += "    - " + ui.Highlight.Sprint(device.Name) + "\n"
+				fmt.Printf("  - %s (created: %s)\n", device.Name, device.CreatedAt.Format("Jan 2, 2006"))
 			}
-			spinner.FinalMSG = finalMessage
-			return nil, nil
-		}
+			fmt.Println("\nThis will revoke ALL devices for this user.")
 
-		// Return files for this specific device
-		return getFilesForUUID(spinner, targetUserUUID, revokeUserEmail+" ("+revokeDevice+")")
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Print("Proceed? [y/N]: ")
+			response, err := reader.ReadString('\n')
+			if err != nil {
+				return Logger.ErrorfAndReturn("Failed to read response: %v", err)
+			}
+			response = strings.TrimSpace(strings.ToLower(response))
+			if response != "y" && response != "yes" {
+				finalMessage := ui.Warning.Sprint("⚠") + " Revocation cancelled."
+				spinner.FinalMSG = finalMessage
+				return nil
+			}
+
+			spinner.Restart()
+		}
 	}
 
-	// No --device specified, handle all devices for this user
-	// If multiple devices and no --yes, prompt for confirmation
-	if len(devices) > 1 && !revokeYes {
+	ctx := context.Background()
+	opts := workflows.RevokeOptions{
+		UserEmail:      revokeUserEmail,
+		FilePath:       revokeFilePath,
+		DeviceName:     revokeDevice,
+		DryRun:         revokeDryRun,
+		PrivateKeyData: revokePrivateKeyData,
+		Verbose:        verbose,
+		Debug:          debug,
+	}
+
+	result, err := workflows.Revoke(ctx, opts)
+	if err != nil {
+		spinner.FinalMSG = formatRevokeError(err)
+		// Return nil for expected errors, return error for unexpected ones.
+		if errors.Is(err, kerrors.ErrProjectNotInitialized) ||
+			errors.Is(err, kerrors.ErrUserNotFound) ||
+			errors.Is(err, kerrors.ErrDeviceNotFound) ||
+			errors.Is(err, kerrors.ErrFileNotFound) ||
+			errors.Is(err, kerrors.ErrInvalidFileType) {
+			return nil
+		}
+		return err
+	}
+
+	// Handle self-revoke warning (returned as result + error).
+	if result != nil && errors.Is(err, kerrors.ErrSelfRevoke) {
+		spinner.FinalMSG = formatRevokeSuccess(result) + "\n" +
+			ui.Warning.Sprint("⚠") + " Note: You revoked your own access to this project"
+		return nil
+	}
+
+	if result.DryRun {
+		spinner.FinalMSG = ""
 		spinner.Stop()
-
-		fmt.Printf("\n%s Warning: %s has %d devices:\n", ui.Warning.Sprint("⚠"), revokeUserEmail, len(devices))
-		for _, device := range devices {
-			fmt.Printf("  - %s (created: %s)\n", device.Name, device.CreatedAt.Format("Jan 2, 2006"))
-		}
-		fmt.Println("\nThis will revoke ALL devices for this user.")
-
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Proceed? [y/N]: ")
-		response, err := reader.ReadString('\n')
-		if err != nil {
-			return nil, Logger.ErrorfAndReturn("Failed to read response: %v", err)
-		}
-		response = strings.TrimSpace(strings.ToLower(response))
-		if response != "y" && response != "yes" {
-			finalMessage := ui.Warning.Sprint("⚠") + " Revocation cancelled."
-			spinner.FinalMSG = finalMessage
-			return nil, nil
-		}
-
-		spinner.Restart()
+		printRevokeDryRunResult(result)
+		return nil
 	}
 
-	// Collect all files and UUIDs for all devices
-	var allFiles []fileToRevoke
-	var allUUIDs []string
-	for userUUID := range devices {
-		allUUIDs = append(allUUIDs, userUUID)
-		publicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
-		kanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
-
-		if _, err := os.Stat(publicKeyPath); err == nil {
-			allFiles = append(allFiles, fileToRevoke{Path: publicKeyPath, Name: userUUID + ".pub"})
-		}
-		if _, err := os.Stat(kanukaKeyPath); err == nil {
-			allFiles = append(allFiles, fileToRevoke{Path: kanukaKeyPath, Name: userUUID + ".kanuka"})
-		}
-	}
-
-	if len(allFiles) == 0 {
-		finalMessage := ui.Error.Sprint("✗") + " No files found for user " + ui.Highlight.Sprint(revokeUserEmail) + "."
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	return &revokeContext{
-		DisplayName:  revokeUserEmail,
-		Files:        allFiles,
-		UUIDsRevoked: allUUIDs,
-	}, nil
+	spinner.FinalMSG = formatRevokeSuccess(result)
+	return nil
 }
 
-func getFilesForUUID(spinner *spinner.Spinner, userUUID, displayName string) (*revokeContext, error) {
-	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
+func formatRevokeError(err error) string {
+	switch {
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return ui.Error.Sprint("✗") + " Kānuka has not been initialized" +
+			"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 
-	publicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
-	kanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
+	case errors.Is(err, kerrors.ErrUserNotFound):
+		// Extract email from error message if available.
+		msg := ui.Error.Sprint("✗") + " User not found in this project"
+		if strings.Contains(err.Error(), ":") {
+			parts := strings.SplitN(err.Error(), ":", 2)
+			if len(parts) == 2 {
+				email := strings.TrimSpace(parts[1])
+				msg = ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(email) + " not found in this project"
+			}
+		}
+		return msg + "\n" + ui.Info.Sprint("→") + " No devices found for this user"
 
-	Logger.Debugf("Checking for user files: %s, %s", publicKeyPath, kanukaKeyPath)
+	case errors.Is(err, kerrors.ErrDeviceNotFound):
+		return ui.Error.Sprint("✗") + " Device not found" +
+			"\n" + ui.Info.Sprint("→") + " " + err.Error()
 
-	publicKeyExists := false
-	kanukaKeyExists := false
+	case errors.Is(err, kerrors.ErrFileNotFound):
+		return ui.Error.Sprint("✗") + " File does not exist" +
+			"\n" + ui.Info.Sprint("→") + " " + err.Error()
 
-	if _, err := os.Stat(publicKeyPath); err == nil {
-		publicKeyExists = true
-	} else if !os.IsNotExist(err) {
-		Logger.Errorf("Failed to check public key file %s: %v", publicKeyPath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to check user's public key file\n" +
-			ui.Error.Sprint("Error: ") + err.Error() + "\n"
-		spinner.FinalMSG = finalMessage
-		return nil, nil
+	case errors.Is(err, kerrors.ErrInvalidFileType):
+		return ui.Error.Sprint("✗") + " Invalid file type" +
+			"\n" + ui.Info.Sprint("→") + " " + err.Error()
+
+	case strings.Contains(err.Error(), "toml:"):
+		return ui.Error.Sprint("✗") + " Failed to load project configuration." +
+			"\n\n" + ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML." +
+			"\n   " + ui.Code.Sprint(err.Error()) +
+			"\n\n   To fix this issue:" +
+			"\n   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") +
+			"\n   2. Or contact your project administrator for assistance"
+
+	default:
+		return ui.Error.Sprint("✗") + " Revoke failed: " + err.Error()
 	}
-
-	if _, err := os.Stat(kanukaKeyPath); err == nil {
-		kanukaKeyExists = true
-	} else if !os.IsNotExist(err) {
-		Logger.Errorf("Failed to check kanuka key file %s: %v", kanukaKeyPath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to check user's kanuka key file" +
-			"\n" + ui.Error.Sprint("Error: ") + err.Error()
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	if !publicKeyExists && !kanukaKeyExists {
-		Logger.Infof("User %s does not exist in the project", displayName)
-		finalMessage := ui.Error.Sprint("✗") + " User " + ui.Highlight.Sprint(displayName) + " does not exist in this project" +
-			"\n" + ui.Info.Sprint("→") + " No files found for this user"
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	var files []fileToRevoke
-	if publicKeyExists {
-		files = append(files, fileToRevoke{Path: publicKeyPath, Name: userUUID + ".pub"})
-	}
-	if kanukaKeyExists {
-		files = append(files, fileToRevoke{Path: kanukaKeyPath, Name: userUUID + ".kanuka"})
-	}
-
-	return &revokeContext{
-		DisplayName:  displayName,
-		Files:        files,
-		UUIDsRevoked: []string{userUUID},
-	}, nil
 }
 
-func getFilesByPath(spinner *spinner.Spinner) (*revokeContext, error) {
-	projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-	projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
+func formatRevokeSuccess(result *workflows.RevokeResult) string {
+	finalMessage := ui.Success.Sprint("✓") + " Access for " + ui.Highlight.Sprint(result.DisplayName) + " has been revoked successfully!" +
+		"\n" + ui.Info.Sprint("→") + " Revoked: "
 
-	Logger.Debugf("Project secrets path: %s, Project public key path: %s", projectSecretsPath, projectPublicKeyPath)
-
-	absFilePath, err := filepath.Abs(revokeFilePath)
-	if err != nil {
-		finalMessage := ui.Error.Sprint("✗") + " Failed to resolve file path: " + err.Error() + "\n"
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	Logger.Debugf("Absolute file path: %s", absFilePath)
-
-	fileInfo, err := os.Stat(absFilePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			Logger.Infof("File does not exist: %s", absFilePath)
-			finalMessage := ui.Error.Sprint("✗") + " File " + ui.Path.Sprint(absFilePath) + " does not exist."
-			spinner.FinalMSG = finalMessage
-			return nil, nil
+	for i, file := range result.RevokedFiles {
+		if i > 0 {
+			finalMessage += ", "
 		}
-		Logger.Errorf("Failed to check file %s: %v", absFilePath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to check file" +
-			"\n" + ui.Error.Sprint("Error: ") + err.Error()
-		spinner.FinalMSG = finalMessage
-		return nil, nil
+		finalMessage += ui.Highlight.Sprint(file)
 	}
 
-	if fileInfo.IsDir() {
-		finalMessage := ui.Error.Sprint("✗") + " Path " + ui.Path.Sprint(absFilePath) + " is a directory, not a file."
-		spinner.FinalMSG = finalMessage
-		return nil, nil
+	if result.RemainingUsers > 0 {
+		finalMessage += "\n" + ui.Info.Sprint("→") + " All secrets have been re-encrypted with a new key"
 	}
 
-	absProjectSecretsPath, err := filepath.Abs(projectSecretsPath)
-	if err != nil {
-		finalMessage := ui.Error.Sprint("✗") + " Failed to resolve project secrets path: " + err.Error() + "\n"
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
+	finalMessage += "\n" + ui.Warning.Sprint("⚠") + ui.Error.Sprint(" Warning: ") + ui.Highlight.Sprint(result.DisplayName) + " may still have access to old secrets from their local git history." +
+		"\n" + ui.Info.Sprint("→") + " If necessary, rotate your actual secret values after this revocation."
 
-	if filepath.Dir(absFilePath) != absProjectSecretsPath {
-		finalMessage := ui.Error.Sprint("✗") + " File " + ui.Path.Sprint(absFilePath) + " is not in the project secrets directory" +
-			"\n" + ui.Info.Sprint("→") + " Expected directory: " + ui.Path.Sprint(absProjectSecretsPath)
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	if filepath.Ext(absFilePath) != ".kanuka" {
-		finalMessage := ui.Error.Sprint("✗") + " File " + ui.Path.Sprint(absFilePath) + " is not a .kanuka file."
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	baseName := filepath.Base(absFilePath)
-	userUUID := baseName[:len(baseName)-len(".kanuka")]
-
-	Logger.Debugf("Extracted user UUID from file: %s", userUUID)
-
-	// Try to find email for display purposes
-	projectConfig, err := configs.LoadProjectConfig()
-	if err != nil {
-		Logger.Warnf("Could not load project config for display name lookup: %v", err)
-	}
-	displayName := userUUID
-	if projectConfig != nil {
-		if email, exists := projectConfig.Users[userUUID]; exists && email != "" {
-			displayName = email
-		}
-	}
-
-	var files []fileToRevoke
-	files = append(files, fileToRevoke{Path: absFilePath, Name: baseName})
-
-	publicKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
-	if _, err := os.Stat(publicKeyPath); err == nil {
-		files = append(files, fileToRevoke{Path: publicKeyPath, Name: userUUID + ".pub"})
-	} else if !os.IsNotExist(err) {
-		Logger.Errorf("Failed to check public key file %s: %v", publicKeyPath, err)
-		finalMessage := ui.Error.Sprint("✗") + " Failed to check public key file" +
-			"\n" + ui.Error.Sprint("Error: ") + err.Error()
-		spinner.FinalMSG = finalMessage
-		return nil, nil
-	}
-
-	return &revokeContext{
-		DisplayName:  displayName,
-		Files:        files,
-		UUIDsRevoked: []string{userUUID},
-	}, nil
+	return finalMessage
 }
 
-func printRevokeDryRun(spinner *spinner.Spinner, ctx *revokeContext) error {
-	spinner.Stop()
-
+func printRevokeDryRunResult(result *workflows.RevokeResult) {
 	fmt.Println()
-	fmt.Println(ui.Warning.Sprint("[dry-run]") + " Would revoke access for " + ui.Highlight.Sprint(ctx.DisplayName))
+	fmt.Println(ui.Warning.Sprint("[dry-run]") + " Would revoke access for " + ui.Highlight.Sprint(result.DisplayName))
 	fmt.Println()
 
 	// List files that would be deleted.
 	fmt.Println("Files that would be deleted:")
-	for _, file := range ctx.Files {
+	for _, file := range result.FilesToDelete {
 		fmt.Println("  - " + ui.Error.Sprint(file.Path))
 	}
 	fmt.Println()
 
 	// Show config changes.
 	fmt.Println("Config changes:")
-	for _, uuid := range ctx.UUIDsRevoked {
+	for _, uuid := range result.UUIDsRevoked {
 		fmt.Println("  - Remove user " + ui.Highlight.Sprint(uuid) + " from project")
 	}
 	fmt.Println()
 
 	// Show re-encryption impact.
-	allUsers, err := secrets.GetAllUsersInProject()
-	if err == nil && len(allUsers) > len(ctx.UUIDsRevoked) {
-		remainingCount := len(allUsers) - len(ctx.UUIDsRevoked)
+	if len(result.AllUsers) > len(result.UUIDsRevoked) {
 		fmt.Println("Post-revocation actions:")
 		fmt.Printf("  - Generate new encryption key\n")
-		fmt.Printf("  - Re-encrypt symmetric key for %d remaining user(s)\n", remainingCount)
+		fmt.Printf("  - Re-encrypt symmetric key for %d remaining user(s)\n", result.RemainingUsers)
 
-		// Count secret files that would be re-encrypted.
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		if projectPath != "" {
-			kanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
-			if err == nil && len(kanukaFiles) > 0 {
-				fmt.Printf("  - Re-encrypt %d secret file(s) with new key\n", len(kanukaFiles))
-			}
+		if result.KanukaFilesCount > 0 {
+			fmt.Printf("  - Re-encrypt %d secret file(s) with new key\n", result.KanukaFilesCount)
 		}
 		fmt.Println()
 	}
 
 	// Warning about git history.
-	fmt.Println(ui.Warning.Sprint("⚠") + " Warning: After revocation, " + ctx.DisplayName + " may still have access to old secrets from git history.")
+	fmt.Println(ui.Warning.Sprint("⚠") + " Warning: After revocation, " + result.DisplayName + " may still have access to old secrets from git history.")
 	fmt.Println()
 
 	fmt.Println(ui.Info.Sprint("No changes made.") + " Run without --dry-run to execute.")
-
-	spinner.FinalMSG = ""
-	return nil
 }
 
-func revokeFiles(spinner *spinner.Spinner, ctx *revokeContext) error {
-	if len(ctx.Files) == 0 {
-		return nil
-	}
-
-	// If dry-run, print preview and exit early.
-	if revokeDryRun {
-		return printRevokeDryRun(spinner, ctx)
-	}
-
-	displayName := ctx.DisplayName
-	filesToRevoke := ctx.Files
-
-	// Load user config for current user UUID
-	userConfig, err := configs.EnsureUserConfig()
-	if err != nil {
-		return Logger.ErrorfAndReturn("failed to load user config: %v", err)
-	}
-	currentUserUUID := userConfig.User.UUID
-
-	// Load project config for project UUID and updating
-	projectConfig, err := configs.LoadProjectConfig()
-	if err != nil {
-		if strings.Contains(err.Error(), "toml:") {
-			Logger.Errorf("Failed to load project config: %v", err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to load project configuration." +
-				"\n\n" + ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML." +
-				"\n   " + ui.Code.Sprint(err.Error()) +
-				"\n\n   To fix this issue:" +
-				"\n   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") +
-				"\n   2. Or contact your project administrator for assistance"
-			spinner.FinalMSG = finalMessage
-			spinner.Stop()
-			return nil
-		}
-		return Logger.ErrorfAndReturn("failed to load project config: %v", err)
-	}
-	projectUUID := projectConfig.Project.UUID
-
-	Logger.Debugf("Current user UUID: %s, Project UUID: %s", currentUserUUID, projectUUID)
-
-	var revokedFiles []string
-	var revokeErrors []error
-
-	for _, file := range filesToRevoke {
-		Logger.Debugf("Revoking file: %s", file.Path)
-		if err := os.Remove(file.Path); err != nil {
-			Logger.Errorf("Failed to revoke file %s: %v", file.Path, err)
-			revokeErrors = append(revokeErrors, err)
-		} else {
-			revokedFiles = append(revokedFiles, file.Name)
-			Logger.Infof("Successfully revoked file: %s", file.Name)
-		}
-	}
-
-	if len(revokeErrors) > 0 {
-		finalMessage := ui.Error.Sprint("✗") + " Failed to completely revoke files for " + ui.Highlight.Sprint(displayName)
-		for _, err := range revokeErrors {
-			finalMessage += "\n" + ui.Error.Sprint("Error: ") + err.Error()
-		}
-		if len(revokedFiles) > 0 {
-			finalMessage += "\n" + ui.Warning.Sprint("Warning: ") + "Some files were revoked successfully"
-		}
-		spinner.FinalMSG = finalMessage
-		return nil
-	}
-
-	// Remove revoked UUIDs from project config
-	for _, uuid := range ctx.UUIDsRevoked {
-		Logger.Debugf("Removing UUID %s from project config", uuid)
-		projectConfig.RemoveDevice(uuid)
-	}
-
-	// Save updated project config
-	if err := configs.SaveProjectConfig(projectConfig); err != nil {
-		Logger.Errorf("Failed to update project config: %v", err)
-		finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to update project config: " + err.Error()
-		spinner.FinalMSG = finalMessage
-		return nil
-	}
-	Logger.Infof("Project config updated - removed %d device(s)", len(ctx.UUIDsRevoked))
-
-	allUsers, err := secrets.GetAllUsersInProject()
-	if err != nil {
-		Logger.Errorf("Failed to get list of users: %v", err)
-		finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to rotate key: " + err.Error()
-		spinner.FinalMSG = finalMessage
-		return nil
-	}
-
-	if len(allUsers) > 0 {
-		spinner.Suffix = " Re-encrypting secrets for remaining users..."
-		Logger.Infof("Re-encrypting secrets for %d remaining users", len(allUsers))
-
-		privateKey, err := loadRevokePrivateKey(projectUUID)
-		if err != nil {
-			Logger.Errorf("Failed to load private key: %v", err)
-			keySource := "from disk"
-			if revokePrivateKeyStdin {
-				keySource = "from stdin"
-			}
-			finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to load private key " + keySource + ": " + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Use SyncSecrets to re-encrypt all secrets with a new key.
-		// This ensures the revoked user cannot decrypt any secrets, even if they
-		// previously copied the encrypted files and had the old symmetric key.
-		syncOpts := secrets.SyncOptions{
-			ExcludeUsers: ctx.UUIDsRevoked,
-			Verbose:      verbose,
-			Debug:        debug,
-		}
-
-		syncResult, err := secrets.SyncSecrets(privateKey, syncOpts)
-		if err != nil {
-			Logger.Errorf("Failed to re-encrypt secrets: %v", err)
-			finalMessage := ui.Error.Sprint("✗") + " Files were revoked but failed to re-encrypt secrets: " + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		Logger.Infof("Secrets re-encrypted successfully: %d secrets for %d users", syncResult.SecretsProcessed, syncResult.UsersProcessed)
-	}
-
-	Logger.Infof("Files revocation completed successfully for: %s", displayName)
-
-	// Log to audit trail.
-	auditEntry := audit.LogWithUser("revoke")
-	auditEntry.TargetUser = displayName
-	if len(ctx.UUIDsRevoked) > 0 {
-		auditEntry.TargetUUID = ctx.UUIDsRevoked[0]
-	}
-	if revokeDevice != "" {
-		auditEntry.Device = revokeDevice
-	}
-	audit.Log(auditEntry)
-
-	finalMessage := ui.Success.Sprint("✓") + " Access for " + ui.Highlight.Sprint(displayName) + " has been revoked successfully!" +
-		"\n" + ui.Info.Sprint("→") + " Revoked: "
-	for i, file := range revokedFiles {
-		if i > 0 {
-			finalMessage += ", "
-		}
-		finalMessage += ui.Highlight.Sprint(file)
-	}
-	if len(allUsers) > 0 {
-		finalMessage += "\n" + ui.Info.Sprint("→") + " All secrets have been re-encrypted with a new key"
-	}
-	finalMessage += "\n" + ui.Warning.Sprint("⚠") + ui.Error.Sprint(" Warning: ") + ui.Highlight.Sprint(displayName) + " may still have access to old secrets from their local git history." +
-		"\n" + ui.Info.Sprint("→") + " If necessary, rotate your actual secret values after this revocation."
-	spinner.FinalMSG = finalMessage
-	return nil
+// GetRevokeCmd returns the revoke command for use in tests.
+func GetRevokeCmd() *cobra.Command {
+	return revokeCmd
 }
