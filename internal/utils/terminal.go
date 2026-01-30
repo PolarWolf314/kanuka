@@ -79,3 +79,59 @@ func IsTTYAvailable() bool {
 
 	return term.IsTerminal(int(tty.Fd()))
 }
+
+// WriteToTTY writes content directly to the terminal (bypassing stdout/stderr).
+// On Unix, writes to /dev/tty. On Windows, writes to CON.
+// Returns an error if the TTY cannot be opened.
+func WriteToTTY(content string) error {
+	ttyPath := "/dev/tty"
+	if runtime.GOOS == "windows" {
+		ttyPath = "CON"
+	}
+
+	tty, err := os.OpenFile(ttyPath, os.O_WRONLY, 0)
+	if err != nil {
+		return fmt.Errorf("cannot open %s for writing: %w", ttyPath, err)
+	}
+	defer tty.Close()
+
+	_, err = tty.WriteString(content)
+	if err != nil {
+		return fmt.Errorf("failed to write to TTY: %w", err)
+	}
+
+	return nil
+}
+
+// ClearScreen clears the terminal screen using ANSI escape sequences.
+// Writes directly to TTY to ensure it works even when stdout is redirected.
+func ClearScreen() error {
+	// ANSI escape sequence: clear screen and move cursor to top-left.
+	return WriteToTTY("\033[2J\033[H")
+}
+
+// WaitForEnterFromTTY waits for the user to press Enter on the TTY.
+// This reads from /dev/tty (or CON on Windows) directly.
+func WaitForEnterFromTTY() error {
+	ttyPath := "/dev/tty"
+	if runtime.GOOS == "windows" {
+		ttyPath = "CON"
+	}
+
+	tty, err := os.Open(ttyPath)
+	if err != nil {
+		return fmt.Errorf("cannot open %s for reading: %w", ttyPath, err)
+	}
+	defer tty.Close()
+
+	buf := make([]byte, 1)
+	for {
+		_, err := tty.Read(buf)
+		if err != nil {
+			return fmt.Errorf("failed to read from TTY: %w", err)
+		}
+		if buf[0] == '\n' || buf[0] == '\r' {
+			return nil
+		}
+	}
+}
