@@ -2,20 +2,15 @@ package cmd
 
 import (
 	"bufio"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
+	"context"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/PolarWolf314/kanuka/internal/audit"
-	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
 
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
@@ -88,84 +83,7 @@ Examples:
 		spinner, cleanup := startSpinner("Rotating keypair...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
-		}
-
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		Logger.Debugf("Project path: %s", projectPath)
-
-		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
-				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Ensure user config has UUID
-		Logger.Debugf("Ensuring user config with UUID")
-		userConfig, err := configs.EnsureUserConfig()
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to ensure user config: %v", err)
-		}
-		userUUID := userConfig.User.UUID
-		Logger.Debugf("Current user UUID: %s", userUUID)
-
-		// Load project config
-		Logger.Debugf("Loading project config")
-		projectConfig, err := configs.LoadProjectConfig()
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to load project config: %v", err)
-		}
-		projectUUID := projectConfig.Project.UUID
-		Logger.Debugf("Project UUID: %s", projectUUID)
-
-		// Check if user has access to this project
-		projectSecretsPath := configs.ProjectKanukaSettings.ProjectSecretsPath
-		userKanukaKeyPath := filepath.Join(projectSecretsPath, userUUID+".kanuka")
-
-		if _, err := os.Stat(userKanukaKeyPath); os.IsNotExist(err) {
-			finalMessage := ui.Error.Sprint("✗") + " You don't have access to this project\n" +
-				ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " and ask someone to register you"
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		// Load current private key
-		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
-		Logger.Debugf("Loading private key from: %s", privateKeyPath)
-
-		oldPrivateKey, err := secrets.LoadPrivateKey(privateKeyPath)
-		if err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Couldn't load your private key from " + ui.Path.Sprint(privateKeyPath) +
-				"\n\n" + ui.Error.Sprint("Error: ") + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-		Logger.Infof("Old private key loaded successfully")
-
-		// Get and decrypt symmetric key
-		Logger.Debugf("Getting encrypted symmetric key")
-		encryptedSymKey, err := secrets.GetProjectKanukaKey(userUUID)
-		if err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Couldn't get your Kanuka key from " + ui.Path.Sprint(userKanukaKeyPath) +
-				"\n\n" + ui.Error.Sprint("Error: ") + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-
-		Logger.Debugf("Decrypting symmetric key with old private key")
-		symKey, err := secrets.DecryptWithPrivateKey(encryptedSymKey, oldPrivateKey)
-		if err != nil {
-			finalMessage := ui.Error.Sprint("✗") + " Failed to decrypt your Kanuka key" +
-				"\n" + ui.Error.Sprint("Error: ") + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-		Logger.Infof("Symmetric key decrypted successfully")
-
-		// Confirmation prompt (unless --force)
+		// Confirmation prompt (unless --force) - must happen before workflow.
 		if !rotateForce {
 			if !confirmRotate(spinner) {
 				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Keypair rotation cancelled."
@@ -173,107 +91,67 @@ Examples:
 			}
 		}
 
-		// Generate new keypair
-		Logger.Debugf("Generating new RSA keypair")
-		newPrivateKey, newPublicKey, err := generateNewKeypair()
+		opts := workflows.RotateOptions{
+			Force: rotateForce,
+		}
+
+		result, err := workflows.Rotate(context.Background(), opts)
 		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to generate new keypair: %v", err)
+			spinner.FinalMSG = formatRotateError(err)
+			if isUnexpectedError(err) {
+				return err
+			}
+			return nil
 		}
-		Logger.Infof("New keypair generated successfully")
-
-		// Re-encrypt symmetric key with new public key
-		Logger.Debugf("Encrypting symmetric key with new public key")
-		newEncryptedSymKey, err := secrets.EncryptWithPublicKey(symKey, newPublicKey)
-		if err != nil {
-			return Logger.ErrorfAndReturn("Failed to encrypt symmetric key with new public key: %v", err)
-		}
-		Logger.Infof("Symmetric key re-encrypted successfully")
-
-		// Save new private key to user's key directory
-		Logger.Debugf("Saving new private key to: %s", privateKeyPath)
-		if err := savePrivateKey(newPrivateKey, privateKeyPath); err != nil {
-			return Logger.ErrorfAndReturn("Failed to save new private key: %v", err)
-		}
-		Logger.Infof("New private key saved successfully")
-
-		// Save new public key to user's key directory
-		publicKeyPath := configs.GetPublicKeyPath(projectUUID)
-		Logger.Debugf("Saving new public key to: %s", publicKeyPath)
-		if err := secrets.SavePublicKeyToFile(newPublicKey, publicKeyPath); err != nil {
-			return Logger.ErrorfAndReturn("Failed to save new public key: %v", err)
-		}
-		Logger.Infof("New public key saved to user key directory")
-
-		// Copy new public key to project
-		projectPublicKeyPath := configs.ProjectKanukaSettings.ProjectPublicKeyPath
-		projectPubKeyPath := filepath.Join(projectPublicKeyPath, userUUID+".pub")
-		Logger.Debugf("Copying new public key to project: %s", projectPubKeyPath)
-		if err := secrets.SavePublicKeyToFile(newPublicKey, projectPubKeyPath); err != nil {
-			return Logger.ErrorfAndReturn("Failed to copy public key to project: %v", err)
-		}
-		Logger.Infof("New public key copied to project")
-
-		// Save new encrypted symmetric key
-		Logger.Debugf("Saving new encrypted symmetric key")
-		if err := secrets.SaveKanukaKeyToProject(userUUID, newEncryptedSymKey); err != nil {
-			return Logger.ErrorfAndReturn("Failed to save new encrypted symmetric key: %v", err)
-		}
-		Logger.Infof("New encrypted symmetric key saved")
-
-		// Update key metadata
-		Logger.Debugf("Updating key metadata")
-		metadata := &configs.KeyMetadata{
-			ProjectName:    projectConfig.Project.Name,
-			ProjectPath:    configs.ProjectKanukaSettings.ProjectPath,
-			CreatedAt:      time.Now(),
-			LastAccessedAt: time.Now(),
-		}
-		if err := configs.SaveKeyMetadata(projectUUID, metadata); err != nil {
-			// Non-critical - just log the error
-			Logger.Errorf("Failed to update key metadata: %v", err)
-		}
-
-		Logger.Infof("Keypair rotation completed successfully")
-
-		// Log to audit trail.
-		auditEntry := audit.LogWithUser("rotate")
-		audit.Log(auditEntry)
 
 		finalMessage := ui.Success.Sprint("✓") + " Keypair rotated successfully\n\n" +
 			"Your new public key has been added to the project.\n" +
 			"Other users do not need to take any action.\n\n" +
-			ui.Info.Sprint("→") + " Commit the updated " + ui.Path.Sprint(".kanuka/public_keys/"+userUUID+".pub") + " file"
+			ui.Info.Sprint("→") + " Commit the updated " + ui.Path.Sprint(".kanuka/public_keys/"+result.UserUUID+".pub") + " file"
 		spinner.FinalMSG = finalMessage
 		return nil
 	},
 }
 
-// generateNewKeypair generates a new RSA keypair.
-func generateNewKeypair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate RSA key: %w", err)
+// formatRotateError formats workflow errors into user-friendly messages.
+func formatRotateError(err error) string {
+	switch {
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
+			"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " instead"
+
+	case errors.Is(err, kerrors.ErrNoAccess):
+		return ui.Error.Sprint("✗") + " You don't have access to this project\n" +
+			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " and ask someone to register you"
+
+	case errors.Is(err, kerrors.ErrPrivateKeyNotFound):
+		return ui.Error.Sprint("✗") + " Couldn't load your private key\n" +
+			ui.Error.Sprint("Error: ") + err.Error()
+
+	case errors.Is(err, kerrors.ErrKeyDecryptFailed):
+		return ui.Error.Sprint("✗") + " Failed to decrypt your Kanuka key\n" +
+			ui.Error.Sprint("Error: ") + err.Error()
+
+	default:
+		return ui.Error.Sprint("✗") + " Failed to rotate keypair\n" +
+			ui.Error.Sprint("Error: ") + err.Error()
 	}
-	return privateKey, &privateKey.PublicKey, nil
 }
 
-// savePrivateKey saves an RSA private key to a file in PEM format.
-func savePrivateKey(privateKey *rsa.PrivateKey, filePath string) error {
-	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
+// isUnexpectedError returns true if the error is unexpected and should cause a non-zero exit.
+func isUnexpectedError(err error) bool {
+	// Expected errors (user-facing issues) that should exit cleanly.
+	expectedErrors := []error{
+		kerrors.ErrProjectNotInitialized,
+		kerrors.ErrNoAccess,
+		kerrors.ErrPrivateKeyNotFound,
+		kerrors.ErrKeyDecryptFailed,
 	}
 
-	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
-	privPem := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privBytes,
+	for _, expected := range expectedErrors {
+		if errors.Is(err, expected) {
+			return false
+		}
 	}
-	pemBytes := pem.EncodeToMemory(privPem)
-
-	if err := os.WriteFile(filePath, pemBytes, 0600); err != nil {
-		return fmt.Errorf("failed to write private key: %w", err)
-	}
-
-	return nil
+	return true
 }
