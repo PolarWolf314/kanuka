@@ -94,6 +94,8 @@ func ResetGlobalState() {
 	resetImportCommandState()
 	// Reset the log command flags
 	resetLogCommandState()
+	// Reset the ci-init command flags
+	resetCIInitCommandState()
 	// Reset Cobra flag state to prevent pollution between tests
 	resetCobraFlagState()
 }
@@ -187,6 +189,13 @@ func resetCobraFlagState() {
 	// Reset the import command flags specifically
 	if importCmd != nil && importCmd.Flags() != nil {
 		importCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Changed = false
+		})
+	}
+
+	// Reset the ci-init command flags specifically
+	if ciInitCmd != nil && ciInitCmd.Flags() != nil {
+		ciInitCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Changed = false
 		})
 	}
