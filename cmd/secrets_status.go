@@ -1,16 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"sort"
-	"strings"
 
-	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,37 +24,21 @@ func resetStatusCommandState() {
 	statusJSONOutput = false
 }
 
-// FileStatus represents the encryption status of a secret file.
-type FileStatus string
-
-const (
-	// StatusCurrent means the encrypted file is newer than the plaintext.
-	StatusCurrent FileStatus = "current"
-	// StatusStale means the plaintext was modified after encryption.
-	StatusStale FileStatus = "stale"
-	// StatusUnencrypted means plaintext exists with no encrypted version.
-	StatusUnencrypted FileStatus = "unencrypted"
-	// StatusEncryptedOnly means encrypted exists with no plaintext.
-	StatusEncryptedOnly FileStatus = "encrypted_only"
-)
-
-// FileStatusInfo holds information about a file's encryption status.
-type FileStatusInfo struct {
-	Path           string     `json:"path"`
-	Status         FileStatus `json:"status"`
-	PlaintextMtime string     `json:"plaintext_mtime,omitempty"`
-	EncryptedMtime string     `json:"encrypted_mtime,omitempty"`
+// statusJSONResult holds the JSON-serializable status result.
+type statusJSONResult struct {
+	ProjectName string            `json:"project"`
+	Files       []statusJSONFile  `json:"files"`
+	Summary     statusJSONSummary `json:"summary"`
 }
 
-// StatusResult holds the result of the status command.
-type StatusResult struct {
-	ProjectName string           `json:"project"`
-	Files       []FileStatusInfo `json:"files"`
-	Summary     StatusSummary    `json:"summary"`
+type statusJSONFile struct {
+	Path           string `json:"path"`
+	Status         string `json:"status"`
+	PlaintextMtime string `json:"plaintext_mtime,omitempty"`
+	EncryptedMtime string `json:"encrypted_mtime,omitempty"`
 }
 
-// StatusSummary holds counts of files by status.
-type StatusSummary struct {
+type statusJSONSummary struct {
 	Current       int `json:"current"`
 	Stale         int `json:"stale"`
 	Unencrypted   int `json:"unencrypted"`
@@ -79,67 +63,17 @@ Use --json for machine-readable output.`,
 		spinner, cleanup := startSpinner("Checking file statuses...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to initialize project settings."
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
-		}
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		Logger.Debugf("Project path: %s", projectPath)
-
-		if projectPath == "" {
+		result, err := workflows.Status(context.Background(), workflows.StatusOptions{})
+		if err != nil {
 			if statusJSONOutput {
-				fmt.Println(`{"error": "Kanuka has not been initialized"}`)
+				fmt.Printf(`{"error": "%s"}`+"\n", formatStatusErrorJSON(err))
 				return nil
 			}
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Kānuka has not been initialized."
-			fmt.Println(ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first")
+			spinner.FinalMSG = formatStatusError(err)
+			if isStatusUnexpectedError(err) {
+				return err
+			}
 			return nil
-		}
-
-		// Load project config for project name.
-		projectConfig, err := configs.LoadProjectConfig()
-		if err != nil {
-			if strings.Contains(err.Error(), "toml:") {
-				if statusJSONOutput {
-					fmt.Println(`{"error": "Failed to load project configuration: config.toml is not valid TOML"}`)
-					return nil
-				}
-				spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to load project configuration."
-				fmt.Println()
-				fmt.Println(ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.")
-				fmt.Println("   " + ui.Code.Sprint(err.Error()))
-				fmt.Println()
-				fmt.Println("   To fix this issue:")
-				fmt.Println("   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml"))
-				fmt.Println("   2. Or contact your project administrator for assistance")
-				return nil
-			}
-			spinner.FinalMSG = ui.Error.Sprint("✗") + " Failed to load project configuration\n"
-			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
-		}
-		projectName := projectConfig.Project.Name
-		if projectName == "" {
-			projectName = configs.ProjectKanukaSettings.ProjectName
-		}
-		Logger.Debugf("Project name: %s", projectName)
-
-		// Discover all files and their statuses.
-		files, err := discoverFileStatuses(projectPath)
-		if err != nil {
-			return Logger.ErrorfAndReturn("failed to discover file statuses: %v", err)
-		}
-
-		// Sort files by path for consistent output.
-		sort.Slice(files, func(i, j int) bool {
-			return files[i].Path < files[j].Path
-		})
-
-		// Build result.
-		result := StatusResult{
-			ProjectName: projectName,
-			Files:       files,
-			Summary:     calculateStatusSummary(files),
 		}
 
 		// Output results.
@@ -156,124 +90,85 @@ Use --json for machine-readable output.`,
 	},
 }
 
-// discoverFileStatuses finds all .env and .kanuka files and determines their status.
-func discoverFileStatuses(projectPath string) ([]FileStatusInfo, error) {
-	Logger.Debugf("Discovering file statuses in: %s", projectPath)
-
-	// Find all plaintext .env files (excluding .kanuka directory).
-	envFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find env files: %w", err)
-	}
-	Logger.Debugf("Found %d .env files", len(envFiles))
-
-	// Find all encrypted .kanuka files.
-	kanukaFiles, err := secrets.FindEnvOrKanukaFiles(projectPath, []string{}, true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find kanuka files: %w", err)
-	}
-	Logger.Debugf("Found %d .kanuka files", len(kanukaFiles))
-
-	// Build a set of all base paths (without .kanuka extension).
-	basePaths := make(map[string]bool)
-	for _, f := range envFiles {
-		basePaths[f] = true
-		Logger.Debugf("Found env file: %s", f)
-	}
-	for _, f := range kanukaFiles {
-		basePath := strings.TrimSuffix(f, ".kanuka")
-		basePaths[basePath] = true
-		Logger.Debugf("Found kanuka file: %s (base: %s)", f, basePath)
-	}
-
-	// Determine status for each base path.
-	var files []FileStatusInfo
-	for basePath := range basePaths {
-		status, envMtime, kanukaMtime := determineFileStatus(basePath, projectPath)
-
-		// Convert to relative path for display.
-		relPath, err := filepath.Rel(projectPath, basePath)
-		if err != nil {
-			relPath = basePath
-		}
-
-		files = append(files, FileStatusInfo{
-			Path:           relPath,
-			Status:         status,
-			PlaintextMtime: envMtime,
-			EncryptedMtime: kanukaMtime,
-		})
-		Logger.Debugf("File %s: status=%s", relPath, status)
-	}
-
-	return files, nil
-}
-
-// determineFileStatus determines the encryption status of a file.
-func determineFileStatus(basePath, projectPath string) (FileStatus, string, string) {
-	kanukaPath := basePath + ".kanuka"
-
-	envInfo, envErr := os.Stat(basePath)
-	kanukaInfo, kanukaErr := os.Stat(kanukaPath)
-
-	envExists := envErr == nil
-	kanukaExists := kanukaErr == nil
-
-	var envMtime, kanukaMtime string
-	if envExists {
-		envMtime = envInfo.ModTime().Format("2006-01-02T15:04:05Z07:00")
-	}
-	if kanukaExists {
-		kanukaMtime = kanukaInfo.ModTime().Format("2006-01-02T15:04:05Z07:00")
-	}
-
+// formatStatusError formats workflow errors into user-friendly messages.
+func formatStatusError(err error) string {
 	switch {
-	case envExists && kanukaExists:
-		// Both exist - check modification times.
-		if kanukaInfo.ModTime().After(envInfo.ModTime()) {
-			return StatusCurrent, envMtime, kanukaMtime
-		}
-		return StatusStale, envMtime, kanukaMtime
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return ui.Error.Sprint("✗") + " Kānuka has not been initialized.\n" +
+			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
 
-	case envExists && !kanukaExists:
-		return StatusUnencrypted, envMtime, ""
-
-	case !envExists && kanukaExists:
-		return StatusEncryptedOnly, "", kanukaMtime
+	case errors.Is(err, kerrors.ErrInvalidProjectConfig):
+		return ui.Error.Sprint("✗") + " Failed to load project configuration.\n\n" +
+			ui.Info.Sprint("→") + " The .kanuka/config.toml file is not valid TOML.\n\n" +
+			"   To fix this issue:\n" +
+			"   1. Restore the file from git: " + ui.Code.Sprint("git checkout .kanuka/config.toml") + "\n" +
+			"   2. Or contact your project administrator for assistance"
 
 	default:
-		// Neither exists - shouldn't happen.
-		return StatusUnencrypted, "", ""
+		return ui.Error.Sprint("✗") + " Failed to check status\n" +
+			ui.Error.Sprint("Error: ") + err.Error()
 	}
 }
 
-// calculateStatusSummary calculates the counts of files by status.
-func calculateStatusSummary(files []FileStatusInfo) StatusSummary {
-	var summary StatusSummary
-	for _, file := range files {
-		switch file.Status {
-		case StatusCurrent:
-			summary.Current++
-		case StatusStale:
-			summary.Stale++
-		case StatusUnencrypted:
-			summary.Unencrypted++
-		case StatusEncryptedOnly:
-			summary.EncryptedOnly++
+// formatStatusErrorJSON formats errors for JSON output.
+func formatStatusErrorJSON(err error) string {
+	switch {
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return "Kanuka has not been initialized"
+
+	case errors.Is(err, kerrors.ErrInvalidProjectConfig):
+		return "Failed to load project configuration: config.toml is not valid TOML"
+
+	default:
+		return err.Error()
+	}
+}
+
+// isStatusUnexpectedError returns true if the error is unexpected and should cause a non-zero exit.
+func isStatusUnexpectedError(err error) bool {
+	expectedErrors := []error{
+		kerrors.ErrProjectNotInitialized,
+		kerrors.ErrInvalidProjectConfig,
+	}
+
+	for _, expected := range expectedErrors {
+		if errors.Is(err, expected) {
+			return false
 		}
 	}
-	return summary
+	return true
 }
 
 // outputStatusJSON outputs the result as JSON.
-func outputStatusJSON(result StatusResult) error {
+func outputStatusJSON(result *workflows.StatusResult) error {
+	// Convert to JSON-serializable format.
+	jsonResult := statusJSONResult{
+		ProjectName: result.ProjectName,
+		Files:       make([]statusJSONFile, len(result.Files)),
+		Summary: statusJSONSummary{
+			Current:       result.Summary.Current,
+			Stale:         result.Summary.Stale,
+			Unencrypted:   result.Summary.Unencrypted,
+			EncryptedOnly: result.Summary.EncryptedOnly,
+		},
+	}
+
+	for i, f := range result.Files {
+		jsonResult.Files[i] = statusJSONFile{
+			Path:           f.Path,
+			Status:         string(f.Status),
+			PlaintextMtime: f.PlaintextMtime,
+			EncryptedMtime: f.EncryptedMtime,
+		}
+	}
+
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(result)
+	return encoder.Encode(jsonResult)
 }
 
 // printStatusTable prints a formatted table of file statuses.
-func printStatusTable(result StatusResult) {
+func printStatusTable(result *workflows.StatusResult) {
 	fmt.Printf("Project: %s\n", ui.Highlight.Sprint(result.ProjectName))
 	fmt.Println()
 
@@ -309,13 +204,13 @@ func printStatusTable(result StatusResult) {
 
 		var statusStr string
 		switch file.Status {
-		case StatusCurrent:
+		case workflows.StatusCurrent:
 			statusStr = ui.Success.Sprint("✓") + " encrypted (up to date)"
-		case StatusStale:
+		case workflows.StatusStale:
 			statusStr = ui.Warning.Sprint("⚠") + " stale (plaintext modified after encryption)"
-		case StatusUnencrypted:
+		case workflows.StatusUnencrypted:
 			statusStr = ui.Error.Sprint("✗") + " not encrypted"
-		case StatusEncryptedOnly:
+		case workflows.StatusEncryptedOnly:
 			statusStr = ui.Muted.Sprint("◌") + " encrypted only (no plaintext)"
 		}
 
