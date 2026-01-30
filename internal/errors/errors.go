@@ -60,6 +60,9 @@ var (
 
 	// ErrInvalidFileType indicates the file is not of the expected type.
 	ErrInvalidFileType = errors.New("invalid file type")
+
+	// ErrInvalidArchive indicates the archive structure is invalid.
+	ErrInvalidArchive = errors.New("invalid archive structure")
 )
 
 // User errors indicate issues with user-related operations.
