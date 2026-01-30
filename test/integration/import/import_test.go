@@ -668,14 +668,19 @@ func TestImport_MissingConfig(t *testing.T) {
 	outFile.Close()
 
 	// Try to import incomplete archive.
-	_, err = shared.CaptureOutput(func() error {
+	output, err := shared.CaptureOutput(func() error {
 		testCmd := shared.CreateTestCLIWithArgs("import", []string{archivePath}, nil, nil, false, false)
 		return testCmd.Execute()
 	})
 
-	// Should fail with validation error.
-	if err == nil {
-		t.Errorf("Expected error for archive missing config.toml, got none")
+	// Command returns nil for expected errors but shows error in output.
+	if err != nil {
+		t.Errorf("Command returned unexpected error: %v", err)
+	}
+
+	// Should show validation error in output.
+	if !strings.Contains(output, "✗") || !strings.Contains(output, "Invalid archive") {
+		t.Errorf("Expected archive validation error in output, got: %s", output)
 	}
 }
 
@@ -701,14 +706,19 @@ func TestImport_ArchiveNotFound(t *testing.T) {
 	shared.SetupTestEnvironment(t, tempDir, tempUserDir, originalWd, originalUserSettings)
 
 	// Try to import non-existent archive.
-	_, err = shared.CaptureOutput(func() error {
+	output, err := shared.CaptureOutput(func() error {
 		testCmd := shared.CreateTestCLIWithArgs("import", []string{"/path/to/nonexistent.tar.gz"}, nil, nil, false, false)
 		return testCmd.Execute()
 	})
 
-	// Should fail.
-	if err == nil {
-		t.Errorf("Expected error for non-existent archive, got none")
+	// Command returns nil for expected errors but shows error in output.
+	if err != nil {
+		t.Errorf("Command returned unexpected error: %v", err)
+	}
+
+	// Should show file not found error in output.
+	if !strings.Contains(output, "✗") || !strings.Contains(output, "not found") {
+		t.Errorf("Expected file not found error in output, got: %s", output)
 	}
 }
 
