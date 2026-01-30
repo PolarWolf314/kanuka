@@ -332,6 +332,38 @@ func GenerateRSAKeyPair(privatePath string, publicPath string) error {
 	return nil
 }
 
+// GenerateRSAKeyPairInMemory generates a new RSA key pair and returns them without saving to disk.
+// Returns the private key, private key PEM bytes, and any error.
+func GenerateRSAKeyPairInMemory() (*rsa.PrivateKey, []byte, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate RSA key pair: %w", err)
+	}
+
+	// Encode private key to PEM format.
+	privBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privPem := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privBytes,
+	}
+	privateKeyPEM := pem.EncodeToMemory(privPem)
+
+	return privateKey, privateKeyPEM, nil
+}
+
+// GetPublicKeyPEM returns the PEM-encoded public key from an RSA private key.
+func GetPublicKeyPEM(privateKey *rsa.PrivateKey) ([]byte, error) {
+	pubASN1, err := x509.MarshalPKIXPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal public key: %w", err)
+	}
+	pubPem := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubASN1,
+	}
+	return pem.EncodeToMemory(pubPem), nil
+}
+
 // CreateAndSaveRSAKeyPair generates a new RSA key pair for the project and saves them in the user's directory.
 // It uses the project UUID from the project config to create a subdirectory for the key files.
 // The new structure is: ~/.local/share/kanuka/keys/{project_uuid}/privkey, pubkey.pub, metadata.toml.
