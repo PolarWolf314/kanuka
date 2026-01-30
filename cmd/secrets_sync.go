@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
-	"github.com/PolarWolf314/kanuka/internal/audit"
-	"github.com/PolarWolf314/kanuka/internal/configs"
-	"github.com/PolarWolf314/kanuka/internal/secrets"
+	kerrors "github.com/PolarWolf314/kanuka/internal/errors"
 	"github.com/PolarWolf314/kanuka/internal/ui"
+	"github.com/PolarWolf314/kanuka/internal/workflows"
 
 	"github.com/spf13/cobra"
 )
@@ -40,60 +41,21 @@ Use --dry-run to preview what would happen without making changes.`,
 		spinner, cleanup := startSpinner("Syncing secrets...", verbose)
 		defer cleanup()
 
-		Logger.Debugf("Initializing project settings")
-		if err := configs.InitProjectSettings(); err != nil {
-			return Logger.ErrorfAndReturn("failed to init project settings: %v", err)
-		}
-		projectPath := configs.ProjectKanukaSettings.ProjectPath
-		Logger.Debugf("Project path: %s", projectPath)
-
-		if projectPath == "" {
-			finalMessage := ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
-				"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
-			spinner.FinalMSG = finalMessage
-			return nil
+		opts := workflows.SyncOptions{
+			DryRun: syncDryRun,
 		}
 
-		// Load project config for project UUID.
-		projectConfig, err := configs.LoadProjectConfig()
+		result, err := workflows.Sync(context.Background(), opts)
 		if err != nil {
-			return Logger.ErrorfAndReturn("failed to load project config: %v", err)
-		}
-		projectUUID := projectConfig.Project.UUID
-		Logger.Debugf("Project UUID: %s", projectUUID)
-
-		// Load private key.
-		privateKeyPath := configs.GetPrivateKeyPath(projectUUID)
-		Logger.Debugf("Loading private key from: %s", privateKeyPath)
-		privateKey, err := secrets.LoadPrivateKey(privateKeyPath)
-		if err != nil {
-			Logger.Errorf("Failed to load private key from %s: %v", privateKeyPath, err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to load your private key. Are you sure you have access?" +
-				"\n" + ui.Error.Sprint("Error: ") + err.Error()
-			spinner.FinalMSG = finalMessage
-			return nil
-		}
-		Logger.Infof("Private key loaded successfully")
-
-		// Build sync options.
-		opts := secrets.SyncOptions{
-			DryRun:  syncDryRun,
-			Verbose: verbose,
-			Debug:   debug,
-		}
-
-		// Call sync function.
-		result, err := secrets.SyncSecrets(privateKey, opts)
-		if err != nil {
-			Logger.Errorf("Sync failed: %v", err)
-			finalMessage := ui.Error.Sprint("✗") + " Failed to sync secrets" +
-				"\n" + ui.Error.Sprint("Error: ") + err.Error()
-			spinner.FinalMSG = finalMessage
+			spinner.FinalMSG = formatSyncError(err)
+			if isSyncUnexpectedError(err) {
+				return err
+			}
 			return nil
 		}
 
 		// Display results.
-		if syncDryRun {
+		if result.DryRun {
 			spinner.Stop()
 			printSyncDryRun(result)
 			spinner.FinalMSG = ""
@@ -102,16 +64,9 @@ Use --dry-run to preview what would happen without making changes.`,
 
 		// Handle case where no secrets needed processing.
 		if result.SecretsProcessed == 0 {
-			finalMessage := ui.Success.Sprint("✓") + " No encrypted files found. Nothing to sync."
-			spinner.FinalMSG = finalMessage
+			spinner.FinalMSG = ui.Success.Sprint("✓") + " No encrypted files found. Nothing to sync."
 			return nil
 		}
-
-		// Log to audit trail.
-		auditEntry := audit.LogWithUser("sync")
-		auditEntry.UsersCount = result.UsersProcessed
-		auditEntry.FilesCount = result.SecretsProcessed
-		audit.Log(auditEntry)
 
 		finalMessage := ui.Success.Sprint("✓") + " Secrets synced successfully" +
 			fmt.Sprintf("\n  Re-encrypted %d secret file(s) for %d user(s).", result.SecretsProcessed, result.UsersProcessed) +
@@ -121,8 +76,45 @@ Use --dry-run to preview what would happen without making changes.`,
 	},
 }
 
+// formatSyncError formats workflow errors into user-friendly messages.
+func formatSyncError(err error) string {
+	switch {
+	case errors.Is(err, kerrors.ErrProjectNotInitialized):
+		return ui.Error.Sprint("✗") + " Kanuka has not been initialized" +
+			"\n" + ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets init") + " first"
+
+	case errors.Is(err, kerrors.ErrPrivateKeyNotFound):
+		return ui.Error.Sprint("✗") + " Failed to load your private key. Are you sure you have access?" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
+
+	case errors.Is(err, kerrors.ErrKeyDecryptFailed):
+		return ui.Error.Sprint("✗") + " Failed to decrypt the symmetric key" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
+
+	default:
+		return ui.Error.Sprint("✗") + " Failed to sync secrets" +
+			"\n" + ui.Error.Sprint("Error: ") + err.Error()
+	}
+}
+
+// isSyncUnexpectedError returns true if the error is unexpected and should cause a non-zero exit.
+func isSyncUnexpectedError(err error) bool {
+	expectedErrors := []error{
+		kerrors.ErrProjectNotInitialized,
+		kerrors.ErrPrivateKeyNotFound,
+		kerrors.ErrKeyDecryptFailed,
+	}
+
+	for _, expected := range expectedErrors {
+		if errors.Is(err, expected) {
+			return false
+		}
+	}
+	return true
+}
+
 // printSyncDryRun displays what would happen during a sync operation.
-func printSyncDryRun(result *secrets.SyncResult) {
+func printSyncDryRun(result *workflows.SyncResult) {
 	fmt.Println()
 	fmt.Println(ui.Warning.Sprint("[dry-run]") + " Would sync secrets:")
 	fmt.Println()
