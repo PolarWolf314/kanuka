@@ -1,6 +1,3 @@
-// Package ui provides semantic text formatting for CLI output.
-// It supports colored output when available and falls back to
-// text decorations (backticks, quotes) when NO_COLOR is set.
 package ui
 
 import (
