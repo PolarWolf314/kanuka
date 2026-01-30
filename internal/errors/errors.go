@@ -72,4 +72,13 @@ var (
 
 	// ErrSelfRevoke indicates a user attempted to revoke their own access.
 	ErrSelfRevoke = errors.New("cannot revoke your own access")
+
+	// ErrInvalidEmail indicates the email format is invalid.
+	ErrInvalidEmail = errors.New("invalid email format")
+
+	// ErrDeviceNameTaken indicates the device name is already in use.
+	ErrDeviceNameTaken = errors.New("device name already in use")
+
+	// ErrPublicKeyExists indicates a public key already exists for this user.
+	ErrPublicKeyExists = errors.New("public key already exists")
 )
