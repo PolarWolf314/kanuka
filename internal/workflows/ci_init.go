@@ -2,6 +2,8 @@ package workflows
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 )
@@ -42,4 +44,42 @@ func IsCIUserRegistered() (bool, error) {
 
 	_, found := projectConfig.GetUserUUIDByEmail(CIUserEmail)
 	return found, nil
+}
+
+// detectGitHubRepoURL attempts to detect the GitHub repository URL from git remote.
+// Returns a placeholder if detection fails.
+func detectGitHubRepoURL() string {
+	cmd := exec.Command("git", "remote", "get-url", "origin")
+	output, err := cmd.Output()
+	if err != nil {
+		return "https://github.com/<owner>/<repo>"
+	}
+
+	remoteURL := strings.TrimSpace(string(output))
+
+	// Convert SSH URL to HTTPS URL.
+	// ssh://git@github.com/owner/repo.git -> https://github.com/owner/repo
+	// git@github.com:owner/repo.git -> https://github.com/owner/repo
+
+	// Handle ssh:// format.
+	if strings.HasPrefix(remoteURL, "ssh://git@github.com/") {
+		remoteURL = strings.TrimPrefix(remoteURL, "ssh://git@github.com/")
+		remoteURL = strings.TrimSuffix(remoteURL, ".git")
+		return "https://github.com/" + remoteURL
+	}
+
+	// Handle git@ format.
+	if strings.HasPrefix(remoteURL, "git@github.com:") {
+		remoteURL = strings.TrimPrefix(remoteURL, "git@github.com:")
+		remoteURL = strings.TrimSuffix(remoteURL, ".git")
+		return "https://github.com/" + remoteURL
+	}
+
+	// Handle HTTPS format.
+	if strings.HasPrefix(remoteURL, "https://github.com/") {
+		remoteURL = strings.TrimSuffix(remoteURL, ".git")
+		return remoteURL
+	}
+
+	return "https://github.com/<owner>/<repo>"
 }
