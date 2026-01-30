@@ -22,6 +22,9 @@ var (
 	// ErrProjectNotInitialized indicates the project has not been set up with Kanuka.
 	ErrProjectNotInitialized = errors.New("project has not been initialized")
 
+	// ErrProjectAlreadyInitialized indicates the project has already been set up with Kanuka.
+	ErrProjectAlreadyInitialized = errors.New("project has already been initialized")
+
 	// ErrInvalidProjectConfig indicates the project configuration is malformed or corrupt.
 	ErrInvalidProjectConfig = errors.New("project configuration is invalid")
 
