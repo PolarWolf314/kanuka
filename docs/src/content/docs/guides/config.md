@@ -63,6 +63,68 @@ kanuka config show --json
 kanuka config show --project --json
 ```
 
+## Configuration Commands
+
+### Init
+
+Set up your user identity:
+
+```bash
+# Interactive setup
+kanuka config init
+
+# Non-interactive setup
+kanuka config init --email alice@example.com --name "Alice Smith" --device workstation
+```
+
+### Show
+
+View your configuration:
+
+```bash
+# Show user configuration
+kanuka config show
+
+# Show project configuration
+kanuka config show --project
+
+# Show as JSON
+kanuka config show --json
+kanuka config show --project --json
+```
+
+### List Devices
+
+List all devices in the project:
+
+```bash
+# List all devices
+kanuka config list-devices
+
+# Filter by user
+kanuka config list-devices --user alice@example.com
+```
+
+### Set Default Device
+
+Set your default device name:
+
+```bash
+kanuka config set-default-device my-laptop
+```
+
+### Set Project Device
+
+Set your device name for a specific project:
+
+```bash
+# From within the project directory
+kanuka config set-project-device work-laptop
+
+# From anywhere, by project UUID
+kanuka config set-project-device --project-uuid 550e8400-e29b-41d4-a716-446655440000 workstation
+```
+
 ## Listing Devices
 
 To see all devices registered in the current project:
