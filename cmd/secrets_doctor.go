@@ -81,11 +81,11 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		spinner.FinalMSG = ""
 		printDoctorResults(result)
 		if result.Summary.Errors > 0 {
-			fmt.Println(ui.Error.Sprint("✗") + " Health checks completed with errors")
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Health checks completed with errors"
 		} else if result.Summary.Warnings > 0 {
-			fmt.Println(ui.Warning.Sprint("⚠") + " Health checks completed with warnings")
+			spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Health checks completed with warnings"
 		} else {
-			fmt.Println(ui.Success.Sprint("✓") + " Health checks completed")
+			spinner.FinalMSG = ui.Success.Sprint("✓") + " Health checks completed"
 		}
 	}
 

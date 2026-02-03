@@ -104,7 +104,7 @@ func formatCIInitError(err error) string {
 			ui.Info.Sprint("→") + " Run " + ui.Code.Sprint("kanuka secrets create") + " to generate your keys"
 
 	default:
-		return ui.Error.Sprint("✗") + " CI setup failed: " + err.Error()
+		return ui.Error.Sprint("✗") + " CI setup failed: " + err.Error() + "\n"
 	}
 }
 
