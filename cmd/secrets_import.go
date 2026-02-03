@@ -69,16 +69,16 @@ Examples:
 		Logger.Infof("Starting import command")
 		archivePath := args[0]
 
+		spinner, cleanup := startSpinner("Importing secrets...", verbose)
+		defer cleanup()
+
 		// Validate flags - can't use both merge and replace.
 		if importMergeFlag && importReplaceFlag {
-			finalMessage := ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags." +
+			spinner.FinalMSG = ui.Error.Sprint("✗") + " Cannot use both --merge and --replace flags." +
 				"\n\n" + ui.Info.Sprint("→") + " Use --merge to add new files while keeping existing files," +
-				"\n   or use --replace to delete existing files and use only of backup."
-			fmt.Print(finalMessage)
+				"\n   or use --replace to delete existing files and use only backup."
 			return nil
 		}
-
-		spinner, cleanup := startSpinner("Importing secrets...", verbose)
 		defer cleanup()
 
 		// Pre-check the archive.
@@ -103,7 +103,7 @@ Examples:
 			var ok bool
 			mode, ok = promptForImportMode()
 			if !ok {
-				fmt.Println(ui.Warning.Sprint("⚠") + " Import cancelled")
+				spinner.FinalMSG = ui.Warning.Sprint("⚠") + " Import cancelled"
 				return nil
 			}
 			// Restart spinner for the import operation.

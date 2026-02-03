@@ -97,11 +97,9 @@ func runLog(cmd *cobra.Command, args []string) error {
 
 	if len(result.Entries) == 0 {
 		if result.TotalEntriesBeforeFilter == 0 {
-			spinner.FinalMSG = ""
-			fmt.Println("No audit log entries found.")
+			spinner.FinalMSG = ui.Info.Sprint("ℹ") + " No audit log entries found."
 		} else {
-			spinner.FinalMSG = ""
-			fmt.Println("No audit log entries found matching the filters.")
+			spinner.FinalMSG = ui.Info.Sprint("ℹ") + " No audit log entries found matching the filters."
 		}
 		return nil
 	}
