@@ -307,7 +307,7 @@ func printRevokeDryRunResult(result *workflows.RevokeResult) {
 	// Show re-encryption impact.
 	if len(result.AllUsers) > len(result.UUIDsRevoked) {
 		fmt.Println("Post-revocation actions:")
-		fmt.Printf("  - Generate new encryption key\n")
+		fmt.Println("  - Generate new encryption key")
 		fmt.Printf("  - Re-encrypt symmetric key for %d remaining user(s)\n", result.RemainingUsers)
 
 		if result.KanukaFilesCount > 0 {

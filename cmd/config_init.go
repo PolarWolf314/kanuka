@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	logger "github.com/PolarWolf314/kanuka/internal/logging"
 	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 
@@ -57,6 +58,9 @@ func promptForInput(reader *bufio.Reader, prompt, defaultValue string) (string, 
 // RunConfigInit runs the config init logic and returns whether setup was performed.
 // This is exported so it can be called from secrets init.
 func RunConfigInit(verbose, debug bool) (bool, error) {
+	// Create a local logger with the provided flags.
+	log := logger.Logger{Verbose: verbose, Debug: debug}
+
 	// Load existing user config if any.
 	userConfig, err := configs.LoadUserConfig()
 	if err != nil {
@@ -77,9 +81,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	var email string
 	if configInitEmail != "" {
 		email = configInitEmail
-		if verbose {
-			fmt.Println("[info] Using email from flag: " + email)
-		}
+		log.Infof("Using email from flag: %s", email)
 	} else {
 		defaultEmail := userConfig.User.Email
 		promptedEmail, err := promptForInput(reader, "Email address", defaultEmail)
@@ -93,17 +95,13 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	if !utils.IsValidEmail(email) {
 		return false, fmt.Errorf("invalid email format: %s", email)
 	}
-	if verbose {
-		fmt.Println("[info] Email validated successfully")
-	}
+	log.Infof("Email validated successfully")
 
 	// Prompt for display name (optional).
 	var displayName string
 	if configInitName != "" {
 		displayName = configInitName
-		if verbose {
-			fmt.Println("[info] Using display name from flag: " + displayName)
-		}
+		log.Infof("Using display name from flag: %s", displayName)
 	} else {
 		defaultName := userConfig.User.Name
 		promptedName, err := promptForInput(reader, "Display name (optional)", defaultName)
@@ -117,9 +115,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	var deviceName string
 	if configInitDeviceName != "" {
 		deviceName = utils.SanitizeDeviceName(configInitDeviceName)
-		if verbose {
-			fmt.Println("[info] Using device name from flag: " + deviceName)
-		}
+		log.Infof("Using device name from flag: %s", deviceName)
 	} else {
 		// Generate default from hostname.
 		defaultDevice, _ := utils.GenerateDeviceName([]string{})
@@ -137,9 +133,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	if !utils.IsValidDeviceName(deviceName) {
 		return false, fmt.Errorf("invalid device name: %s (must be alphanumeric with hyphens and underscores)", deviceName)
 	}
-	if verbose {
-		fmt.Println("[info] Device name validated: " + deviceName)
-	}
+	log.Infof("Device name validated: %s", deviceName)
 
 	// Update user config.
 	userConfig.User.Email = email
@@ -149,9 +143,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	// Generate UUID if not present.
 	if userConfig.User.UUID == "" {
 		userConfig.User.UUID = configs.GenerateUserUUID()
-		if verbose {
-			fmt.Println("[info] Generated new user UUID: " + userConfig.User.UUID)
-		}
+		log.Infof("Generated new user UUID: %s", userConfig.User.UUID)
 	}
 
 	// Initialize projects map if nil.
@@ -163,9 +155,7 @@ func RunConfigInit(verbose, debug bool) (bool, error) {
 	if err := configs.SaveUserConfig(userConfig); err != nil {
 		return false, fmt.Errorf("failed to save user config: %w", err)
 	}
-	if verbose {
-		fmt.Println("[info] User configuration saved to " + configs.UserKanukaSettings.UserConfigsPath + "/config.toml")
-	}
+	log.Infof("User configuration saved to %s/config.toml", configs.UserKanukaSettings.UserConfigsPath)
 
 	// Display summary.
 	fmt.Println()

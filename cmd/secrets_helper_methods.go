@@ -11,9 +11,13 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-// startSpinner creates and starts a spinner with of given message when not in verbose or debug mode.
-// Returns to spinner and a function that should be deferred to clean up.
-// Uses to global debug flag from the secrets command.
+// startSpinner creates and starts a spinner with the given message when not in verbose or debug mode.
+// Returns the spinner and a function that should be deferred to clean up.
+// Uses the global debug flag from the secrets command.
+//
+// IMPORTANT: spinner.FinalMSG values do NOT need trailing newlines. The cleanup function
+// automatically calls ui.EnsureNewline() on the final message before printing it.
+// This ensures consistent output formatting across all commands.
 func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 	Logger.Debugf("Starting spinner with message: %s", message)
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
@@ -66,6 +70,10 @@ func startSpinner(message string, verbose bool) (*spinner.Spinner, func()) {
 
 // startSpinnerWithFlags creates and starts a spinner with explicit verbose and debug flags.
 // This is useful for commands that have their own flag variables (e.g., config commands).
+//
+// IMPORTANT: spinner.FinalMSG values do NOT need trailing newlines. The cleanup function
+// automatically calls ui.EnsureNewline() on the final message before printing it.
+// This ensures consistent output formatting across all commands.
 func startSpinnerWithFlags(message string, verbose, debugFlag bool) (*spinner.Spinner, func()) {
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
 	s.Suffix = " " + message

@@ -115,12 +115,12 @@ This audit catalogs all user-facing output statements in the Kānuka CLI codebas
 | 95-96 | Already configured error | `return` (FinalMSG) | stdout | Has `\n` | `ui.Error`, `ui.Info`, `ui.Code` | OK |
 | 99-100 | Not interactive error | `return` (FinalMSG) | stdout | Has `\n` | `ui.Error`, `ui.Info` | OK |
 | 103-104 | No access error | `return` (FinalMSG) | stdout | Has `\n` | `ui.Error`, `ui.Info`, `ui.Code` | OK |
-| 107 | Generic CI setup failure | `return` (FinalMSG) | stdout | No `\n` | `ui.Error` | **ISSUE: Missing newline** |
+| 107 | Generic CI setup failure | `return` (FinalMSG) | stdout | Has `\n` | `ui.Error` | **FIXED** |
 | 114-129 | Private key display box | String concat | stdout | Has `\n\n` | `ui.Warning`, `ui.Error`, `ui.Highlight` | OK |
 | 150-180 | Next steps instructions | `fmt.Println` | stdout | Auto | Various `ui.*` | OK |
 
-**Issues Found:** 1
-- Line 107: `ui.Error.Sprint("✗") + " CI setup failed: " + err.Error()` - Missing trailing `\n` (will be fixed by `EnsureNewline` in cleanup)
+**Issues Found:** 1 (FIXED)
+- Line 107: Added trailing `\n` to `ui.Error.Sprint("✗") + " CI setup failed: " + err.Error() + "\n"`
 
 ### `cmd/secrets_register.go`
 
@@ -302,7 +302,26 @@ This audit catalogs all user-facing output statements in the Kānuka CLI codebas
 
 ### `cmd/config_init.go`
 
-(Configuration initialization - need to verify this file separately)
+| Line | Message/Pattern | Mechanism | Stream | Newline | Formatting | Status |
+|------|-----------------|-----------|--------|---------|------------|--------|
+| 40-42 | Input prompt | `fmt.Printf` | stdout | No (intentional) | - | OK (prompt) |
+| 74 | Welcome message | `fmt.Println` | stdout | Auto | `ui.Info` | OK |
+| 81 | Email from flag | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 95 | Email validated | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 99 | Display name from flag | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 113 | Device name from flag | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 129 | Device name validated | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 141 | UUID generated | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 155 | Config saved | `log.Infof` | stdout | Auto | Logger | **FIXED** |
+| 159-169 | Summary display | `fmt.Println` | stdout | Auto | Various `ui.*` | OK |
+| 233-244 | Already exists output | `fmt.Println` | stdout | Auto | Various `ui.*` | OK |
+| 260 | Invalid email error | `fmt.Println` | stdout | Auto | `ui.Error`, `ui.Highlight` | OK |
+| 275 | Invalid device error | `fmt.Println` | stdout | Auto | `ui.Error`, `ui.Highlight` | OK |
+| 300-309 | Updated config output | `fmt.Println` | stdout | Auto | Various `ui.*` | OK |
+| 317 | Error display | `fmt.Println` | stdout | Auto | `ui.Error` | OK |
+
+**Issues Found:** 7 (ALL FIXED)
+- Lines 81, 95, 99, 113, 129, 141, 155: Replaced raw `fmt.Println("[info] ...")` with proper `log.Infof(...)` using a local logger instance
 
 ### `cmd/config_show.go`
 
@@ -375,7 +394,7 @@ This audit catalogs all user-facing output statements in the Kānuka CLI codebas
 | Total output statements | 200+ | - |
 | Properly formatted | 200+ | OK |
 | Missing newlines (fixed by cleanup) | ~15 | OK |
-| Actually missing newlines | 0 | - |
+| Issues found | 8 | **ALL FIXED** |
 | Wrong stream usage | 0 | - |
 | Missing semantic formatting | 0 | - |
 
@@ -403,24 +422,16 @@ This audit catalogs all user-facing output statements in the Kānuka CLI codebas
 
 ## Recommendations
 
-### No Critical Issues Found
+### All Issues Fixed
 
-The codebase demonstrates excellent output consistency:
+The following fixes have been applied:
 
-1. **Newline handling is robust** - The `ui.EnsureNewline()` helper in spinner cleanup catches any messages missing trailing newlines
-2. **Semantic formatting is consistent** - All commands use `ui.*` formatters appropriately
-3. **Stream usage is correct** - Errors and warnings go to stderr where appropriate, user output to stdout
-4. **Icon usage is consistent** - Success/error/warning/info icons follow a clear pattern
+1. **`cmd/secrets_ci_init.go:107`** - Added explicit trailing `\n` to generic error message
+2. **`cmd/config_init.go`** - Replaced 7 raw `fmt.Println("[info] ...")` calls with proper `log.Infof(...)` using a local logger instance
+3. **`cmd/secrets_helper_methods.go`** - Added documentation comments explaining that `spinner.FinalMSG` values don't need trailing newlines because cleanup adds them automatically
+4. **`cmd/secrets_revoke.go:310`** - Changed `fmt.Printf("  - Generate new encryption key\n")` to `fmt.Println("  - Generate new encryption key")` for consistency
 
-### Minor Suggestions
-
-1. **Consider adding `ui.EnsureNewline` to more places** - While spinner cleanup handles it, explicit newlines in format functions could improve clarity
-
-2. **Document the pattern** - Add a comment in `secrets_helper_methods.go` explaining that `spinner.FinalMSG` messages don't need trailing `\n` because cleanup adds them
-
-3. **Standardize on `fmt.Println` vs `fmt.Printf`** - Some files use `fmt.Printf` with `\n` where `fmt.Println` would work; this is stylistic but consistency could be improved
-
-### Patterns to Preserve
+### Patterns Preserved
 
 1. **Keep using `spinner.FinalMSG` with cleanup** - This pattern ensures consistent output and newline handling
 2. **Keep password prompts on stderr without newlines** - This is correct behavior for interactive prompts
@@ -436,4 +447,11 @@ See the detailed tables above for the complete inventory. Each statement has bee
 - Semantic formatter usage
 - Icon consistency
 
-**Audit Complete**
+**Audit Complete - All Issues Fixed**
+
+### Files Modified
+
+1. `cmd/secrets_ci_init.go` - Added trailing newline to error message
+2. `cmd/config_init.go` - Replaced raw `[info]` prints with proper Logger calls
+3. `cmd/secrets_helper_methods.go` - Added documentation comments about spinner.FinalMSG pattern
+4. `cmd/secrets_revoke.go` - Standardized fmt.Printf to fmt.Println for static string
