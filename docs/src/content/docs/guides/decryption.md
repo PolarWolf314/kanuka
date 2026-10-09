@@ -24,6 +24,10 @@ kanuka secrets decrypt
 That's it! Kānuka will automatically decrypt the files, and return the original
 `.env`, as long as you have access.
 
+Decrypted `.env` files are written with `0600` permissions — readable only by
+you — since they contain plaintext secrets. Pre-existing plaintext files are
+tightened to `0600` as well when they are overwritten.
+
 ## Decrypting specific files
 
 By default, `decrypt` processes all `.kanuka` files in your project. You can

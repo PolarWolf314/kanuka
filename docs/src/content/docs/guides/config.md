@@ -21,7 +21,8 @@ kanuka config init
 This will prompt you for:
 - **Email address** (required) - Your identifier across all projects.
 - **Display name** (optional) - For audit log features.
-- **Default device name** - Defaults to your computer's hostname.
+- **Default device name** - Defaults to your computer's hostname. Used when
+  running `secrets init` or `secrets create` unless you pass `--device-name`.
 
 For non-interactive setup (useful in CI/CD or scripts):
 
