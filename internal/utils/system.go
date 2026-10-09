@@ -71,7 +71,14 @@ func GenerateDeviceName(existingDeviceNames []string) (string, error) {
 		}
 	}
 
-	baseName := SanitizeDeviceName(hostname)
+	return UniqueDeviceName(hostname, existingDeviceNames), nil
+}
+
+// UniqueDeviceName sanitizes a base name and resolves conflicts with
+// existing device names by appending a number suffix (-2, -3, etc.).
+// Conflict checks are case-insensitive.
+func UniqueDeviceName(base string, existingDeviceNames []string) string {
+	baseName := SanitizeDeviceName(base)
 	deviceName := baseName
 
 	// Check for conflicts and append suffix if needed.
@@ -86,5 +93,5 @@ func GenerateDeviceName(existingDeviceNames []string) (string, error) {
 		suffix++
 	}
 
-	return deviceName, nil
+	return deviceName
 }

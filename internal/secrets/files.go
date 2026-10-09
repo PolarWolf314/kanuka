@@ -118,7 +118,7 @@ func findFilesInDir(dir string, forEncryption bool) ([]string, error) {
 
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return skipUnreadableDir(dir, path, err)
 		}
 		if d.IsDir() {
 			// Skip .kanuka directory.

@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -8,7 +9,31 @@ import (
 	"strings"
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
+	logger "github.com/PolarWolf314/kanuka/internal/logging"
 )
+
+// walkLogger reports non-fatal issues encountered while walking directories.
+// It defaults to a silent logger; the cmd layer wires it to the real logger
+// so that skipped directories are reported in verbose mode.
+var walkLogger = logger.Logger{}
+
+// SetWalkLogger sets the logger used to report non-fatal issues during
+// directory walks, such as unreadable directories being skipped.
+func SetWalkLogger(l logger.Logger) {
+	walkLogger = l
+}
+
+// skipUnreadableDir converts walk errors that indicate an unreadable
+// directory into filepath.SkipDir so the walk continues with the rest of
+// the tree. Errors affecting the walk root, or any other error kind,
+// remain fatal: an unreadable root means the whole scan is unusable.
+func skipUnreadableDir(root, path string, err error) error {
+	if path != root && errors.Is(err, fs.ErrPermission) {
+		walkLogger.Warnf("Skipping unreadable directory %s: %v", path, err)
+		return filepath.SkipDir
+	}
+	return fmt.Errorf("failed while walking directory: %w", err)
+}
 
 // EnsureUserSettings ensures that the user's Kanuka data and config directory exists.
 func EnsureUserSettings() error {
@@ -95,7 +120,7 @@ func FindEnvOrKanukaFiles(rootDir string, ignoreDirs []string, isKanuka bool) ([
 
 	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return fmt.Errorf("failed while walking directory: %w", err)
+			return skipUnreadableDir(rootDir, path, err)
 		}
 
 		// Skip ignored directories

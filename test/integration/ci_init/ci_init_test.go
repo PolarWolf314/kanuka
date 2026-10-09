@@ -112,7 +112,10 @@ func testCIInitAlreadyConfigured(t *testing.T, originalWd string, originalUserSe
 		t.Error("Expected CI user to be registered (already configured)")
 	}
 
-	// Also verify CLI shows TTY error (since we can't mock TTY).
+	// Also verify CLI shows an appropriate error.
+	// The error depends on the environment:
+	// - In non-TTY environment: "interactive terminal" error (TTY check fails first)
+	// - In TTY environment: "already configured" error (TTY check passes, CI check fails)
 	output, err := shared.CaptureOutput(func() error {
 		cmd := shared.CreateTestCLIWithArgs("ci-init", []string{}, nil, nil, false, false)
 		return cmd.Execute()
@@ -122,9 +125,11 @@ func testCIInitAlreadyConfigured(t *testing.T, originalWd string, originalUserSe
 		t.Errorf("Command failed unexpectedly: %v", err)
 	}
 
-	// In non-TTY environment, we expect the TTY error.
-	if !strings.Contains(output, "interactive terminal") {
-		t.Errorf("Expected 'interactive terminal' error in non-TTY env, got: %s", output)
+	// Accept either error depending on TTY availability.
+	hasTTYError := strings.Contains(output, "interactive terminal")
+	hasAlreadyConfiguredError := strings.Contains(output, "already configured")
+	if !hasTTYError && !hasAlreadyConfiguredError {
+		t.Errorf("Expected 'interactive terminal' or 'already configured' error, got: %s", output)
 	}
 }
 

@@ -224,6 +224,28 @@ ssh-keygen -l -f your_key
 ssh-keygen -t rsa -b 4096 -f new_rsa_key
 ```
 
+### "failed while walking directory: ... permission denied"
+
+Commands that scan the project tree used to abort when they hit a directory
+your user cannot read — common in self-hosted setups with container-owned
+runtime data like `data/postgres/pgdata/`. Kānuka now skips unreadable
+directories and continues.
+
+Run with `--verbose` to see which directories were skipped:
+
+```bash
+kanuka secrets encrypt --verbose
+```
+
+If a skipped directory actually contains `.env` files you care about, fix its
+permissions or pass those files explicitly:
+
+```bash
+kanuka secrets encrypt path/to/.env
+```
+
+See [working with monorepos](/guides/monorepo/) for details.
+
 ### Passphrase prompt not appearing
 
 If you're piping a passphrase-protected key via `--private-key-stdin` and the

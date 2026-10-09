@@ -33,6 +33,31 @@ func TestSanitizeDeviceName(t *testing.T) {
 	}
 }
 
+func TestUniqueDeviceName(t *testing.T) {
+	tests := []struct {
+		name     string
+		base     string
+		existing []string
+		expected string
+	}{
+		{"NoConflicts", "recovery-key", nil, "recovery-key"},
+		{"CaseInsensitiveConflict", "recovery-key", []string{"Recovery-Key"}, "recovery-key-2"},
+		{"SingleConflict", "recovery-key", []string{"recovery-key"}, "recovery-key-2"},
+		{"MultipleConflicts", "recovery-key", []string{"recovery-key", "recovery-key-2", "recovery-key-3"}, "recovery-key-4"},
+		{"OtherNamesDontConflict", "recovery-key", []string{"laptop", "desktop"}, "recovery-key"},
+		{"BaseIsSanitized", "My Recovery Key!", []string{}, "my-recovery-key"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := UniqueDeviceName(tt.base, tt.existing)
+			if result != tt.expected {
+				t.Errorf("UniqueDeviceName(%q, %v) = %q, expected %q", tt.base, tt.existing, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestGenerateDeviceName(t *testing.T) {
 	t.Run("GeneratesUniqueName", func(t *testing.T) {
 		existing := []string{}

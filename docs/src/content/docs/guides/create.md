@@ -65,6 +65,10 @@ You can specify a custom device name during creation:
 kanuka secrets create --device-name work-laptop
 ```
 
+If you've set a default device name in your user config (via
+`kanuka config init --device`), `create` uses it automatically. Otherwise a
+name is derived from your computer's hostname.
+
 ## Requesting access
 
 After creating your keys, someone with existing access needs to register you:

@@ -86,9 +86,16 @@ func Init(ctx context.Context, opts InitOptions) (*InitResult, error) {
 	}
 	cleanupNeeded = true
 
-	deviceName, err := utils.GenerateDeviceName([]string{})
-	if err != nil {
-		return nil, fmt.Errorf("generating device name: %w", err)
+	// Prefer the user's configured default device name (set by
+	// `kanuka config init --device`) over a hostname-derived one.
+	var deviceName string
+	if userConfig.User.DefaultDeviceName != "" {
+		deviceName = utils.UniqueDeviceName(userConfig.User.DefaultDeviceName, nil)
+	} else {
+		deviceName, err = utils.GenerateDeviceName([]string{})
+		if err != nil {
+			return nil, fmt.Errorf("generating device name: %w", err)
+		}
 	}
 
 	projectConfig := &configs.ProjectConfig{

@@ -268,6 +268,44 @@ func TestResolveFiles_WrongFileType(t *testing.T) {
 	}
 }
 
+func TestResolveFiles_DirectoryWithUnreadableSubdir(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "kanuka-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// A readable service with an .env file.
+	apiDir := filepath.Join(tmpDir, "services", "api")
+	if err := os.MkdirAll(apiDir, 0755); err != nil {
+		t.Fatalf("Failed to create subdir: %v", err)
+	}
+	envFile := filepath.Join(apiDir, ".env")
+	writeTestFile(t, envFile, "TEST=value")
+
+	// An unreadable runtime-data subtree inside the directory argument.
+	lockedDir := filepath.Join(tmpDir, "services", "data", "pgdata")
+	if err := os.MkdirAll(lockedDir, 0755); err != nil {
+		t.Fatalf("Failed to create locked dir: %v", err)
+	}
+	writeTestFile(t, filepath.Join(lockedDir, ".env"), "UNREADABLE=1")
+	cleanup := lockDir(t, lockedDir)
+	defer cleanup()
+
+	// Resolving a directory argument must skip the unreadable subtree
+	// instead of aborting.
+	files, err := ResolveFiles([]string{"services/"}, tmpDir, true)
+	if err != nil {
+		t.Fatalf("Expected unreadable subdir to be skipped, got: %v", err)
+	}
+	if len(files) != 1 {
+		t.Fatalf("Expected 1 file, got %d: %v", len(files), files)
+	}
+	if files[0] != envFile {
+		t.Errorf("Expected %s, got %s", envFile, files[0])
+	}
+}
+
 func TestIsEnvFile(t *testing.T) {
 	tests := []struct {
 		path     string

@@ -106,6 +106,27 @@ kanuka secrets register --user alice@example.com
 - Projects with different security classifications per service
 - Situations requiring strict access separation
 
+## Unreadable directories are skipped
+
+Monorepos often contain runtime data owned by other users, such as
+`data/postgres/pgdata/` (owned by the container's `postgres` user, mode `0700`)
+or caddy/pocketid data directories. These directories are unreadable to your
+user and typically live in `.gitignore` — Kānuka never needs to look inside
+them.
+
+Commands that scan the project tree (`encrypt`, `decrypt`, `status`, `doctor`,
+`export`, `sync`, `rotate`, and `revoke`) skip directories they cannot read
+instead of failing, and continue with the rest of the tree. Run any of them
+with `--verbose` to list skipped directories:
+
+```bash
+kanuka secrets encrypt --verbose
+# [warn] Skipping unreadable directory /path/to/data/postgres/pgdata: open ...: permission denied
+```
+
+If a directory that actually contains `.env` files is being skipped, fix its
+permissions or pass the files explicitly as shown above.
+
 ## Recommendation
 
 **Start with Option 1** (single store at root) unless you have a specific need
