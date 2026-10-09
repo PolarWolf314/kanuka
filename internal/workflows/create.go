@@ -159,7 +159,9 @@ func Create(ctx context.Context, opts CreateOptions) (*CreateResult, error) {
 		return nil, fmt.Errorf("loading project config: %w", err)
 	}
 
-	// Determine device name.
+	// Determine device name. An explicit --device-name wins, then the
+	// user's configured default_device_name (set by `kanuka config init`),
+	// then a name generated from the system hostname.
 	existingDeviceNames := projectConfig.GetDeviceNamesByEmail(userEmail)
 	var deviceName string
 
@@ -168,6 +170,8 @@ func Create(ctx context.Context, opts CreateOptions) (*CreateResult, error) {
 		if projectConfig.IsDeviceNameTakenByEmail(userEmail, deviceName) {
 			return nil, fmt.Errorf("%w: %s", kerrors.ErrDeviceNameTaken, deviceName)
 		}
+	} else if userConfig.User.DefaultDeviceName != "" {
+		deviceName = utils.UniqueDeviceName(userConfig.User.DefaultDeviceName, existingDeviceNames)
 	} else {
 		deviceName, err = utils.GenerateDeviceName(existingDeviceNames)
 		if err != nil {
