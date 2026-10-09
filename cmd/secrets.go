@@ -6,6 +6,7 @@ import (
 
 	"github.com/PolarWolf314/kanuka/internal/configs"
 	logger "github.com/PolarWolf314/kanuka/internal/logging"
+	"github.com/PolarWolf314/kanuka/internal/secrets"
 	"github.com/PolarWolf314/kanuka/internal/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -25,6 +26,7 @@ var (
 				Verbose: verbose,
 				Debug:   debug,
 			}
+			secrets.SetWalkLogger(Logger)
 			Logger.Debugf("Initializing secrets command with verbose=%t, debug=%t", verbose, debug)
 
 			// Update key metadata access time if in a project.
@@ -221,6 +223,7 @@ func SetDebug(d bool) {
 // SetLogger sets the logger for testing.
 func SetLogger(l logger.Logger) {
 	Logger = l
+	secrets.SetWalkLogger(l)
 }
 
 // updateProjectAccessTime updates the key metadata access time if running inside a project.
