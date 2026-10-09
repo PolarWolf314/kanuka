@@ -18,7 +18,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: stable
+          # Pinned to match go.yml/release.yml and the golangci-lint version
+          # below: a golangci-lint binary can only load packages with a Go
+          # toolchain compatible with the one it was built for. `stable`
+          # resolves to go1.26 now, which breaks v2.1.5. If you bump one
+          # side, bump the other.
+          go-version: "1.24"
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
