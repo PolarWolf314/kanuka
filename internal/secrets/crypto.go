@@ -142,9 +142,15 @@ func DecryptFiles(symKey []byte, inputPaths []string, verbose bool) error {
 		}
 
 		outputPath := strings.TrimSuffix(inputPath, ".kanuka")
-		// #nosec G306 -- We want the decrypted .env file to be editable by the user
-		if err := os.WriteFile(outputPath, plaintext, 0644); err != nil {
+		// Plaintext secrets must never be group- or world-readable.
+		// #nosec G304 -- Path is derived from a .kanuka file the user asked to decrypt.
+		if err := os.WriteFile(outputPath, plaintext, 0600); err != nil {
 			return fmt.Errorf("failed to write to %s: %w", outputPath, err)
+		}
+		// os.WriteFile only applies the mode when creating the file, so
+		// tighten pre-existing files (e.g. stale 0644 plaintext) explicitly.
+		if err := os.Chmod(outputPath, 0600); err != nil {
+			return fmt.Errorf("failed to restrict permissions on %s: %w", outputPath, err)
 		}
 	}
 
